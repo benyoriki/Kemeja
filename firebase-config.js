@@ -23,6 +23,7 @@ const firebaseConfig = {
 /* Kata sandi panel admin (sisi klien saja — lihat catatan
    keamanan di PANDUAN-FIREBASE.md). Ganti dengan kata sandi
    Anda sendiri sebelum website dipakai secara nyata. */
+export const ADMIN_USERNAME = "admin";
 export const ADMIN_PASSCODE = "lokonprima2026";
 
 /* Nama koleksi Firestore tempat data pendaftaran disimpan */

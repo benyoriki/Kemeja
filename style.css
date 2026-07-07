@@ -1071,13 +1071,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     font-size:13.5px; color:var(--ink); width:100%;
 }
 
-.admin-btn{
-    width:42px; height:42px; border-radius:50%; background:var(--white);
-    border:1px solid var(--line); color:var(--ink-soft); display:flex;
-    align-items:center; justify-content:center; transition:var(--transition);
-}
-[data-theme="dark"] .admin-btn{ background:var(--foam); }
-.admin-btn:hover{ background:var(--gradient-brand); color:#04213A; border-color:transparent; transform:rotate(-12deg); }
+.admin-btn{ display:none; }
 
 .peserta-grid{
     display:grid; grid-template-columns:repeat(3,1fr); gap:22px; position:relative; z-index:1;
@@ -1202,15 +1196,31 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 .admin-login h3{ font-size:20px; margin-bottom:8px; }
 .admin-login p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:22px; }
+.admin-field{ text-align:left; margin-bottom:16px; }
+.admin-field label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:7px; }
+.admin-field label span{ font-family:var(--font-mono); color:var(--aqua-deep); font-weight:700; }
 .admin-login input{
-    width:100%; padding:14px 18px; border-radius:30px; border:1.5px solid var(--border);
-    background:var(--foam); font-size:14px; margin-bottom:14px; text-align:center;
-    font-family:var(--font-mono); letter-spacing:.15em;
+    width:100%; padding:13px 16px; border-radius:16px; border:1.5px solid var(--border);
+    background:var(--foam); font-size:14px; font-family:var(--font-body);
 }
 [data-theme="dark"] .admin-login input{ background:var(--white); }
 .admin-login input:focus{ outline:none; border-color:var(--aqua); }
-.admin-login .btn{ width:100%; justify-content:center; }
-.admin-error{ display:block; color:#EF5A6F; font-size:12.5px; margin-top:10px; min-height:16px; }
+.admin-passcode-wrap{ position:relative; }
+.admin-captcha-row{ display:flex; gap:10px; align-items:center; }
+.admin-captcha-row input{ flex:1; text-align:left; font-family:var(--font-mono); letter-spacing:normal; }
+.admin-captcha-refresh{
+    width:46px; height:46px; min-width:46px; border-radius:14px;
+    background:rgba(18,169,224,.1); color:var(--aqua-deep);
+    display:flex; align-items:center; justify-content:center; transition:var(--transition);
+}
+.admin-captcha-refresh:hover{ background:var(--gradient-brand); color:#04213A; transform:rotate(180deg); }
+.admin-error{ display:block; color:#EF5A6F; font-size:12.5px; margin:2px 0 14px; min-height:16px; text-align:left; }
+.admin-login-actions{ display:flex; gap:12px; }
+.admin-login-actions .btn{ flex:1; justify-content:center; padding:13px 20px; }
+.btn-outline-dark{
+    background:transparent; color:var(--ink-soft); border:1.5px solid var(--border);
+}
+.btn-outline-dark:hover{ background:var(--line); color:var(--ink); transform:translateY(-2px); }
 
 .admin-panel{ display:none; }
 .admin-panel h3{ font-size:17px; margin-bottom:20px; display:flex; align-items:center; gap:9px; }
