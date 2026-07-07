@@ -699,3 +699,291 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 @media (prefers-reduced-motion: reduce){
   *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
 }
+
+/* ==========================================
+   Developer Credit
+========================================== */
+
+.developer-credit{
+    margin-top:18px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    font-size:14px;
+    color:var(--ink-soft);
+}
+
+.benyoriki-link{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px 22px;
+    border-radius:40px;
+    overflow:hidden;
+    font-weight:700;
+    letter-spacing:.4px;
+    color:#fff;
+    background:linear-gradient(135deg,#12A9E0,#0FD8B8);
+    box-shadow:
+        0 0 18px rgba(18,169,224,.35),
+        0 8px 30px rgba(15,216,184,.28);
+    transition:.45s cubic-bezier(.2,.8,.2,1);
+}
+
+.benyoriki-link:hover{
+    transform:translateY(-4px) scale(1.05);
+    box-shadow:
+        0 0 25px rgba(18,169,224,.6),
+        0 15px 40px rgba(15,216,184,.45);
+}
+
+.benyoriki-link::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    border-radius:40px;
+    padding:2px;
+    background:linear-gradient(90deg,#12A9E0,#0FD8B8,#ffffff,#12A9E0);
+    background-size:300% 100%;
+    animation:borderFlow 5s linear infinite;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;
+            mask-composite:exclude;
+}
+
+@keyframes borderFlow{
+    to{
+        background-position:300% 0;
+    }
+}
+
+/* Shine Effect */
+
+.shine{
+    position:absolute;
+    top:0;
+    left:-120%;
+    width:50%;
+    height:100%;
+    transform:skewX(-25deg);
+    background:rgba(255,255,255,.45);
+}
+
+.benyoriki-link:hover .shine{
+    animation:shineMove .9s ease;
+}
+
+@keyframes shineMove{
+    to{
+        left:170%;
+    }
+}
+
+/* Floating Particles */
+
+.particle{
+    position:absolute;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:#fff;
+    opacity:0;
+    box-shadow:0 0 10px #fff;
+}
+
+.benyoriki-link:hover .particle{
+    opacity:1;
+}
+
+.particle:nth-child(1){
+    left:18%;
+    animation:floatParticle 2s infinite;
+}
+
+.particle:nth-child(2){
+    left:35%;
+    animation:floatParticle 1.6s .2s infinite;
+}
+
+.particle:nth-child(3){
+    left:55%;
+    animation:floatParticle 2.3s .4s infinite;
+}
+
+.particle:nth-child(4){
+    left:72%;
+    animation:floatParticle 1.8s .6s infinite;
+}
+
+.particle:nth-child(5){
+    left:88%;
+    animation:floatParticle 2.1s .3s infinite;
+}
+
+@keyframes floatParticle{
+
+    0%{
+        transform:translateY(15px) scale(.4);
+        opacity:0;
+    }
+
+    20%{
+        opacity:1;
+    }
+
+    100%{
+        transform:translateY(-30px) scale(1.2);
+        opacity:0;
+    }
+}
+
+/* ==========================================
+   GOOGLE MAP PREMIUM
+========================================== */
+
+.map-section{
+    margin-top:50px;
+}
+
+.map-header{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.map-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 18px;
+    border-radius:30px;
+    background:rgba(18,169,224,.1);
+    color:var(--aqua-deep);
+    font-weight:600;
+    margin-bottom:15px;
+}
+
+.map-header h3{
+    font-size:30px;
+    margin-bottom:12px;
+}
+
+.map-header p{
+    max-width:700px;
+    margin:auto;
+    line-height:1.7;
+    color:var(--ink-soft);
+}
+
+.map-card{
+    position:relative;
+    display:block;
+    overflow:hidden;
+    border-radius:24px;
+    min-height:450px;
+    border:1px solid rgba(18,169,224,.15);
+    box-shadow:0 20px 60px rgba(11,37,69,.12);
+    transition:.5s ease;
+}
+
+.map-card:hover{
+    transform:translateY(-8px);
+    box-shadow:
+        0 30px 70px rgba(18,169,224,.25),
+        0 0 35px rgba(15,216,184,.2);
+}
+
+.map-card iframe{
+    width:100%;
+    height:450px;
+    border:none;
+    transition:1.2s ease;
+}
+
+.map-card:hover iframe{
+    transform:scale(1.04);
+}
+
+.map-overlay{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding:25px;
+    background:linear-gradient(
+        to top,
+        rgba(7,16,34,.65),
+        rgba(7,16,34,0)
+    );
+}
+
+.map-button{
+    padding:14px 28px;
+    border-radius:40px;
+    background:linear-gradient(
+        135deg,
+        #12A9E0,
+        #0FD8B8
+    );
+    color:#fff;
+    font-weight:700;
+    letter-spacing:.4px;
+    box-shadow:0 10px 25px rgba(18,169,224,.35);
+    transition:.4s;
+}
+
+.map-card:hover .map-button{
+    transform:scale(1.08);
+}
+
+.map-glow{
+    position:absolute;
+    inset:-100px;
+    background:
+      radial-gradient(
+      circle,
+      rgba(18,169,224,.15),
+      transparent 60%);
+    animation:mapGlow 6s linear infinite;
+    pointer-events:none;
+}
+
+@keyframes mapGlow{
+    0%{
+        transform:rotate(0deg);
+    }
+    100%{
+        transform:rotate(360deg);
+    }
+}
+
+.map-pulse{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:#ff3b30;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 0 rgba(255,59,48,.7);
+    animation:mapPulse 2s infinite;
+}
+
+@keyframes mapPulse{
+    0%{
+        box-shadow:0 0 0 0 rgba(255,59,48,.7);
+    }
+    70%{
+        box-shadow:0 0 0 25px rgba(255,59,48,0);
+    }
+    100%{
+        box-shadow:0 0 0 0 rgba(255,59,48,0);
+    }
+}
+
