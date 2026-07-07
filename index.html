@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- ===== SEO META ===== -->
+<title>Pendaftaran Kemeja Kerja | PT. LOKON PRIMA - Distributor AQUA</title>
+<meta name="description" content="Formulir pendaftaran pembuatan kemeja kerja resmi PT. LOKON PRIMA, Distributor Air Kemasan AQUA. Bahan Tropical premium, logo bordir, dan proses cepat.">
+<meta name="keywords" content="kemeja kerja, seragam PT LOKON PRIMA, distributor AQUA, pendaftaran seragam">
+<meta name="author" content="PT. LOKON PRIMA">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Pendaftaran Kemeja Kerja | PT. LOKON PRIMA">
+<meta property="og:description" content="Daftarkan diri Anda untuk pembuatan kemeja kerja resmi PT. LOKON PRIMA - Distributor Air Kemasan AQUA.">
+<meta property="og:image" content="assets/og-image.jpg">
+<meta property="og:locale" content="id_ID">
+
+<!-- Favicon Placeholder -->
+<link rel="icon" type="image/png" href="assets/favicon.png">
+
+<!-- Google Fonts: Outfit (display) + Inter (body) + JetBrains Mono (data) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Stylesheet -->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===================================================== -->
+<!-- LOADING SCREEN -->
+<!-- ===================================================== -->
+<div id="loading-screen">
+  <div class="loader-content">
+    <div class="loader-drop"></div>
+    <p>LOKON PRIMA</p>
+  </div>
+</div>
+
+<!-- Scroll Progress Bar -->
+<div id="scroll-progress"></div>
+
+<!-- Ambient cursor glow (desktop only) -->
+<div id="cursorGlow" aria-hidden="true"></div>
+
+<!-- ===================================================== -->
+<!-- NAVBAR -->
+<!-- ===================================================== -->
+<header class="navbar" id="navbar">
+  <div class="container nav-inner">
+    <a href="#home" class="logo">
+      <i class="fa-solid fa-shirt"></i> LOKON <span>PRIMA</span>
+    </a>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="#home" class="active">Beranda</a>
+      <a href="#tentang">Tentang</a>
+      <a href="#keunggulan">Keunggulan</a>
+      <a href="#galeri">Galeri</a>
+      <a href="#spesifikasi">Spesifikasi</a>
+      <a href="#ukuran">Ukuran</a>
+      <a href="#daftar" class="nav-cta">Daftar</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button id="darkModeToggle" aria-label="Ganti mode gelap/terang">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button id="hamburger" aria-label="Buka menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ===================================================== -->
+<!-- HERO SECTION -->
+<!-- ===================================================== -->
+<section id="home" class="hero">
+  <div class="hero-bg" id="parallaxBg"></div>
+  <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+  <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
+  <canvas id="particleCanvas" aria-hidden="true"></canvas>
+  <div class="hero-overlay"></div>
+
+  <div class="container hero-content">
+    <div class="hero-badge fade-up"><i class="fa-solid fa-droplet"></i> Distributor Resmi Air Kemasan AQUA</div>
+
+    <h1 class="hero-title fade-up">Pendaftaran Pembuatan<br><span class="grad-text">Kemeja Kerja</span></h1>
+
+    <p class="hero-sub fade-up">
+      <strong>PT. LOKON PRIMA</strong><br>
+      Distributor Air Kemasan AQUA
+    </p>
+
+    <p class="hero-desc fade-up">
+      Satu seragam, satu identitas, satu kebanggaan. Lengkapi data Anda sekarang
+      dan wujudkan kemeja kerja bordir premium untuk seluruh tim lapangan.
+    </p>
+
+    <div class="hero-actions fade-up">
+      <a href="#daftar" class="btn btn-primary ripple magnetic">
+        <i class="fa-solid fa-pen-to-square"></i> Daftar Sekarang
+      </a>
+      <a href="#galeri" class="btn btn-outline ripple magnetic">
+        <i class="fa-solid fa-images"></i> Lihat Desain
+      </a>
+    </div>
+
+    <!-- Counter Stats -->
+    <div class="hero-stats fade-up">
+      <div class="stat-item">
+        <span class="counter" data-target="500">0</span><span class="stat-plus">+</span>
+        <p>Karyawan Terdaftar</p>
+      </div>
+      <div class="stat-item">
+        <span class="counter" data-target="100">0</span><span class="stat-plus">%</span>
+        <p>Logo Bordir Premium</p>
+      </div>
+      <div class="stat-item">
+        <span class="counter" data-target="7">0</span>
+        <p>Pilihan Ukuran</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-down">
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+
+  <div class="wave-divider">
+    <svg viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,32 C240,80 480,0 720,24 C960,48 1200,88 1440,40 L1440,90 L0,90 Z" fill="var(--foam)"></path>
+    </svg>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- KATA PENGANTAR -->
+<!-- ===================================================== -->
+<section id="tentang" class="section intro">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Kata Pengantar</span>
+      <h2>Satu Kemeja, Satu Kebanggaan Bersama</h2>
+    </div>
+
+    <div class="intro-grid">
+      <div class="intro-text fade-up">
+        <p>
+          Kepada seluruh karyawan dan mitra kerja PT. LOKON PRIMA yang kami banggakan,
+          seragam kerja bukan sekadar pakaian yang kita kenakan setiap hari. Ia adalah
+          cerminan identitas, kekompakan, dan semangat profesionalisme kita sebagai
+          satu keluarga besar Distributor Air Kemasan AQUA.
+        </p>
+        <p>
+          Melalui program pendaftaran kemeja kerja ini, kami mengajak Bapak/Ibu dan
+          rekan-rekan sekalian untuk turut serta melengkapi diri dengan seragam resmi
+          perusahaan. Bukan hanya soal penampilan, seragam ini adalah wujud nyata
+          kebersamaan kita dalam melayani pelanggan dengan sebaik-baiknya.
+        </p>
+        <p>Mari bergabung dan tunjukkan bahwa kita adalah satu tim, satu tujuan, satu LOKON PRIMA.</p>
+      </div>
+
+      <div class="intro-points fade-up">
+        <div class="point"><i class="fa-solid fa-people-group"></i><span>Meningkatkan kekompakan tim</span></div>
+        <div class="point"><i class="fa-solid fa-heart"></i><span>Menambah rasa bangga terhadap perusahaan</span></div>
+        <div class="point"><i class="fa-solid fa-user-tie"></i><span>Menunjukkan profesionalisme kerja</span></div>
+        <div class="point"><i class="fa-solid fa-shield-halved"></i><span>Menjadi identitas resmi perusahaan</span></div>
+        <div class="point"><i class="fa-solid fa-face-smile"></i><span>Nyaman digunakan sepanjang hari kerja</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- KEUNGGULAN -->
+<!-- ===================================================== -->
+<section id="keunggulan" class="section keunggulan">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Kenapa Memilih Kami</span>
+      <h2>Keunggulan Kemeja Kerja LOKON PRIMA</h2>
+    </div>
+
+    <div class="card-grid">
+      <div class="feature-card fade-up">
+        <div class="feature-icon"><i class="fa-solid fa-layer-group"></i></div>
+        <h3>Bahan American Drill / Tropical</h3>
+        <p>Komposisi 65% Polyester, 35% Cotton dengan gramasi 190–200 GSM, adem dan tahan lama.</p>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon"><i class="fa-solid fa-scroll"></i></div>
+        <h3>Logo Full Bordir</h3>
+        <p>Logo AQUA, nama karyawan, bendera, dan K3 dibordir komputer rapi dan tidak mudah pudar.</p>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+        <h3>Jahitan Berkualitas</h3>
+        <p>Dijahit dengan presisi tinggi untuk ketahanan pemakaian jangka panjang.</p>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon"><i class="fa-solid fa-wind"></i></div>
+        <h3>Nyaman Dipakai</h3>
+        <p>Sirkulasi udara baik, ringan, dan tidak mengganggu pergerakan kerja.</p>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon"><i class="fa-solid fa-star"></i></div>
+        <h3>Desain Modern</h3>
+        <p>Potongan kekinian yang tetap formal dan mencerminkan citra perusahaan.</p>
+      </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon"><i class="fa-solid fa-truck-fast"></i></div>
+        <h3>Cocok Aktivitas Lapangan</h3>
+        <p>Dirancang tahan banting untuk mobilitas tinggi tim distribusi.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- GALERI MODEL KEMEJA -->
+<!-- ===================================================== -->
+<section id="galeri" class="section galeri">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Galeri</span>
+      <h2>Model Kemeja Kerja</h2>
+      <p class="section-desc">Klik gambar untuk melihat pratinjau lebih besar.</p>
+    </div>
+
+    <div class="gallery-grid">
+      <div class="gallery-item fade-up" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
+        <img src="https://placehold.co/600x600/0B2545/FFFFFF?text=Tampak+Depan" alt="Tampak Depan Kemeja Kerja AQUA" loading="lazy">
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
+      </div>
+      <div class="gallery-item fade-up" data-caption="Tampak Belakang - List Piping Punggung">
+        <img src="https://placehold.co/600x600/071022/FFFFFF?text=Tampak+Belakang" alt="Tampak Belakang Kemeja Kerja AQUA" loading="lazy">
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
+      </div>
+      <div class="gallery-item fade-up" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
+        <img src="https://placehold.co/600x600/0A84C4/FFFFFF?text=Samping+Kanan" alt="Tampak Samping Kanan" loading="lazy">
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
+      </div>
+      <div class="gallery-item fade-up" data-caption="Tampak Samping Kiri - Logo K3">
+        <img src="https://placehold.co/600x600/0E3A66/FFFFFF?text=Samping+Kiri" alt="Tampak Samping Kiri" loading="lazy">
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
+      </div>
+      <div class="gallery-item fade-up" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
+        <img src="https://placehold.co/1200x600/0FD8B8/04213A?text=Detail+Bordir" alt="Detail Logo Bordir" loading="lazy">
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+  <img src="" alt="" id="lightboxImg">
+  <p id="lightboxCaption"></p>
+</div>
+
+<!-- ===================================================== -->
+<!-- SPESIFIKASI -->
+<!-- ===================================================== -->
+<section id="spesifikasi" class="section spesifikasi">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Detail Produk</span>
+      <h2>Spesifikasi &amp; Harga</h2>
+    </div>
+
+    <div class="table-wrap fade-up">
+      <table class="modern-table">
+        <thead>
+          <tr><th>Item</th><th>Keterangan</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><i class="fa-solid fa-layer-group"></i> Jenis Bahan</td><td>American Drill / Tropical</td></tr>
+          <tr><td><i class="fa-solid fa-palette"></i> Warna</td><td>Biru Navy (Premium)</td></tr>
+          <tr><td><i class="fa-solid fa-flask"></i> Komposisi</td><td>65% Polyester, 35% Cotton</td></tr>
+          <tr><td><i class="fa-solid fa-weight-hanging"></i> Gramasi</td><td>190–200 GSM</td></tr>
+          <tr><td><i class="fa-solid fa-spray-can-sparkles"></i> Finishing</td><td>Pre-Shrunk, Warna Tahan Lama, Tidak Mudah Kusut</td></tr>
+          <tr><td><i class="fa-solid fa-scroll"></i> Logo</td><td>Semua Logo Full Bordir Komputer</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Pendek</td><td class="price">Rp160.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Panjang</td><td class="price">Rp165.000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Detail Desain & Penempatan Bordir -->
+    <div class="detail-desain fade-up">
+      <h3 class="detail-title"><i class="fa-solid fa-scissors"></i> Detail Desain</h3>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-solid fa-shirt"></i></div>
+          <h4>Kerah Kemeja</h4>
+          <p>Model semi spread dengan list biru muda.</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-regular fa-square"></i></div>
+          <h4>Saku Depan</h4>
+          <p>Model tutup kancing dengan list biru muda.</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-solid fa-ruler-combined"></i></div>
+          <h4>List & Piping</h4>
+          <p>Warna biru muda pada saku, placket, dan punggung.</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-solid fa-water"></i></div>
+          <h4>Logo AQUA</h4>
+          <p>Bordir komputer di dada kiri.</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-solid fa-id-badge"></i></div>
+          <h4>Nama Karyawan</h4>
+          <p>Bordir komputer di dada kanan.</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-solid fa-flag"></i></div>
+          <h4>Logo Bendera</h4>
+          <p>Bordir Bendera Merah Putih di lengan kanan.</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-icon"><i class="fa-solid fa-hard-hat"></i></div>
+          <h4>Logo K3</h4>
+          <p>Bordir Keselamatan Kerja (K3) di lengan kiri.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- PANDUAN UKURAN -->
+<!-- ===================================================== -->
+<section id="ukuran" class="section panduan-ukuran">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Panduan</span>
+      <h2>Panduan Ukuran Kemeja</h2>
+    </div>
+
+    <div class="ukuran-grid">
+      <div class="table-wrap fade-up ukuran-table-wrap">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Ukuran</th>
+              <th>A. Lebar Dada</th>
+              <th>B. Panjang Badan</th>
+              <th>C. Lebar Bahu</th>
+              <th>D. Panjang Tangan</th>
+              <th>E. Lebar Lengan</th>
+              <th>F. Lebar Pergelangan</th>
+              <th>G. Kerah</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>S</td><td>52</td><td>72</td><td>44</td><td>60</td><td>20</td><td>11</td><td>40</td></tr>
+            <tr><td>M</td><td>54</td><td>74</td><td>46</td><td>61</td><td>21</td><td>11.5</td><td>41</td></tr>
+            <tr><td>L</td><td>56</td><td>76</td><td>48</td><td>62</td><td>22</td><td>12</td><td>42</td></tr>
+            <tr><td>XL</td><td>58</td><td>78</td><td>50</td><td>63</td><td>23</td><td>12.5</td><td>43</td></tr>
+            <tr><td>XXL</td><td>60</td><td>80</td><td>52</td><td>64</td><td>24</td><td>13</td><td>44</td></tr>
+            <tr><td>XXXL</td><td>62</td><td>82</td><td>54</td><td>65</td><td>25</td><td>13.5</td><td>45</td></tr>
+          </tbody>
+        </table>
+        <p class="table-note">* Semua ukuran dalam satuan cm. Toleransi ukuran ±1 cm. Bahan tidak menyusut setelah dicuci.</p>
+      </div>
+
+      <div class="ukuran-ilustrasi fade-up">
+        <img src="https://placehold.co/400x450/EAF4FB/0A84C4?text=Pola+%26+Cara+Mengukur" alt="Ilustrasi Pola dan Cara Mengukur Badan" loading="lazy">
+        <p>Ilustrasi pola: A) Lebar Dada, B) Panjang Badan, C) Lebar Bahu, D) Panjang Tangan, E) Lebar Lengan, F) Lebar Pergelangan, G) Kerah.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- FORMULIR PENDAFTARAN -->
+<!-- ===================================================== -->
+<section id="daftar" class="section formulir">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Formulir</span>
+      <h2>Pendaftaran Kemeja Kerja</h2>
+      <p class="section-desc">Lengkapi seluruh data dengan benar. Semua kolom wajib diisi.</p>
+    </div>
+
+    <form id="regForm" class="reg-form fade-up" novalidate>
+
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="nama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="nama" name="nama" placeholder="Contoh: Muhammad Daud" required minlength="3">
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="namaBordir">Nama Yang Akan Dibordir <span class="req">*</span></label>
+          <input type="text" id="namaBordir" name="namaBordir" placeholder="Contoh: M DAUD S.M" required minlength="3">
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="departemen">Departemen <span class="req">*</span></label>
+          <select id="departemen" name="departemen" required>
+            <option value="">Pilih Departemen</option>
+            <option value="Distribusi">Distribusi</option>
+            <option value="Gudang">Gudang</option>
+            <option value="Sales & Marketing">Sales & Marketing</option>
+            <option value="Driver / Ekspedisi">Driver / Ekspedisi</option>
+            <option value="Administrasi">Administrasi</option>
+            <option value="Keuangan">Keuangan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="gender">Jenis Kelamin <span class="req">*</span></label>
+          <select id="gender" name="gender" required>
+            <option value="">Pilih Jenis Kelamin</option>
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+            <option value="Masih Ragu">Masih Ragu</option>
+          </select>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="ukuranKemeja">Ukuran Kemeja <span class="req">*</span></label>
+          <select id="ukuranKemeja" name="ukuranKemeja" required>
+            <option value="">Pilih Ukuran</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+            <option value="XXXL">XXXL</option>
+          </select>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group full">
+          <label>Jenis Kemeja <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="jenisKemeja" value="pendek" data-harga="160000" required>
+              <span><i class="fa-solid fa-shirt"></i> Tangan Pendek <b>Rp160.000</b></span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="jenisKemeja" value="panjang" data-harga="165000" required>
+              <span><i class="fa-solid fa-shirt"></i> Tangan Panjang <b>Rp165.000</b></span>
+            </label>
+          </div>
+          <small class="error-msg" id="jenisKemejaError"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="jumlah">Jumlah Pesanan <span class="req">*</span></label>
+          <input type="number" id="jumlah" name="jumlah" min="1" value="1" required>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label>Total Harga</label>
+          <div id="totalHarga" class="total-harga">Rp0</div>
+        </div>
+
+        <div class="form-group full">
+          <label for="catatan">Catatan Tambahan <span class="req">*</span></label>
+          <textarea id="catatan" name="catatan" rows="2" placeholder="Contoh: tanpa Nama di dada / lainnya" required></textarea>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group full checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="konfirmasi" name="konfirmasi" required>
+            <span>Saya menyatakan data yang saya isi sudah benar.</span>
+          </label>
+          <small class="error-msg" id="konfirmasiError"></small>
+        </div>
+
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-submit ripple" id="submitBtn" disabled>
+        <i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- Hidden canvas for receipt generation -->
+<canvas id="strukCanvas" width="640" height="900" style="display:none;"></canvas>
+
+<!-- ===================================================== -->
+<!-- FOOTER -->
+<!-- ===================================================== -->
+<footer class="footer">
+  <div class="footer-wave">
+    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,40 C240,0 480,72 720,36 C960,0 1200,64 1440,24 L1440,0 L0,0 Z" fill="var(--section-alt)"></path>
+    </svg>
+  </div>
+  <div class="container footer-grid">
+    <div class="footer-about">
+      <a href="#home" class="logo"><i class="fa-solid fa-shirt"></i> LOKON <span>PRIMA</span></a>
+      <p>Distributor resmi Air Kemasan AQUA yang berkomitmen pada profesionalisme, kekompakan, dan kualitas layanan terbaik.</p>
+      <div class="footer-social">
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+        <a href="https://wa.me/6285697321423" aria-label="WhatsApp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
+      </div>
+    </div>
+
+    <div class="footer-links">
+      <h4>Navigasi</h4>
+      <a href="#tentang">Tentang</a>
+      <a href="#keunggulan">Keunggulan</a>
+      <a href="#galeri">Galeri</a>
+      <a href="#daftar">Pendaftaran</a>
+    </div>
+
+    <div class="footer-contact">
+      <h4>Kontak</h4>
+      <p><i class="fa-solid fa-location-dot"></i> Kantor PT. LOKON PRIMA</p>
+      <p><i class="fa-brands fa-whatsapp"></i> +62 856-9732-1423</p>
+      <div class="map-placeholder">
+        <i class="fa-solid fa-map-location-dot"></i>
+        <span>Google Maps Placeholder</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; <span id="year"></span> PT. LOKON PRIMA — Distributor Air Kemasan AQUA. Seluruh hak cipta dilindungi.</p>
+  </div>
+</footer>
+
+<!-- Back To Top -->
+<button id="backToTop" aria-label="Kembali ke atas"><i class="fa-solid fa-arrow-up"></i></button>
+
+<!-- Toast Notification Container -->
+<div id="toastContainer"></div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal-box">
+    <div class="modal-icon"><i class="fa-solid fa-circle-check"></i></div>
+    <h3>Pendaftaran Berhasil!</h3>
+    <p>Struk pendaftaran sedang diunduh dan WhatsApp akan terbuka otomatis.</p>
+    <button class="btn btn-primary" id="closeModal">Tutup</button>
+  </div>
+</div>
+
+<!-- Submit Loading Overlay -->
+<div class="submit-loading" id="submitLoading">
+  <div class="spinner"></div>
+  <p>Memproses pendaftaran...</p>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
