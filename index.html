@@ -65,6 +65,7 @@
       <a href="#galeri">Galeri</a>
       <a href="#spesifikasi">Spesifikasi</a>
       <a href="#ukuran">Ukuran</a>
+      <a href="#peserta">Peserta</a>
       <a href="#daftar" class="nav-cta">Daftar</a>
     </nav>
 
@@ -385,6 +386,102 @@
 </section>
 
 <!-- ===================================================== -->
+<!-- PESERTA TERDAFTAR (LIVE — FIREBASE) -->
+<!-- ===================================================== -->
+<section id="peserta" class="section peserta-section">
+  <div class="peserta-bg" aria-hidden="true">
+    <span class="pfloat pfloat-1"><i class="fa-solid fa-shirt"></i></span>
+    <span class="pfloat pfloat-2"><i class="fa-solid fa-shirt"></i></span>
+    <span class="pfloat pfloat-3"><i class="fa-solid fa-droplet"></i></span>
+    <span class="pfloat pfloat-4"><i class="fa-solid fa-shirt"></i></span>
+  </div>
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Live Update</span>
+      <h2>Peserta Yang Sudah Mendaftar</h2>
+      <p class="section-desc">Daftar peserta diperbarui secara langsung (real-time) setiap ada pendaftaran atau pembayaran baru.</p>
+    </div>
+
+    <!-- Ringkasan statistik peserta -->
+    <div class="peserta-stats fade-up">
+      <div class="pstat-card">
+        <div class="pstat-icon"><i class="fa-solid fa-users"></i></div>
+        <div><span class="pstat-num" id="statTotal">0</span><p>Total Peserta</p></div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-icon pstat-warn"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div><span class="pstat-num" id="statMenunggu">0</span><p>Menunggu Pembayaran</p></div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-icon pstat-info"><i class="fa-solid fa-coins"></i></div>
+        <div><span class="pstat-num" id="statCicilan">0</span><p>Sedang Dicicil</p></div>
+      </div>
+      <div class="pstat-card">
+        <div class="pstat-icon pstat-success"><i class="fa-solid fa-circle-check"></i></div>
+        <div><span class="pstat-num" id="statLunas">0</span><p>Lunas</p></div>
+      </div>
+    </div>
+
+    <!-- Filter & pencarian -->
+    <div class="peserta-toolbar fade-up">
+      <div class="peserta-filters" id="pesertaFilters">
+        <button class="pfilter active" data-filter="semua">Semua</button>
+        <button class="pfilter" data-filter="belum_dp">Menunggu DP</button>
+        <button class="pfilter" data-filter="dp">DP Terbayar</button>
+        <button class="pfilter" data-filter="cicilan">Cicilan Berjalan</button>
+        <button class="pfilter" data-filter="lunas">Lunas</button>
+      </div>
+      <div class="peserta-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="pesertaSearch" placeholder="Cari nama peserta...">
+      </div>
+      <button class="admin-btn" id="openAdmin" aria-label="Panel Admin"><i class="fa-solid fa-lock"></i></button>
+    </div>
+
+    <!-- Grid kartu peserta -->
+    <div class="peserta-grid" id="pesertaGrid">
+      <!-- Skeleton loaders tampil sebelum data Firestore masuk -->
+      <div class="peserta-card skeleton"></div>
+      <div class="peserta-card skeleton"></div>
+      <div class="peserta-card skeleton"></div>
+    </div>
+
+    <p class="peserta-empty" id="pesertaEmpty" style="display:none;">
+      <i class="fa-solid fa-inbox"></i> Belum ada peserta pada kategori ini.
+    </p>
+    <p class="peserta-offline" id="pesertaOffline" style="display:none;">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.
+    </p>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- PANEL ADMIN (KELOLA STATUS PEMBAYARAN) -->
+<!-- ===================================================== -->
+<div class="admin-overlay" id="adminOverlay">
+  <div class="admin-box">
+    <button class="admin-close" id="adminClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+
+    <!-- Layar login -->
+    <div class="admin-login" id="adminLogin">
+      <div class="admin-icon"><i class="fa-solid fa-user-shield"></i></div>
+      <h3>Masuk Panel Admin</h3>
+      <p>Khusus tim keuangan untuk memperbarui status pembayaran peserta.</p>
+      <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin">
+      <button class="btn btn-primary ripple" id="adminLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+      <small class="admin-error" id="adminLoginError"></small>
+    </div>
+
+    <!-- Panel kelola peserta -->
+    <div class="admin-panel" id="adminPanel">
+      <h3><i class="fa-solid fa-list-check"></i> Kelola Pembayaran Peserta</h3>
+      <div class="admin-list" id="adminList"><!-- diisi via JS --></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
 <!-- FORMULIR PENDAFTARAN -->
 <!-- ===================================================== -->
 <section id="daftar" class="section formulir">
@@ -481,6 +578,31 @@
           <label for="catatan">Catatan Tambahan <span class="req">*</span></label>
           <textarea id="catatan" name="catatan" rows="2" placeholder="Contoh: tanpa Nama di dada / lainnya" required></textarea>
           <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group full">
+          <label>Metode Pembayaran <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="metodeBayar" value="tunai" checked>
+              <span><i class="fa-solid fa-money-bill-wave"></i> Tunai / Lunas Langsung</span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="metodeBayar" value="cicilan">
+              <span><i class="fa-solid fa-coins"></i> DP + Cicilan</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group full" id="cicilanOptionWrap" style="display:none;">
+          <label for="jumlahCicilan">Jumlah Kali Cicilan</label>
+          <select id="jumlahCicilan" name="jumlahCicilan">
+            <option value="2">2x Cicilan</option>
+            <option value="3">3x Cicilan</option>
+            <option value="4">4x Cicilan</option>
+            <option value="6">6x Cicilan</option>
+          </select>
+          <small class="hint-msg">Uang muka (DP) minimal 30% dari total harga, sisanya dicicil sesuai jumlah yang dipilih. Rincian cicilan akan dikonfirmasi oleh tim keuangan.</small>
         </div>
 
         <div class="form-group full checkbox-group">
@@ -624,6 +746,35 @@
   <div class="spinner"></div>
   <p>Memproses pendaftaran...</p>
 </div>
+
+<!-- Firebase (modular v10 via CDN) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, onSnapshot, doc, updateDoc,
+    serverTimestamp, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { firebaseConfig, ADMIN_PASSCODE, FIRESTORE_COLLECTION } from "./firebase-config.js";
+
+  let db = null;
+  try {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+  } catch (err) {
+    console.warn("Firebase belum dikonfigurasi dengan benar:", err);
+  }
+
+  // Ekspos ke script.js (non-module) lewat window, supaya tetap
+  // satu file script.js tanpa perlu mengubah semuanya jadi module.
+  window.__lokonFirebase = db ? {
+    db, collection, addDoc, onSnapshot, doc, updateDoc,
+    serverTimestamp, query, orderBy,
+    ADMIN_PASSCODE, FIRESTORE_COLLECTION
+  } : null;
+
+  window.__lokonAdminPasscode = ADMIN_PASSCODE;
+  window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
+</script>
 
 <script src="script.js"></script>
 </body>
