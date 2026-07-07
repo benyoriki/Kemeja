@@ -407,8 +407,23 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
       }
     }
+    if (field.id === 'noWhatsapp'){
+      const digitsOnly = value.replace(/[^0-9]/g, '');
+      if (digitsOnly.length < 9 || digitsOnly.length > 15){
+        showFieldError(field, 'Masukkan nomor WhatsApp yang valid (9-15 digit).');
+        return false;
+      }
+    }
     clearFieldError(field);
     return true;
+  }
+
+  /* Normalisasi nomor WhatsApp: hanya angka, ubah awalan 0 -> 62 */
+  function normalizeWhatsapp(raw){
+    let d = String(raw || '').replace(/[^0-9]/g, '');
+    if (d.startsWith('0')) d = '62' + d.slice(1);
+    if (!d.startsWith('62') && d.length > 0) d = '62' + d;
+    return d;
   }
 
   function validateJenisKemeja(){
@@ -556,6 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return {
       nama: document.getElementById('nama').value.trim(),
       namaBordir: document.getElementById('namaBordir').value.trim(),
+      whatsapp: normalizeWhatsapp(document.getElementById('noWhatsapp').value),
       departemen: departemenLabel,
       gender: document.getElementById('gender').value,
       ukuranKemeja: document.getElementById('ukuranKemeja').value,
@@ -599,6 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       nama: data.nama,
       namaBordir: data.namaBordir,
+      whatsapp: data.whatsapp,
       departemen: data.departemen,
       gender: data.gender,
       ukuranKemeja: data.ukuranKemeja,
@@ -619,7 +636,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
+      const ref = await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
+      // Setelah berhasil mendaftar, otomatis buat sesi akun peserta
+      // di perangkat ini (localStorage) supaya bisa langsung ikut
+      // chat grup & tampil di navbar sebagai akun terverifikasi.
+      loginAsMember({ nama: data.nama, whatsapp: data.whatsapp, docId: ref.id });
     } catch (err){
       console.warn('Gagal menyimpan ke Firestore:', err);
     }
@@ -1154,6 +1175,7 @@ Terima kasih.`;
         });
         renderPeserta();
         renderAdminList();
+        updateChatMemberCount();
       }, (err) => {
         console.warn('Firestore listener error:', err);
         pesertaOffline.style.display = 'block';
@@ -1166,6 +1188,269 @@ Terima kasih.`;
     }
   }
   startPesertaListener();
+
+  /* =========================================================
+     18b. AKUN PESERTA (SESI LOGIN) — pojok kanan navbar
+     Karena situs ini murni statis (tanpa server backend), "akun"
+     peserta diverifikasi dengan mencocokkan Nomor WhatsApp yang
+     dimasukkan terhadap data pendaftaran (koleksi Firestore
+     "pendaftaran"), lalu sesi disimpan di localStorage perangkat
+     tersebut. Setelah submit formulir pendaftaran, sesi otomatis
+     dibuat (auto-login) sehingga peserta langsung bisa memakai
+     chat grup tanpa langkah tambahan.
+  ========================================================= */
+  const SESSION_KEY = 'lokonMemberSession';
+
+  const profileWidget = document.getElementById('profileWidget');
+  const profileBtn = document.getElementById('profileBtn');
+  const profileAvatar = document.getElementById('profileAvatar');
+  const profileName = document.getElementById('profileName');
+  const profileSub = document.getElementById('profileSub');
+  const profileGuestView = document.getElementById('profileGuestView');
+  const profileMemberView = document.getElementById('profileMemberView');
+  const openLoginBtn = document.getElementById('openLoginBtn');
+  const profileLoginForm = document.getElementById('profileLoginForm');
+  const loginWhatsapp = document.getElementById('loginWhatsapp');
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+  const loginError = document.getElementById('loginError');
+  const memberAvatarInitial = document.getElementById('memberAvatarInitial');
+  const memberNameFull = document.getElementById('memberNameFull');
+  const memberPhoneFull = document.getElementById('memberPhoneFull');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  function getSession(){
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+    catch { return null; }
+  }
+  function saveSession(session){
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    renderProfileWidget();
+    renderChatPermission();
+    renderChatMessages();
+  }
+  function clearSession(){
+    localStorage.removeItem(SESSION_KEY);
+    renderProfileWidget();
+    renderChatPermission();
+    renderChatMessages();
+  }
+  function loginAsMember({ nama, whatsapp, docId }){
+    saveSession({ nama, whatsapp, docId, loginAt: Date.now() });
+    showToast(`Selamat datang, ${nama}! Akun peserta Anda aktif.`, 'success');
+  }
+
+  function renderProfileWidget(){
+    const session = getSession();
+    const initial = (session?.nama || '').trim().charAt(0).toUpperCase() || 'P';
+    if (session){
+      profileName.textContent = session.nama.split(' ')[0];
+      profileSub.textContent = 'Peserta Terdaftar';
+      profileAvatar.innerHTML = initial;
+      profileGuestView.style.display = 'none';
+      profileMemberView.style.display = 'block';
+      memberAvatarInitial.textContent = initial;
+      memberNameFull.textContent = session.nama;
+      memberPhoneFull.innerHTML = `<i class="fa-brands fa-whatsapp"></i> +${session.whatsapp}`;
+    } else {
+      profileName.textContent = 'Tamu';
+      profileSub.textContent = 'Pengunjung';
+      profileAvatar.innerHTML = '<i class="fa-solid fa-user"></i>';
+      profileGuestView.style.display = 'block';
+      profileMemberView.style.display = 'none';
+    }
+  }
+  renderProfileWidget();
+
+  profileBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    profileWidget.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (profileWidget && !profileWidget.contains(e.target)) profileWidget.classList.remove('open');
+  });
+
+  openLoginBtn?.addEventListener('click', () => {
+    const showing = profileLoginForm.style.display !== 'none' && profileLoginForm.style.display !== '';
+    profileLoginForm.style.display = showing ? 'none' : 'flex';
+    loginError.textContent = '';
+  });
+
+  loginSubmitBtn?.addEventListener('click', () => {
+    const raw = loginWhatsapp.value;
+    const norm = normalizeWhatsapp(raw);
+    loginError.textContent = '';
+    if (!raw.trim() || norm.length < 10){
+      loginError.textContent = 'Masukkan nomor WhatsApp yang valid.';
+      loginError.classList.add('show');
+      return;
+    }
+    const match = pesertaData.find(p => normalizeWhatsapp(p.whatsapp) === norm);
+    if (match){
+      loginAsMember({ nama: match.nama, whatsapp: norm, docId: match.id });
+      profileWidget.classList.remove('open');
+      loginWhatsapp.value = '';
+      profileLoginForm.style.display = 'none';
+    } else {
+      loginError.textContent = 'Nomor tidak ditemukan. Pastikan Anda sudah mendaftar.';
+      loginError.classList.add('show');
+    }
+  });
+
+  logoutBtn?.addEventListener('click', () => {
+    clearSession();
+    showToast('Anda telah keluar dari akun peserta.', 'success');
+  });
+
+  /* =========================================================
+     18c. LIVE CHAT GRUP PESERTA (mirip WhatsApp, real-time)
+     - Semua orang (Tamu & Peserta) bisa MELIHAT isi chat.
+     - Hanya Peserta yang sudah terverifikasi (login lewat sesi
+       di atas) yang bisa MENGIRIM pesan.
+     - Disimpan real-time di koleksi Firestore "chat_pesan".
+  ========================================================= */
+  const chatFab = document.getElementById('chatFab');
+  const chatFabBadge = document.getElementById('chatFabBadge');
+  const chatOverlay = document.getElementById('chatOverlay');
+  const chatPanel = document.getElementById('chatPanel');
+  const chatClose = document.getElementById('chatClose');
+  const chatBody = document.getElementById('chatBody');
+  const chatEmpty = document.getElementById('chatEmpty');
+  const chatOffline = document.getElementById('chatOffline');
+  const chatForm = document.getElementById('chatForm');
+  const chatInput = document.getElementById('chatInput');
+  const chatLocked = document.getElementById('chatLocked');
+  const chatMemberCount = document.getElementById('chatMemberCount');
+
+  let chatMessages = [];
+  let unreadCount = 0;
+  let chatIsOpen = false;
+  let chatListenerStarted = false;
+
+  function openChatPanel(){
+    chatIsOpen = true;
+    chatOverlay.classList.add('active');
+    chatPanel.classList.add('active');
+    chatFab.classList.add('hide');
+    document.body.classList.add('chat-open-lock');
+    unreadCount = 0;
+    updateChatBadge();
+    startChatListener();
+    setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 80);
+  }
+  function closeChatPanel(){
+    chatIsOpen = false;
+    chatOverlay.classList.remove('active');
+    chatPanel.classList.remove('active');
+    chatFab.classList.remove('hide');
+    document.body.classList.remove('chat-open-lock');
+  }
+  chatFab?.addEventListener('click', openChatPanel);
+  chatClose?.addEventListener('click', closeChatPanel);
+  chatOverlay?.addEventListener('click', closeChatPanel);
+
+  function updateChatBadge(){
+    if (unreadCount > 0){
+      chatFabBadge.style.display = 'flex';
+      chatFabBadge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+    } else {
+      chatFabBadge.style.display = 'none';
+    }
+  }
+
+  function renderChatPermission(){
+    const session = getSession();
+    if (session){
+      chatForm.style.display = 'flex';
+      chatLocked.style.display = 'none';
+    } else {
+      chatForm.style.display = 'none';
+      chatLocked.style.display = 'flex';
+    }
+  }
+  renderChatPermission();
+
+  function renderChatMessages(){
+    const session = getSession();
+    chatBody.querySelectorAll('.chat-msg').forEach(el => el.remove());
+    if (chatMessages.length === 0){
+      chatEmpty.style.display = 'block';
+    } else {
+      chatEmpty.style.display = 'none';
+      chatMessages.forEach(msg => {
+        const mine = !!(session && normalizeWhatsapp(session.whatsapp) === normalizeWhatsapp(msg.whatsapp));
+        const el = document.createElement('div');
+        el.className = 'chat-msg ' + (mine ? 'mine' : 'other');
+        const time = msg._ms ? new Date(msg._ms).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '';
+        el.innerHTML = `
+          <span class="chat-msg-name">${escapeHtml((msg.nama || 'Peserta').split(' ')[0])}</span>
+          ${escapeHtml(msg.pesan || '')}
+          <span class="chat-msg-time">${time}</span>
+        `;
+        chatBody.appendChild(el);
+      });
+    }
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  chatForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const session = getSession();
+    if (!session) return;
+    const text = chatInput.value.trim();
+    if (!text) return;
+    const fb = window.__lokonFirebase;
+    if (!fb){ showToast('Chat live tidak tersedia (Firebase belum dikonfigurasi).', 'error'); return; }
+    chatInput.value = '';
+    try {
+      await fb.addDoc(fb.collection(fb.db, fb.CHAT_COLLECTION), {
+        nama: session.nama,
+        whatsapp: session.whatsapp,
+        pesan: text.slice(0, 500),
+        timestamp: fb.serverTimestamp()
+      });
+    } catch (err){
+      console.warn('Gagal mengirim pesan:', err);
+      showToast('Gagal mengirim pesan, coba lagi.', 'error');
+    }
+  });
+
+  function startChatListener(){
+    if (chatListenerStarted) return;
+    chatListenerStarted = true;
+    const fb = window.__lokonFirebase;
+    if (!fb){
+      chatOffline.style.display = 'block';
+      return;
+    }
+    try {
+      const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.orderBy('timestamp', 'asc'), fb.limit(200));
+      fb.onSnapshot(q, (snap) => {
+        const prevCount = chatMessages.length;
+        chatMessages = snap.docs.map(d => {
+          const docData = d.data();
+          const ms = docData.timestamp?.toMillis ? docData.timestamp.toMillis() : Date.now();
+          return { id: d.id, ...docData, _ms: ms };
+        });
+        renderChatMessages();
+        if (prevCount !== 0 && chatMessages.length > prevCount && !chatIsOpen){
+          unreadCount += (chatMessages.length - prevCount);
+          updateChatBadge();
+        }
+      }, (err) => {
+        console.warn('Chat listener error:', err);
+        chatOffline.style.display = 'block';
+      });
+    } catch (err){
+      console.warn('Gagal memulai listener chat:', err);
+      chatOffline.style.display = 'block';
+    }
+  }
+
+  function updateChatMemberCount(){
+    if (!chatMemberCount) return;
+    const total = pesertaData.length;
+    chatMemberCount.innerHTML = `<i class="fa-solid fa-user-group"></i> ${total} peserta terdaftar`;
+  }
 
   /* =========================================================
      19. PANEL ADMIN — UBAH STATUS PEMBAYARAN

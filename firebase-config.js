@@ -28,3 +28,6 @@ export const ADMIN_PASSCODE = "lokonprima2026";
 
 /* Nama koleksi Firestore tempat data pendaftaran disimpan */
 export const FIRESTORE_COLLECTION = "pendaftaran";
+
+/* Nama koleksi Firestore tempat pesan chat grup peserta disimpan */
+export const CHAT_COLLECTION = "chat_pesan";

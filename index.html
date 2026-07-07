@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet -->
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -73,6 +73,53 @@
       <button id="darkModeToggle" aria-label="Ganti mode gelap/terang">
         <i class="fa-solid fa-moon"></i>
       </button>
+
+      <!-- ===== PROFILE WIDGET (Tamu / Peserta Terdaftar) ===== -->
+      <div class="profile-widget" id="profileWidget">
+        <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+          <span class="profile-avatar" id="profileAvatar"><i class="fa-solid fa-user"></i></span>
+          <span class="profile-meta">
+            <span class="profile-name" id="profileName">Tamu</span>
+            <span class="profile-sub" id="profileSub">Pengunjung</span>
+          </span>
+          <i class="fa-solid fa-chevron-down profile-caret"></i>
+        </button>
+
+        <div class="profile-dropdown" id="profileDropdown">
+          <!-- Tampilan TAMU -->
+          <div class="profile-guest-view" id="profileGuestView">
+            <div class="profile-drop-head">
+              <span class="profile-avatar lg"><i class="fa-solid fa-user"></i></span>
+              <div>
+                <strong>Tamu / Pengunjung</strong>
+                <p>Anda belum memiliki akun peserta.</p>
+              </div>
+            </div>
+            <a href="#daftar" class="btn btn-primary btn-sm profile-drop-cta"><i class="fa-solid fa-pen-to-square"></i> Daftar Sekarang</a>
+            <button type="button" class="profile-login-link" id="openLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Sudah daftar? Masuk pakai No. WhatsApp</button>
+
+            <div class="profile-login-form" id="profileLoginForm" style="display:none;">
+              <input type="tel" id="loginWhatsapp" placeholder="Nomor WhatsApp terdaftar" inputmode="numeric">
+              <button type="button" class="btn btn-primary btn-sm" id="loginSubmitBtn"><i class="fa-solid fa-magnifying-glass"></i> Cari Akun</button>
+              <small class="error-msg" id="loginError"></small>
+            </div>
+          </div>
+
+          <!-- Tampilan PESERTA (sudah login) -->
+          <div class="profile-member-view" id="profileMemberView" style="display:none;">
+            <div class="profile-drop-head">
+              <span class="profile-avatar lg" id="memberAvatarInitial">A</span>
+              <div>
+                <strong id="memberNameFull">-</strong>
+                <p id="memberPhoneFull"><i class="fa-brands fa-whatsapp"></i> -</p>
+              </div>
+            </div>
+            <span class="profile-badge"><i class="fa-solid fa-circle-check"></i> Akun Peserta Terverifikasi</span>
+            <button type="button" class="profile-logout-btn" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Keluar Akun</button>
+          </div>
+        </div>
+      </div>
+
       <button id="hamburger" aria-label="Buka menu">
         <span></span><span></span><span></span>
       </button>
@@ -530,6 +577,13 @@
         </div>
 
         <div class="form-group">
+          <label for="noWhatsapp">Nomor WhatsApp Aktif <span class="req">*</span></label>
+          <input type="tel" id="noWhatsapp" name="noWhatsapp" placeholder="Contoh: 0812xxxxxxxx" required minlength="9" maxlength="15" inputmode="numeric" autocomplete="tel">
+          <small class="hint-msg"><i class="fa-solid fa-circle-info"></i> Nomor ini menjadi akun Anda untuk chat grup peserta &amp; konfirmasi pesanan.</small>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
           <label for="departemen">Departemen <span class="req">*</span></label>
           <select id="departemen" name="departemen" required>
             <option value="">Pilih Departemen</option>
@@ -746,6 +800,57 @@
     </div>
 </div>
 
+<!-- ===================================================== -->
+<!-- LIVE CHAT: TOMBOL MENGAMBANG -->
+<!-- ===================================================== -->
+<button id="chatFab" class="chat-fab" aria-label="Buka chat grup peserta">
+  <i class="fa-solid fa-comments"></i>
+  <span class="chat-fab-badge" id="chatFabBadge" style="display:none;">0</span>
+  <span class="chat-fab-ping"></span>
+</button>
+
+<!-- ===================================================== -->
+<!-- LIVE CHAT: PANEL GRUP (mirip WhatsApp) -->
+<!-- ===================================================== -->
+<div class="chat-overlay" id="chatOverlay"></div>
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Grup Chat Peserta">
+  <div class="chat-header">
+    <button class="chat-close" id="chatClose" aria-label="Tutup chat"><i class="fa-solid fa-arrow-left"></i></button>
+    <span class="chat-group-avatar"><i class="fa-solid fa-people-group"></i></span>
+    <div class="chat-header-info">
+      <strong>Grup Peserta LOKON PRIMA</strong>
+      <span id="chatMemberCount"><i class="fa-solid fa-circle-notch fa-spin"></i> memuat anggota...</span>
+    </div>
+    <span class="chat-header-live"><span class="dot"></span> LIVE</span>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    <div class="chat-day-sep"><span>Hari ini</span></div>
+    <p class="chat-empty" id="chatEmpty" style="display:none;">
+      <i class="fa-solid fa-comment-dots"></i> Belum ada percakapan. Jadilah yang pertama menyapa!
+    </p>
+    <p class="chat-offline" id="chatOffline" style="display:none;">
+      <i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi, chat live tidak tersedia.
+    </p>
+    <!-- pesan dirender via JS -->
+  </div>
+
+  <div class="chat-footer">
+    <!-- Untuk PESERTA terverifikasi -->
+    <form class="chat-input-row" id="chatForm" style="display:none;">
+      <input type="text" id="chatInput" placeholder="Tulis pesan..." maxlength="500" autocomplete="off">
+      <button type="submit" class="chat-send-btn" aria-label="Kirim pesan"><i class="fa-solid fa-paper-plane"></i></button>
+    </form>
+
+    <!-- Untuk TAMU / pengunjung: hanya bisa lihat -->
+    <div class="chat-locked" id="chatLocked">
+      <i class="fa-solid fa-lock"></i>
+      <span>Hanya <b>peserta terdaftar</b> yang bisa mengirim pesan. Anda sedang melihat sebagai <b>Tamu</b>.</span>
+      <a href="#daftar" class="btn btn-primary btn-sm" id="chatDaftarBtn">Daftar untuk Ikut Chat</a>
+    </div>
+  </div>
+</div>
+
 <!-- Back To Top -->
 <button id="backToTop" aria-label="Kembali ke atas"><i class="fa-solid fa-arrow-up"></i></button>
 
@@ -773,9 +878,9 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore, collection, addDoc, onSnapshot, doc, updateDoc,
-    serverTimestamp, query, orderBy
+    serverTimestamp, query, orderBy, limit
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION } from "./firebase-config.js?v=3";
+  import { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION } from "./firebase-config.js?v=4";
 
   let db = null;
   try {
@@ -789,8 +894,8 @@
   // satu file script.js tanpa perlu mengubah semuanya jadi module.
   window.__lokonFirebase = db ? {
     db, collection, addDoc, onSnapshot, doc, updateDoc,
-    serverTimestamp, query, orderBy,
-    ADMIN_PASSCODE, FIRESTORE_COLLECTION
+    serverTimestamp, query, orderBy, limit,
+    ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
   } : null;
 
   window.__lokonAdminPasscode = ADMIN_PASSCODE;
@@ -798,7 +903,7 @@
   window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
 </script>
 
-<script src="script.js?v=3"></script>
+<script src="script.js?v=4"></script>
 </body>
 </html>
 
