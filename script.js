@@ -11,11 +11,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ============ 1. LOADING SCREEN ============ */
   const loadingScreen = document.getElementById('loading-screen');
-  window.addEventListener('load', () => {
-    setTimeout(() => loadingScreen.classList.add('hide'), 500);
-  });
-  // Fallback in case 'load' already fired or takes too long
-  setTimeout(() => loadingScreen && loadingScreen.classList.add('hide'), 2500);
+  const MIN_LOADING_MS = 15000; // durasi minimal loading screen tampil: 15 detik
+  const loadingStartedAt = Date.now();
+  function hideLoadingScreen(){
+    const elapsed = Date.now() - loadingStartedAt;
+    const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+    setTimeout(() => loadingScreen && loadingScreen.classList.add('hide'), remaining);
+  }
+  window.addEventListener('load', hideLoadingScreen);
+  // Fallback in case 'load' already fired before listener was attached
+  setTimeout(hideLoadingScreen, 100);
 
   /* ============ 2. SCROLL PROGRESS + STICKY NAVBAR ============ */
   const progressBar = document.getElementById('scroll-progress');
@@ -1447,12 +1452,18 @@ Terima kasih.`;
     }
   });
 
+  function showChatOffline(reason){
+    if (!chatOffline) return;
+    chatOffline.style.display = 'block';
+    chatOffline.innerHTML = reason || '<i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi, chat live tidak tersedia.';
+  }
+
   function startChatListener(){
     if (chatListenerStarted) return;
     chatListenerStarted = true;
     const fb = window.__lokonFirebase;
     if (!fb){
-      chatOffline.style.display = 'block';
+      showChatOffline();
       return;
     }
     try {
@@ -1470,12 +1481,22 @@ Terima kasih.`;
           updateChatBadge();
         }
       }, (err) => {
-        console.warn('Chat listener error:', err);
-        chatOffline.style.display = 'block';
+        console.warn('Chat listener error:', err.code, err.message);
+        let reason;
+        if (err.code === 'permission-denied'){
+          reason = '<i class="fa-solid fa-lock"></i> Akses chat ditolak. Cek Firestore Rules — pastikan koleksi <code>chat_pesan</code> mengizinkan <code>allow read: if true</code> dan sudah di-<b>Publish</b>.';
+        } else if (err.code === 'not-found' || err.code === 'failed-precondition'){
+          reason = '<i class="fa-solid fa-database"></i> Database Firestore belum dibuat. Buka Firebase Console → Build → Firestore Database → Create database.';
+        } else if (err.code === 'unavailable'){
+          reason = '<i class="fa-solid fa-wifi"></i> Tidak bisa terhubung ke server chat (jaringan bermasalah). Coba muat ulang halaman.';
+        } else {
+          reason = `<i class="fa-solid fa-triangle-exclamation"></i> Chat live tidak tersedia (${err.code || 'error'}).`;
+        }
+        showChatOffline(reason);
       });
     } catch (err){
       console.warn('Gagal memulai listener chat:', err);
-      chatOffline.style.display = 'block';
+      showChatOffline();
     }
   }
 

@@ -59,10 +59,48 @@
 <!-- LOADING SCREEN -->
 <!-- ===================================================== -->
 <div id="loading-screen">
-  <div class="loader-content">
-    <div class="loader-drop"></div>
-    <p>LOKON PRIMA</p>
+  <div class="loader-aurora" aria-hidden="true"></div>
+
+  <div class="loader-particles" aria-hidden="true">
+    <span class="drop" style="--x:6%;  --s:.7;  --t:5.2s; --d:0s"></span>
+    <span class="drop" style="--x:14%; --s:1.1;  --t:6.8s; --d:.6s"></span>
+    <span class="drop" style="--x:22%; --s:.55; --t:4.6s; --d:1.4s"></span>
+    <span class="drop" style="--x:30%; --s:.9;  --t:6.1s; --d:.2s"></span>
+    <span class="drop" style="--x:38%; --s:.65; --t:5.6s; --d:2s"></span>
+    <span class="drop" style="--x:46%; --s:1;   --t:7s;   --d:.9s"></span>
+    <span class="drop" style="--x:54%; --s:.6;  --t:5s;   --d:1.7s"></span>
+    <span class="drop" style="--x:62%; --s:.95; --t:6.4s; --d:.3s"></span>
+    <span class="drop" style="--x:70%; --s:.7;  --t:5.8s; --d:2.3s"></span>
+    <span class="drop" style="--x:78%; --s:1.05; --t:6.6s; --d:1.1s"></span>
+    <span class="drop" style="--x:86%; --s:.6;  --t:5.4s; --d:.5s"></span>
+    <span class="drop" style="--x:94%; --s:.85; --t:6.9s; --d:1.9s"></span>
+    <span class="drop" style="--x:10%; --s:.5;  --t:4.8s; --d:2.6s"></span>
+    <span class="drop" style="--x:50%; --s:.8;  --t:5.9s; --d:2.9s"></span>
+    <span class="drop" style="--x:90%; --s:.5;  --t:5.1s; --d:3.2s"></span>
   </div>
+
+  <div class="loader-content">
+    <div class="loader-mark">
+      <div class="loader-ring loader-ring-a"></div>
+      <div class="loader-ring loader-ring-b"></div>
+      <div class="loader-glow"></div>
+      <svg class="loader-shirt" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path class="shirt-path" d="M42 12 L60 24 L78 12 L98 32 L86 44 L86 106 L34 106 L34 44 L22 32 Z" stroke="url(#loaderGrad)" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="loaderGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#12A9E0"/>
+            <stop offset="1" stop-color="#0FD8B8"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <p class="loader-word">Solusi Kerja Cerdas 2026</p>
+    <span class="loader-sub">Menyiapkan pengalaman terbaik<span class="loader-dots"><i></i><i></i><i></i></span></span>
+    <span class="loader-sub">Website Developer: benyoriki.com<span class="loader-dots"><i></i><i></i><i></i></span></span>
+  </div>
+
+  <div class="loader-progress" aria-hidden="true"><span></span></div>
 </div>
 
 <!-- Scroll Progress Bar -->
@@ -82,7 +120,11 @@
 
     <nav class="nav-links" id="navLinks">
       <div class="nav-links-mobile-head">
-        <span class="nav-links-mobile-brand"><i class="fa-solid fa-shirt"></i> LOKON <b>PRIMA</b></span>
+        <div class="nav-links-mobile-brand-wrap">
+          <span class="nav-links-mobile-brand"><i class="fa-solid fa-shirt"></i> LOKON <b>PRIMA</b></span>
+          <a href="https://benyoriki.com/" target="_blank" rel="noopener" class="nav-dev-credit">Website Developer benyoriki.com</a>
+          <span class="nav-app-version">apk sistem v.0.1</span>
+        </div>
         <button class="nav-close-btn" id="navCloseBtn" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <a href="#home" class="active"><i class="fa-solid fa-house nav-ico"></i>Beranda</a>
@@ -314,23 +356,23 @@
 
     <div class="gallery-grid">
       <div class="gallery-item fade-up" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
-        <img src="https://placehold.co/600x600/0B2545/FFFFFF?text=Tampak+Depan" alt="Tampak Depan Kemeja Kerja AQUA" loading="lazy">
+        <img src="images/depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
       <div class="gallery-item fade-up" data-caption="Tampak Belakang - List Piping Punggung">
-        <img src="https://placehold.co/600x600/071022/FFFFFF?text=Tampak+Belakang" alt="Tampak Belakang Kemeja Kerja AQUA" loading="lazy">
+        <img src="images/belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
       <div class="gallery-item fade-up" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
-        <img src="https://placehold.co/600x600/0A84C4/FFFFFF?text=Samping+Kanan" alt="Tampak Samping Kanan" loading="lazy">
+        <img src="images/kanan.jpg" alt="Tampak Samping Kanan" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
       <div class="gallery-item fade-up" data-caption="Tampak Samping Kiri - Logo K3">
-        <img src="https://placehold.co/600x600/0E3A66/FFFFFF?text=Samping+Kiri" alt="Tampak Samping Kiri" loading="lazy">
+        <img src="images/kiri.jpg" alt="Tampak Samping Kiri" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
       <div class="gallery-item fade-up" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
-        <img src="https://placehold.co/1200x600/0FD8B8/04213A?text=Detail+Bordir" alt="Detail Logo Bordir" loading="lazy">
+        <img src="images/bordir.jpg" alt="Detail Logo Bordir" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
     </div>
@@ -454,7 +496,7 @@
       </div>
 
       <div class="ukuran-ilustrasi fade-up">
-        <img src="https://placehold.co/400x450/EAF4FB/0A84C4?text=Pola+%26+Cara+Mengukur" alt="Ilustrasi Pola dan Cara Mengukur Badan" loading="lazy">
+        <img src="images/pola.jpg" alt="Ilustrasi Pola dan Cara Mengukur Badan" loading="lazy">
         <p>Ilustrasi pola: A) Lebar Dada, B) Panjang Badan, C) Lebar Bahu, D) Panjang Tangan, E) Lebar Lengan, F) Lebar Pergelangan, G) Kerah.</p>
       </div>
     </div>
