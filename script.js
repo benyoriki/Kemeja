@@ -1171,11 +1171,21 @@ Terima kasih.`;
     renderPeserta();
   });
 
+  function showPesertaOffline(reason){
+    if (pesertaOffline){
+      pesertaOffline.style.display = 'block';
+      const msgEl = pesertaOffline.querySelector('.peserta-offline-msg') || pesertaOffline;
+      if (msgEl) msgEl.innerHTML = reason || 'Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.';
+    }
+    pesertaGrid.innerHTML = '';
+  }
+
   function startPesertaListener(){
     const fb = window.__lokonFirebase;
     if (!fb){
-      pesertaOffline.style.display = 'block';
-      pesertaGrid.innerHTML = '';
+      // window.__lokonFirebase hanya null jika initializeApp()/getFirestore()
+      // di index.html gagal — cek console browser (F12) untuk pesan aslinya.
+      showPesertaOffline('<i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.');
       return;
     }
     try {
@@ -1190,14 +1200,24 @@ Terima kasih.`;
         renderAdminList();
         updateChatMemberCount();
       }, (err) => {
-        console.warn('Firestore listener error:', err);
-        pesertaOffline.style.display = 'block';
-        pesertaGrid.innerHTML = '';
+        console.warn('Firestore listener error:', err.code, err.message);
+        // Bedakan pesan berdasarkan kode error asli Firestore, supaya
+        // tidak selalu terlihat seperti "config salah" padahal penyebabnya lain.
+        let reason;
+        if (err.code === 'permission-denied'){
+          reason = '<i class="fa-solid fa-lock"></i> Akses Firestore ditolak. Cek Firestore Rules di Firebase Console — pastikan sudah di-<b>Publish</b> dan mengizinkan <code>allow read: if true</code> pada koleksi pendaftaran.';
+        } else if (err.code === 'unavailable'){
+          reason = '<i class="fa-solid fa-wifi"></i> Tidak bisa terhubung ke Firestore (jaringan bermasalah atau diblokir). Coba muat ulang halaman.';
+        } else if (err.code === 'not-found' || err.code === 'failed-precondition'){
+          reason = '<i class="fa-solid fa-database"></i> Database Firestore belum dibuat. Buka Firebase Console → Build → Firestore Database → Create database.';
+        } else {
+          reason = `<i class="fa-solid fa-triangle-exclamation"></i> Gagal memuat data peserta (${err.code || 'error'}). Cek console browser untuk detail.`;
+        }
+        showPesertaOffline(reason);
       });
     } catch (err){
       console.warn('Gagal memulai listener peserta:', err);
-      pesertaOffline.style.display = 'block';
-      pesertaGrid.innerHTML = '';
+      showPesertaOffline();
     }
   }
   startPesertaListener();

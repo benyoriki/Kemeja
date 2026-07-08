@@ -899,50 +899,85 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 
 /* ==========================================
-   GOOGLE MAP PREMIUM
+   LOKASI / GOOGLE MAP — SECTION PENUH
 ========================================== */
+.lokasi-section{ background:var(--section-alt); }
 
-.map-section{
-    margin-top:50px;
-}
-
-.map-header{
-    text-align:center;
-    margin-bottom:25px;
-}
-
-.map-badge{
-    display:inline-flex;
+.lokasi-grid{
+    display:grid;
+    grid-template-columns:0.9fr 1.1fr;
+    gap:56px;
     align-items:center;
-    gap:8px;
-    padding:8px 18px;
-    border-radius:30px;
+}
+
+.lokasi-info h2{
+    font-size:clamp(26px,4vw,38px);
+    font-weight:700;
+    line-height:1.25;
+    margin:16px 0 14px;
+}
+
+.lokasi-desc{
+    margin:0 0 30px;
+    max-width:480px;
+    line-height:1.75;
+    color:var(--ink-soft);
+}
+
+.lokasi-detail-list{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    margin-bottom:34px;
+}
+
+.lokasi-detail-list li{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+}
+
+.lokasi-detail-list strong{
+    display:block;
+    font-family:var(--font-display);
+    font-size:15px;
+    color:var(--ink);
+    margin-bottom:2px;
+}
+
+.lokasi-detail-list span{
+    font-size:13.5px;
+    color:var(--ink-soft);
+}
+
+.lokasi-detail-ico{
+    flex:none;
+    width:44px;
+    height:44px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     background:rgba(18,169,224,.1);
     color:var(--aqua-deep);
-    font-weight:600;
-    margin-bottom:15px;
+    font-size:16px;
 }
 
-.map-header h3{
-    font-size:30px;
-    margin-bottom:12px;
-}
-
-.map-header p{
-    max-width:700px;
-    margin:auto;
-    line-height:1.7;
-    color:var(--ink-soft);
+.lokasi-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
 }
 
 .map-card{
     position:relative;
     display:block;
     overflow:hidden;
-    border-radius:24px;
-    min-height:450px;
+    border-radius:var(--radius-lg);
+    aspect-ratio:4/3.1;
     border:1px solid rgba(18,169,224,.15);
-    box-shadow:0 20px 60px rgba(11,37,69,.12);
+    box-shadow:var(--shadow-strong);
     transition:.5s ease;
 }
 
@@ -954,10 +989,14 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 
 .map-card iframe{
+    position:absolute;
+    inset:0;
     width:100%;
-    height:450px;
+    height:100%;
     border:none;
+    filter:saturate(1.05);
     transition:1.2s ease;
+    pointer-events:none;
 }
 
 .map-card:hover iframe{
@@ -973,22 +1012,21 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     padding:25px;
     background:linear-gradient(
         to top,
-        rgba(7,16,34,.65),
-        rgba(7,16,34,0)
+        rgba(7,16,34,.7),
+        rgba(7,16,34,0) 55%
     );
 }
 
 .map-button{
     padding:14px 28px;
     border-radius:40px;
-    background:linear-gradient(
-        135deg,
-        #12A9E0,
-        #0FD8B8
-    );
-    color:#fff;
+    background:var(--gradient-brand);
+    color:#04213A;
     font-weight:700;
     letter-spacing:.4px;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
     box-shadow:0 10px 25px rgba(18,169,224,.35);
     transition:.4s;
 }
@@ -1003,44 +1041,51 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     background:
       radial-gradient(
       circle,
-      rgba(18,169,224,.15),
+      rgba(18,169,224,.18),
       transparent 60%);
     animation:mapGlow 6s linear infinite;
     pointer-events:none;
+    z-index:0;
 }
 
 @keyframes mapGlow{
-    0%{
-        transform:rotate(0deg);
-    }
-    100%{
-        transform:rotate(360deg);
-    }
+    0%{ transform:rotate(0deg); }
+    100%{ transform:rotate(360deg); }
 }
 
 .map-pulse{
     position:absolute;
-    top:50%;
+    top:38%;
     left:50%;
-    width:18px;
-    height:18px;
+    width:16px;
+    height:16px;
     border-radius:50%;
     background:#ff3b30;
     transform:translate(-50%,-50%);
     box-shadow:0 0 0 rgba(255,59,48,.7);
     animation:mapPulse 2s infinite;
+    pointer-events:none;
 }
 
 @keyframes mapPulse{
-    0%{
-        box-shadow:0 0 0 0 rgba(255,59,48,.7);
-    }
-    70%{
-        box-shadow:0 0 0 25px rgba(255,59,48,0);
-    }
-    100%{
-        box-shadow:0 0 0 0 rgba(255,59,48,0);
-    }
+    0%{ box-shadow:0 0 0 0 rgba(255,59,48,.7); }
+    70%{ box-shadow:0 0 0 25px rgba(255,59,48,0); }
+    100%{ box-shadow:0 0 0 0 rgba(255,59,48,0); }
+}
+
+@media (max-width:900px){
+    .lokasi-grid{ grid-template-columns:1fr; gap:38px; }
+    .lokasi-info{ text-align:center; }
+    .lokasi-desc{ margin-left:auto; margin-right:auto; }
+    .lokasi-detail-list li{ text-align:left; }
+    .lokasi-actions{ justify-content:center; }
+    .map-card{ aspect-ratio:4/3.4; }
+}
+
+@media (max-width:520px){
+    .map-card{ aspect-ratio:1/1.05; border-radius:var(--radius); }
+    .lokasi-actions{ flex-direction:column; }
+    .lokasi-actions .btn{ width:100%; justify-content:center; }
 }
 
 /* ==========================================
