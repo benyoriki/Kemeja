@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet -->
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -354,25 +354,34 @@
       <p class="section-desc">Klik gambar untuk melihat pratinjau lebih besar.</p>
     </div>
 
+    <div class="galeri-bokeh" aria-hidden="true">
+      <span style="--gx:8%;  --gsz:8px;  --gdur:12s; --gdel:0s"></span>
+      <span style="--gx:20%; --gsz:5px;  --gdur:15s; --gdel:2s"></span>
+      <span style="--gx:35%; --gsz:10px; --gdur:13s; --gdel:4s"></span>
+      <span style="--gx:52%; --gsz:6px;  --gdur:16s; --gdel:1s"></span>
+      <span style="--gx:68%; --gsz:9px;  --gdur:14s; --gdel:3s"></span>
+      <span style="--gx:80%; --gsz:5px;  --gdur:17s; --gdel:5s"></span>
+      <span style="--gx:92%; --gsz:8px;  --gdur:13s; --gdel:2.5s"></span>
+    </div>
     <div class="gallery-grid">
-      <div class="gallery-item fade-up" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
-        <img src="images/depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA" loading="lazy">
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
+        <img src="depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
-      <div class="gallery-item fade-up" data-caption="Tampak Belakang - List Piping Punggung">
-        <img src="images/belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA" loading="lazy">
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Belakang - List Piping Punggung">
+        <img src="belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
-      <div class="gallery-item fade-up" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
-        <img src="images/kanan.jpg" alt="Tampak Samping Kanan" loading="lazy">
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
+        <img src="kanan.jpg" alt="Tampak Samping Kanan" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
-      <div class="gallery-item fade-up" data-caption="Tampak Samping Kiri - Logo K3">
-        <img src="images/kiri.jpg" alt="Tampak Samping Kiri" loading="lazy">
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kiri - Logo K3">
+        <img src="kiri.jpg" alt="Tampak Samping Kiri" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
-      <div class="gallery-item fade-up" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
-        <img src="images/bordir.jpg" alt="Detail Logo Bordir" loading="lazy">
+      <div class="gallery-item fade-up img-loading" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
+        <img src="bordir.jpg" alt="Detail Logo Bordir" loading="lazy">
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
     </div>
@@ -496,7 +505,7 @@
       </div>
 
       <div class="ukuran-ilustrasi fade-up">
-        <img src="images/pola.jpg" alt="Ilustrasi Pola dan Cara Mengukur Badan" loading="lazy">
+        <img src="pola.jpg" alt="Ilustrasi Pola dan Cara Mengukur Badan" loading="lazy">
         <p>Ilustrasi pola: A) Lebar Dada, B) Panjang Badan, C) Lebar Bahu, D) Panjang Tangan, E) Lebar Lengan, F) Lebar Pergelangan, G) Kerah.</p>
       </div>
     </div>
@@ -984,35 +993,47 @@
 
 <!-- Firebase (modular v10 via CDN) -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, onSnapshot, doc, updateDoc,
-    serverTimestamp, query, orderBy, limit
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION } from "./firebase-config.js?v=4";
+  import { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION } from "./firebase-config.js?v=5";
 
-  let db = null;
-  try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-  } catch (err) {
-    console.warn("Firebase belum dikonfigurasi dengan benar:", err);
-  }
-
-  // Ekspos ke script.js (non-module) lewat window, supaya tetap
-  // satu file script.js tanpa perlu mengubah semuanya jadi module.
-  window.__lokonFirebase = db ? {
-    db, collection, addDoc, onSnapshot, doc, updateDoc,
-    serverTimestamp, query, orderBy, limit,
-    ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
-  } : null;
-
+  // Kredensial admin diisi LANGSUNG dari file lokal ini, tidak bergantung
+  // pada berhasil/tidaknya SDK Firebase dimuat dari CDN. Jadi Login Admin
+  // tetap bisa dipakai walau internet lambat/terputus.
   window.__lokonAdminPasscode = ADMIN_PASSCODE;
   window.__lokonAdminUsername = ADMIN_USERNAME;
+
+  // SDK Firebase (dari CDN Google) dimuat secara terpisah dan dinamis,
+  // supaya kalau koneksi lambat/gagal, hanya fitur online (live peserta,
+  // chat grup) yang nonaktif — bukan seluruh website/login admin.
+  (async () => {
+    let db = null;
+    let mods = null;
+    try {
+      const [{ initializeApp }, firestoreMod] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
+      ]);
+      mods = firestoreMod;
+      const app = initializeApp(firebaseConfig);
+      db = mods.getFirestore(app);
+    } catch (err) {
+      console.warn("SDK Firebase gagal dimuat (cek koneksi internet), fitur online dinonaktifkan:", err);
+    }
+
+    // Ekspos ke script.js (non-module) lewat window, supaya tetap
+    // satu file script.js tanpa perlu mengubah semuanya jadi module.
+    window.__lokonFirebase = (db && mods) ? {
+      db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
+      doc: mods.doc, updateDoc: mods.updateDoc, serverTimestamp: mods.serverTimestamp,
+      query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
+      ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
+    } : null;
+
+    window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
+  })();
   window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
 </script>
 
-<script src="script.js?v=4"></script>
+<script src="script.js?v=5"></script>
 </body>
 </html>
 
