@@ -43,15 +43,28 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ============ 3. HAMBURGER MENU ============ */
   const hamburger = document.getElementById('hamburger');
   const navLinks = document.getElementById('navLinks');
+  const navOverlay = document.getElementById('navOverlay');
+  const navCloseBtn = document.getElementById('navCloseBtn');
+
+  function openNavMenu(){
+    navLinks.classList.add('open');
+    hamburger.classList.add('active');
+    navOverlay.classList.add('active');
+    document.body.classList.add('nav-open-lock');
+  }
+  function closeNavMenu(){
+    navLinks.classList.remove('open');
+    hamburger.classList.remove('active');
+    navOverlay.classList.remove('active');
+    document.body.classList.remove('nav-open-lock');
+  }
   hamburger.addEventListener('click', () => {
-    navLinks.classList.toggle('open');
-    hamburger.classList.toggle('active');
+    navLinks.classList.contains('open') ? closeNavMenu() : openNavMenu();
   });
+  navCloseBtn?.addEventListener('click', closeNavMenu);
+  navOverlay?.addEventListener('click', closeNavMenu);
   navLinks.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      navLinks.classList.remove('open');
-      hamburger.classList.remove('active');
-    });
+    link.addEventListener('click', closeNavMenu);
   });
 
   /* ============ 4. DARK MODE TOGGLE (session only) ============ */

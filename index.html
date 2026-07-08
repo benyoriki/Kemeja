@@ -39,7 +39,6 @@
 <!-- Icons -->
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="favicon.png">
-
 <!-- Favicon Placeholder -->
 <link rel="icon" type="image/png" href="assets/favicon.png">
 
@@ -82,14 +81,18 @@
     </a>
 
     <nav class="nav-links" id="navLinks">
-      <a href="#home" class="active">Beranda</a>
-      <a href="#tentang">Tentang</a>
-      <a href="#keunggulan">Keunggulan</a>
-      <a href="#galeri">Galeri</a>
-      <a href="#spesifikasi">Spesifikasi</a>
-      <a href="#ukuran">Ukuran</a>
-      <a href="#peserta">Peserta</a>
-      <a href="#daftar" class="nav-cta">Daftar</a>
+      <div class="nav-links-mobile-head">
+        <span class="nav-links-mobile-brand"><i class="fa-solid fa-shirt"></i> LOKON <b>PRIMA</b></span>
+        <button class="nav-close-btn" id="navCloseBtn" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <a href="#home" class="active"><i class="fa-solid fa-house nav-ico"></i>Beranda</a>
+      <a href="#tentang"><i class="fa-solid fa-circle-info nav-ico"></i>Tentang</a>
+      <a href="#keunggulan"><i class="fa-solid fa-star nav-ico"></i>Keunggulan</a>
+      <a href="#galeri"><i class="fa-solid fa-images nav-ico"></i>Galeri</a>
+      <a href="#spesifikasi"><i class="fa-solid fa-ruler-combined nav-ico"></i>Spesifikasi</a>
+      <a href="#ukuran"><i class="fa-solid fa-shirt nav-ico"></i>Ukuran</a>
+      <a href="#peserta"><i class="fa-solid fa-users nav-ico"></i>Peserta</a>
+      <a href="#daftar" class="nav-cta"><i class="fa-solid fa-pen-to-square"></i> Daftar</a>
     </nav>
 
     <div class="nav-actions">
@@ -149,6 +152,9 @@
     </div>
   </div>
 </header>
+
+<!-- Backdrop gelap saat menu mobile terbuka -->
+<div class="nav-overlay" id="navOverlay"></div>
 
 <!-- ===================================================== -->
 <!-- HERO SECTION -->
