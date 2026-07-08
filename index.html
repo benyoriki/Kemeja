@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet -->
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -417,8 +417,8 @@
           <tr><td><i class="fa-solid fa-weight-hanging"></i> Gramasi</td><td>190–200 GSM</td></tr>
           <tr><td><i class="fa-solid fa-spray-can-sparkles"></i> Finishing</td><td>Pre-Shrunk, Warna Tahan Lama, Tidak Mudah Kusut</td></tr>
           <tr><td><i class="fa-solid fa-scroll"></i> Logo</td><td>Semua Logo Full Bordir Komputer</td></tr>
-          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Pendek</td><td class="price">Rp160.000</td></tr>
-          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Panjang</td><td class="price">Rp165.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Pendek</td><td class="price">Rp150.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Panjang</td><td class="price">Rp155.000</td></tr>
         </tbody>
       </table>
     </div>
@@ -621,10 +621,63 @@
       </div>
     </div>
 
-    <!-- Panel kelola peserta -->
+    <!-- Panel kelola peserta (DASBOR ADMIN) -->
     <div class="admin-panel" id="adminPanel">
-      <h3><i class="fa-solid fa-list-check"></i> Kelola Pembayaran Peserta</h3>
+
+      <div class="adash-header">
+        <div class="adash-header-left">
+          <div class="adash-logo-badge"><i class="fa-solid fa-chart-pie"></i></div>
+          <div>
+            <h3>Dasbor Admin</h3>
+            <p id="adashClock">Memuat waktu...</p>
+          </div>
+        </div>
+        <div class="adash-header-right">
+          <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
+          <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
+          <button class="adash-logout-btn" id="adminLogoutBtn" type="button"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+        </div>
+      </div>
+
+      <div class="adash-stats">
+        <div class="adash-stat">
+          <div class="adash-stat-icon ic-blue"><i class="fa-solid fa-users"></i></div>
+          <div class="adash-stat-txt"><span id="adashTotal">0</span><p>Total Peserta</p></div>
+        </div>
+        <div class="adash-stat">
+          <div class="adash-stat-icon ic-green"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="adash-stat-txt"><span id="adashPendapatan">Rp0</span><p>Dana Terkumpul</p></div>
+        </div>
+        <div class="adash-stat">
+          <div class="adash-stat-icon ic-amber"><i class="fa-solid fa-hourglass-half"></i></div>
+          <div class="adash-stat-txt"><span id="adashMenunggu">0</span><p>Menunggu DP</p></div>
+        </div>
+        <div class="adash-stat">
+          <div class="adash-stat-icon ic-purple"><i class="fa-solid fa-coins"></i></div>
+          <div class="adash-stat-txt"><span id="adashCicilan">0</span><p>Cicilan 2x Jalan</p></div>
+        </div>
+        <div class="adash-stat">
+          <div class="adash-stat-icon ic-teal"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="adash-stat-txt"><span id="adashLunas">0</span><p>Lunas</p></div>
+        </div>
+      </div>
+
+      <div class="adash-toolbar">
+        <div class="adash-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="adminSearch" placeholder="Cari nama, WhatsApp, atau departemen...">
+        </div>
+        <div class="adash-filters" id="adminFilters">
+          <button class="adash-chip active" data-filter="semua">Semua</button>
+          <button class="adash-chip" data-filter="belum_dp">Menunggu DP</button>
+          <button class="adash-chip" data-filter="dp">DP Terbayar</button>
+          <button class="adash-chip" data-filter="cicilan">Cicilan 2x</button>
+          <button class="adash-chip" data-filter="lunas">Lunas</button>
+        </div>
+      </div>
+
       <div class="admin-list" id="adminList"><!-- diisi via JS --></div>
+      <p class="adash-empty" id="adminEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Tidak ada peserta pada kategori ini.</p>
     </div>
   </div>
 </div>
@@ -707,12 +760,12 @@
           <label>Jenis Kemeja <span class="req">*</span></label>
           <div class="radio-group">
             <label class="radio-card">
-              <input type="radio" name="jenisKemeja" value="pendek" data-harga="160000" required>
-              <span><i class="fa-solid fa-shirt"></i> Tangan Pendek <b>Rp160.000</b></span>
+              <input type="radio" name="jenisKemeja" value="pendek" data-harga="150000" required>
+              <span><i class="fa-solid fa-shirt"></i> Tangan Pendek <b>Rp150.000</b></span>
             </label>
             <label class="radio-card">
-              <input type="radio" name="jenisKemeja" value="panjang" data-harga="165000" required>
-              <span><i class="fa-solid fa-shirt"></i> Tangan Panjang <b>Rp165.000</b></span>
+              <input type="radio" name="jenisKemeja" value="panjang" data-harga="155000" required>
+              <span><i class="fa-solid fa-shirt"></i> Tangan Panjang <b>Rp155.000</b></span>
             </label>
           </div>
           <small class="error-msg" id="jenisKemejaError"></small>
@@ -744,20 +797,13 @@
             </label>
             <label class="radio-card">
               <input type="radio" name="metodeBayar" value="cicilan">
-              <span><i class="fa-solid fa-coins"></i> DP + Cicilan</span>
+              <span><i class="fa-solid fa-coins"></i> Bayar 2x (Cicilan)</span>
             </label>
           </div>
         </div>
 
         <div class="form-group full" id="cicilanOptionWrap" style="display:none;">
-          <label for="jumlahCicilan">Jumlah Kali Cicilan</label>
-          <select id="jumlahCicilan" name="jumlahCicilan">
-            <option value="2">2x Cicilan</option>
-            <option value="3">3x Cicilan</option>
-            <option value="4">4x Cicilan</option>
-            <option value="6">6x Cicilan</option>
-          </select>
-          <small class="hint-msg">Uang muka (DP) minimal 30% dari total harga, sisanya dicicil sesuai jumlah yang dipilih. Rincian cicilan akan dikonfirmasi oleh tim keuangan.</small>
+          <small class="hint-msg"><i class="fa-solid fa-circle-info"></i> Pembayaran dibagi <b>2 kali</b>: Pembayaran ke-1 (uang muka) minimal 50% dari total harga, dan Pembayaran ke-2 (pelunasan sisa 50%) dibayar saat kemeja siap diambil/diantar.</small>
         </div>
 
         <div class="form-group full checkbox-group">
@@ -993,7 +1039,27 @@
 
 <!-- Firebase (modular v10 via CDN) -->
 <script type="module">
-  import { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION } from "./firebase-config.js?v=5";
+(async () => {
+  // PERBAIKAN BUG: import statis sebelumnya membuat SELURUH script ini
+  // (termasuk Login Admin) gagal total secara diam-diam kalau
+  // firebase-config.js gagal dimuat/di-parse (mis. salah path, typo,
+  // file belum ke-deploy, dsb) — tanpa ada tanda apa pun untuk pengguna.
+  // Sekarang pakai dynamic import() yang dibungkus try/catch, supaya
+  // kegagalan ini terlihat jelas (pesan di layar + console) alih-alih
+  // membuat "Login Admin" & "Peserta Live" terlihat rusak tanpa sebab.
+  let cfg;
+  try {
+    cfg = await import("./firebase-config.js?v=6");
+  } catch (err) {
+    console.error("GAGAL memuat firebase-config.js:", err);
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;z-index:99999;font-family:sans-serif;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+    banner.innerHTML = '⚠️ <b>firebase-config.js gagal dimuat.</b> Login Admin &amp; database TIDAK akan berfungsi. Buka console browser (F12) untuk detail error.';
+    document.body.prepend(banner);
+    window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
+    return;
+  }
+  const { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION } = cfg;
 
   // Kredensial admin diisi LANGSUNG dari file lokal ini, tidak bergantung
   // pada berhasil/tidaknya SDK Firebase dimuat dari CDN. Jadi Login Admin
@@ -1004,36 +1070,34 @@
   // SDK Firebase (dari CDN Google) dimuat secara terpisah dan dinamis,
   // supaya kalau koneksi lambat/gagal, hanya fitur online (live peserta,
   // chat grup) yang nonaktif — bukan seluruh website/login admin.
-  (async () => {
-    let db = null;
-    let mods = null;
-    try {
-      const [{ initializeApp }, firestoreMod] = await Promise.all([
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-        import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-      ]);
-      mods = firestoreMod;
-      const app = initializeApp(firebaseConfig);
-      db = mods.getFirestore(app);
-    } catch (err) {
-      console.warn("SDK Firebase gagal dimuat (cek koneksi internet), fitur online dinonaktifkan:", err);
-    }
+  let db = null;
+  let mods = null;
+  try {
+    const [{ initializeApp }, firestoreMod] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
+    ]);
+    mods = firestoreMod;
+    const app = initializeApp(firebaseConfig);
+    db = mods.getFirestore(app);
+  } catch (err) {
+    console.warn("SDK Firebase gagal dimuat (cek koneksi internet), fitur online dinonaktifkan:", err);
+  }
 
-    // Ekspos ke script.js (non-module) lewat window, supaya tetap
-    // satu file script.js tanpa perlu mengubah semuanya jadi module.
-    window.__lokonFirebase = (db && mods) ? {
-      db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
-      doc: mods.doc, updateDoc: mods.updateDoc, serverTimestamp: mods.serverTimestamp,
-      query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
-      ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
-    } : null;
+  // Ekspos ke script.js (non-module) lewat window, supaya tetap
+  // satu file script.js tanpa perlu mengubah semuanya jadi module.
+  window.__lokonFirebase = (db && mods) ? {
+    db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
+    doc: mods.doc, updateDoc: mods.updateDoc, serverTimestamp: mods.serverTimestamp,
+    query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
+    ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
+  } : null;
 
-    window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
-  })();
   window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
+})();
 </script>
 
-<script src="script.js?v=5"></script>
+<script src="script.js?v=7"></script>
 </body>
 </html>
 

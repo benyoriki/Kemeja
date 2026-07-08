@@ -275,12 +275,46 @@ document.addEventListener('DOMContentLoaded', () => {
   const lightboxImg = document.getElementById('lightboxImg');
   const lightboxCaption = document.getElementById('lightboxCaption');
   const lightboxClose = document.getElementById('lightboxClose');
+  const isFinePointer = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   galleryItems.forEach(item => {
+    const img = item.querySelector('img');
+    if (img) {
+      const markLoaded = () => {
+        item.classList.remove('img-loading');
+        img.classList.add('img-loaded');
+      };
+      const markError = () => {
+        item.classList.remove('img-loading');
+        item.classList.add('img-error');
+      };
+      if (img.complete && img.naturalWidth > 0) {
+        markLoaded();
+      } else {
+        img.addEventListener('load', markLoaded);
+        img.addEventListener('error', markError);
+      }
+    }
+
+    // Tilt 3D lembut saat hover (desktop only, dimatikan jika reduced-motion)
+    if (isFinePointer && !prefersReducedMotion) {
+      item.addEventListener('mousemove', (e) => {
+        const rect = item.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        item.style.transform = `perspective(700px) rotateX(${(-py * 6).toFixed(2)}deg) rotateY(${(px * 6).toFixed(2)}deg) scale(1.015)`;
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.transform = '';
+      });
+    }
+
     item.addEventListener('click', () => {
-      const img = item.querySelector('img');
-      lightboxImg.src = img.src;
-      lightboxImg.alt = img.alt;
+      if (item.classList.contains('img-error')) return; // jangan buka lightbox jika gambar gagal
+      const imgEl = item.querySelector('img');
+      lightboxImg.src = imgEl.src;
+      lightboxImg.alt = imgEl.alt;
       lightboxCaption.textContent = item.dataset.caption || '';
       lightbox.classList.add('active');
     });
@@ -599,8 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
       total: total,
       catatan: document.getElementById('catatan').value.trim(),
       tanggal, jam,
-      metodeBayar: form.querySelector('input[name="metodeBayar"]:checked')?.value || 'tunai',
-      jumlahCicilan: parseInt(document.getElementById('jumlahCicilan').value, 10) || 0
+      metodeBayar: form.querySelector('input[name="metodeBayar"]:checked')?.value || 'tunai'
     };
   }
 
@@ -613,21 +646,29 @@ document.addEventListener('DOMContentLoaded', () => {
   ========================================================= */
   async function simpanKeFirestore(data){
     const fb = window.__lokonFirebase;
-    if (!fb) return null;
+    if (!fb){
+      // PERBAIKAN BUG: sebelumnya diam saja jika SDK Firebase gagal
+      // dimuat/konfigurasi salah, sehingga pengguna tidak tahu data
+      // pendaftarannya tidak masuk ke database sama sekali.
+      console.warn('window.__lokonFirebase kosong: SDK Firebase gagal dimuat atau firebase-config.js gagal di-import.');
+      showToast('Struk & WhatsApp berhasil, TAPI data TIDAK tersimpan ke database (Firebase gagal dimuat). Cek console browser (F12).', 'error');
+      return null;
+    }
 
+    // PERBAIKAN: metode cicilan sekarang selalu dibagi PERSIS 2 kali
+    // bayar — Pembayaran ke-1 (uang muka 50%) dan Pembayaran ke-2
+    // (pelunasan sisa 50%). Tidak ada lagi pilihan 3x/4x/6x.
     const isCicilan = data.metodeBayar === 'cicilan';
-    const jumlahCicilan = isCicilan ? (data.jumlahCicilan || 2) : 0;
-    const dpMinimal = isCicilan ? Math.round(data.total * 0.3) : data.total;
+    const dpMinimal = isCicilan ? Math.round(data.total * 0.5) : data.total;
 
     // Rincian rencana cicilan (belum ada yang dibayar — akan
-    // diperbarui oleh admin lewat panel admin saat uang masuk)
+    // diperbarui oleh admin lewat panel admin saat uang masuk).
+    // Untuk metode 2x bayar, array ini hanya berisi SATU entri yang
+    // mewakili "Pembayaran ke-2 (Pelunasan)".
     const rencanaCicilan = [];
     if (isCicilan){
       const sisaSetelahDp = data.total - dpMinimal;
-      const perCicilan = Math.round(sisaSetelahDp / jumlahCicilan);
-      for (let i = 0; i < jumlahCicilan; i++){
-        rencanaCicilan.push({ ke: i + 1, nominal: perCicilan, dibayar: false, tanggalBayar: null });
-      }
+      rencanaCicilan.push({ ke: 1, nominal: sisaSetelahDp, dibayar: false, tanggalBayar: null });
     }
 
     const payload = {
@@ -660,7 +701,23 @@ document.addEventListener('DOMContentLoaded', () => {
       // chat grup & tampil di navbar sebagai akun terverifikasi.
       loginAsMember({ nama: data.nama, whatsapp: data.whatsapp, docId: ref.id });
     } catch (err){
-      console.warn('Gagal menyimpan ke Firestore:', err);
+      // PERBAIKAN BUG: sebelumnya kegagalan simpan ke Firestore hanya
+      // dicatat di console (tidak terlihat pengguna), sehingga terlihat
+      // seperti "berhasil daftar" padahal data TIDAK masuk database.
+      // Sekarang beri tahu pengguna secara jelas + pesan spesifik sesuai
+      // kode error asli Firestore, supaya mudah didiagnosis.
+      console.warn('Gagal menyimpan ke Firestore:', err.code, err.message);
+      let pesan;
+      if (err.code === 'permission-denied'){
+        pesan = 'Struk & WhatsApp berhasil, TAPI data gagal masuk database (akses Firestore ditolak). Cek Firestore Rules di Firebase Console.';
+      } else if (err.code === 'not-found' || err.code === 'failed-precondition'){
+        pesan = 'Struk & WhatsApp berhasil, TAPI database Firestore belum dibuat. Buka Firebase Console → Build → Firestore Database → Create database.';
+      } else if (err.code === 'unavailable'){
+        pesan = 'Struk & WhatsApp berhasil, TAPI koneksi ke database bermasalah. Data tidak tersimpan online, coba lagi.';
+      } else {
+        pesan = `Struk & WhatsApp berhasil, TAPI data gagal masuk database (${err.code || 'error tidak diketahui'}).`;
+      }
+      showToast(pesan, 'error');
     }
   }
 
@@ -1042,6 +1099,7 @@ Jenis : ${data.jenis}
 Jumlah : ${data.jumlah}
 Harga : ${formatRupiah(data.harga)}
 Total : ${formatRupiah(data.total)}
+Metode Bayar : ${data.metodeBayar === 'cicilan' ? '2x Cicilan (DP 50% + Pelunasan 50%)' : 'Tunai / Lunas Langsung'}
 Catatan : ${data.catatan}
 ================================
 Terima kasih.`;
@@ -1075,7 +1133,7 @@ Terima kasih.`;
   const STATUS_LABEL = {
     belum_dp: { label:'Menunggu DP', cls:'badge-warn', icon:'fa-hourglass-half' },
     dp:       { label:'DP Terbayar', cls:'badge-info', icon:'fa-hand-holding-dollar' },
-    cicilan:  { label:'Cicilan Berjalan', cls:'badge-info', icon:'fa-coins' },
+    cicilan:  { label:'Cicilan 2x Berjalan', cls:'badge-info', icon:'fa-coins' },
     lunas:    { label:'Lunas', cls:'badge-success', icon:'fa-circle-check' }
   };
 
@@ -1152,7 +1210,7 @@ Terima kasih.`;
             <div class="peserta-progress-bar">
               <div class="peserta-progress-fill" style="width:${cicilanArr.length ? (cicilanTerbayar/cicilanArr.length*100) : 0}%"></div>
             </div>
-            <span>${cicilanTerbayar}/${cicilanArr.length} kali cicilan terbayar</span>
+            <span>${cicilanTerbayar === 1 ? 'Lunas (2/2 pembayaran)' : 'Pembayaran ke-1 (DP) selesai, menunggu pelunasan ke-2'}</span>
           </div>` : ''}
       `;
       pesertaGrid.appendChild(card);
@@ -1520,6 +1578,7 @@ Terima kasih.`;
      yang benar-benar bisa menulis perubahan data pembayaran.
   ========================================================= */
   const adminOverlay = document.getElementById('adminOverlay');
+  const adminBox = document.querySelector('.admin-box');
   const brandLogo = document.getElementById('brandLogo');
   const adminClose = document.getElementById('adminClose');
   const adminLogin = document.getElementById('adminLogin');
@@ -1530,11 +1589,27 @@ Terima kasih.`;
   const adminCancelBtn = document.getElementById('adminCancelBtn');
   const adminLoginError = document.getElementById('adminLoginError');
   const adminList = document.getElementById('adminList');
+  const adminEmpty = document.getElementById('adminEmpty');
   const adminCaptchaQuestion = document.getElementById('adminCaptchaQuestion');
   const adminCaptchaInput = document.getElementById('adminCaptchaInput');
   const adminCaptchaRefresh = document.getElementById('adminCaptchaRefresh');
+  const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+  const adminRefreshBtn = document.getElementById('adminRefreshBtn');
+  const adminExportBtn = document.getElementById('adminExportBtn');
+  const adminSearchInput = document.getElementById('adminSearch');
+  const adminFiltersWrap = document.getElementById('adminFilters');
+  const adashClock = document.getElementById('adashClock');
+  const adashTotal = document.getElementById('adashTotal');
+  const adashPendapatan = document.getElementById('adashPendapatan');
+  const adashMenunggu = document.getElementById('adashMenunggu');
+  const adashCicilan = document.getElementById('adashCicilan');
+  const adashLunas = document.getElementById('adashLunas');
+
   let adminUnlocked = false;
   let captchaAnswer = null;
+  let adminFilter = 'semua';
+  let adminSearch = '';
+  let adminClockTimer = null;
 
   function newCaptcha(){
     const a = Math.floor(Math.random() * 8) + 1;
@@ -1552,9 +1627,23 @@ Terima kasih.`;
     newCaptcha();
   }
 
+  function startAdminClock(){
+    if (!adashClock) return;
+    const update = () => {
+      const now = new Date();
+      adashClock.textContent = now.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) +
+        ' • ' + now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    };
+    update();
+    clearInterval(adminClockTimer);
+    adminClockTimer = setInterval(update, 1000);
+  }
+  function stopAdminClock(){ clearInterval(adminClockTimer); }
+
   function openAdminModal(){
     adminOverlay.classList.add('active');
     if (!adminUnlocked){
+      adminOverlay.classList.remove('admin-dash-mode');
       adminLogin.style.display = 'block';
       adminPanel.style.display = 'none';
       resetAdminLoginForm();
@@ -1562,6 +1651,13 @@ Terima kasih.`;
   }
   function closeAdminModal(){
     adminOverlay.classList.remove('active');
+  }
+  function logoutAdmin(){
+    adminUnlocked = false;
+    adminOverlay.classList.remove('admin-dash-mode');
+    stopAdminClock();
+    closeAdminModal();
+    showToast('Berhasil keluar dari dasbor admin.', 'success');
   }
 
   // Ketuk logo 5x dalam 1.6 detik untuk membuka panel admin
@@ -1580,6 +1676,7 @@ Terima kasih.`;
 
   adminClose?.addEventListener('click', closeAdminModal);
   adminCancelBtn?.addEventListener('click', closeAdminModal);
+  adminLogoutBtn?.addEventListener('click', logoutAdmin);
   adminOverlay?.addEventListener('click', (e) => { if (e.target === adminOverlay) closeAdminModal(); });
 
   adminLoginBtn?.addEventListener('click', () => {
@@ -1598,6 +1695,8 @@ Terima kasih.`;
       adminUnlocked = true;
       adminLogin.style.display = 'none';
       adminPanel.style.display = 'block';
+      adminOverlay.classList.add('admin-dash-mode');
+      startAdminClock();
       renderAdminList();
     } else {
       adminLoginError.textContent = 'Username atau kata sandi salah.';
@@ -1605,37 +1704,135 @@ Terima kasih.`;
     }
   });
 
+  adminRefreshBtn?.addEventListener('click', () => {
+    renderAdminList();
+    showToast('Data dasbor disegarkan.', 'success');
+  });
+
+  adminSearchInput?.addEventListener('input', (e) => {
+    adminSearch = e.target.value;
+    renderAdminList();
+  });
+
+  adminFiltersWrap?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.adash-chip');
+    if (!btn) return;
+    adminFiltersWrap.querySelectorAll('.adash-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    adminFilter = btn.dataset.filter;
+    renderAdminList();
+  });
+
+  /* ---- Export data peserta ke file CSV (dibuka di Excel/Sheets) ---- */
+  adminExportBtn?.addEventListener('click', () => {
+    if (!pesertaData.length){
+      showToast('Belum ada data untuk diexport.', 'error');
+      return;
+    }
+    const header = ['Nama','Nama Bordir','WhatsApp','Departemen','Jenis Kelamin','Ukuran','Jenis Kemeja','Jumlah','Total','Metode Bayar','Status','Total Dibayar'];
+    const rows = pesertaData.map(p => [
+      p.nama || '', p.namaBordir || '', p.whatsapp || '', p.departemen || '', p.gender || '',
+      p.ukuranKemeja || '', p.jenis || '', p.jumlah || 0, p.total || 0,
+      p.pembayaran?.metode === 'cicilan' ? '2x Cicilan' : 'Tunai',
+      STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-',
+      p.pembayaran?.totalDibayar || 0
+    ]);
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `peserta-kemeja-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Data berhasil diexport ke CSV.', 'success');
+  });
+
   function renderAdminList(){
     if (!adminUnlocked || !adminList) return;
+
+    // ---- Statistik dasbor (dihitung dari SELURUH data) ----
+    const total = pesertaData.length;
+    const menunggu = pesertaData.filter(p => (p.pembayaran?.status || 'belum_dp') === 'belum_dp').length;
+    const cicilanJalan = pesertaData.filter(p => ['dp','cicilan'].includes(p.pembayaran?.status)).length;
+    const lunas = pesertaData.filter(p => p.pembayaran?.status === 'lunas').length;
+    const pendapatan = pesertaData.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
+    if (adashTotal) animateStatNumber(adashTotal, total);
+    if (adashMenunggu) animateStatNumber(adashMenunggu, menunggu);
+    if (adashCicilan) animateStatNumber(adashCicilan, cicilanJalan);
+    if (adashLunas) animateStatNumber(adashLunas, lunas);
+    if (adashPendapatan) adashPendapatan.textContent = formatRupiah(pendapatan);
+
+    // ---- Filter + pencarian ----
+    let list = pesertaData.slice();
+    if (adminFilter !== 'semua'){
+      list = list.filter(p => (p.pembayaran?.status || 'belum_dp') === adminFilter);
+    }
+    if (adminSearch.trim() !== ''){
+      const q = adminSearch.trim().toLowerCase();
+      list = list.filter(p =>
+        (p.nama || '').toLowerCase().includes(q) ||
+        (p.whatsapp || '').toLowerCase().includes(q) ||
+        (p.departemen || '').toLowerCase().includes(q)
+      );
+    }
+
     adminList.innerHTML = '';
-    pesertaData.forEach(p => {
+    if (adminEmpty) adminEmpty.style.display = list.length === 0 ? 'block' : 'none';
+
+    list.forEach(p => {
       const status = p.pembayaran?.status || 'belum_dp';
+      const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
       const cicilanArr = p.pembayaran?.cicilan || [];
+      const cicilanTerbayar = cicilanArr.filter(c => c.dibayar).length;
+      const isCicilan = p.pembayaran?.metode === 'cicilan';
+
       const row = document.createElement('div');
       row.className = 'admin-row';
       row.innerHTML = `
-        <div class="admin-row-head">
-          <strong>${escapeHtml(p.nama || '-')}</strong>
-          <span>${formatRupiah(p.total || 0)} • ${escapeHtml(p.pembayaran?.metode === 'cicilan' ? 'Cicilan' : 'Tunai')}</span>
+        <div class="admin-row-top">
+          <div class="admin-row-id">
+            <div class="admin-row-avatar">${initialsOf(p.nama)}</div>
+            <div class="admin-row-head">
+              <strong>${escapeHtml(p.nama || '-')}</strong>
+              <span>${escapeHtml(p.departemen || '-')} • ${escapeHtml(p.whatsapp || '-')}</span>
+            </div>
+          </div>
+          <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
         </div>
+        <div class="admin-row-meta">
+          <span><i class="fa-solid fa-shirt"></i> ${escapeHtml(p.jenis || '-')} • ${escapeHtml(p.ukuranKemeja || '-')}</span>
+          <span><i class="fa-solid fa-cubes"></i> ${p.jumlah || 1} pcs</span>
+          <span><i class="fa-solid fa-wallet"></i> ${isCicilan ? '2x Cicilan' : 'Tunai'}</span>
+          <span class="admin-row-total"><i class="fa-solid fa-tag"></i> ${formatRupiah(p.total || 0)}</span>
+        </div>
+        ${isCicilan ? `
+          <div class="admin-row-progress">
+            <div class="admin-row-progress-bar"><div class="admin-row-progress-fill" style="width:${status==='belum_dp'?0:(cicilanTerbayar?100:50)}%"></div></div>
+            <span>${status==='belum_dp' ? 'Belum bayar sama sekali' : (cicilanTerbayar ? 'Lunas — 2/2 pembayaran selesai' : 'Pembayaran ke-1 (DP) selesai, menunggu ke-2')} • Terkumpul ${formatRupiah(p.pembayaran?.totalDibayar || 0)}</span>
+          </div>` : ''}
         <div class="admin-row-actions">
-          ${status === 'belum_dp' ? `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai DP Terbayar</button>` : ''}
-          ${p.pembayaran?.metode === 'cicilan' && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
-            `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Bayar Cicilan Berikutnya</button>` : ''}
+          ${status === 'belum_dp' ? `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai ${isCicilan ? 'DP (1/2)' : 'Lunas'} Terbayar</button>` : ''}
+          ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
+            `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
           ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : `<span class="admin-done"><i class="fa-solid fa-check-double"></i> Lunas</span>`}
+          ${p.whatsapp ? `<a class="admin-action-btn admin-action-wa" href="https://wa.me/${encodeURIComponent(p.whatsapp)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
         </div>
       `;
       adminList.appendChild(row);
     });
 
-    adminList.querySelectorAll('.admin-action-btn').forEach(btn => {
+    adminList.querySelectorAll('.admin-action-btn[data-action]').forEach(btn => {
       btn.addEventListener('click', () => handleAdminAction(btn.dataset.id, btn.dataset.action));
     });
   }
 
   async function handleAdminAction(id, action){
     const fb = window.__lokonFirebase;
-    if (!fb) return;
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
     const p = pesertaData.find(x => x.id === id);
     if (!p) return;
     const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
@@ -1665,8 +1862,8 @@ Terima kasih.`;
       await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran });
       showToast('Status pembayaran berhasil diperbarui.', 'success');
     } catch (err){
-      console.warn('Gagal memperbarui status pembayaran:', err);
-      showToast('Gagal memperbarui status. Coba lagi.', 'error');
+      console.warn('Gagal memperbarui status pembayaran:', err.code, err.message);
+      showToast(`Gagal memperbarui status (${err.code || 'error'}). Coba lagi.`, 'error');
     }
   }
 
