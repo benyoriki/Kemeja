@@ -1430,6 +1430,9 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .peserta-offline code{
     background:rgba(18,169,224,.1); padding:2px 8px; border-radius:6px; font-family:var(--font-mono);
 }
+.peserta-retry-btn{
+    margin-top:16px; display:inline-flex; align-items:center; gap:8px; font-size:13px; padding:11px 20px;
+}
 
 @media (max-width:900px){
     .peserta-stats{ grid-template-columns:repeat(2,1fr); }

@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet -->
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -417,8 +417,8 @@
           <tr><td><i class="fa-solid fa-weight-hanging"></i> Gramasi</td><td>190–200 GSM</td></tr>
           <tr><td><i class="fa-solid fa-spray-can-sparkles"></i> Finishing</td><td>Pre-Shrunk, Warna Tahan Lama, Tidak Mudah Kusut</td></tr>
           <tr><td><i class="fa-solid fa-scroll"></i> Logo</td><td>Semua Logo Full Bordir Komputer</td></tr>
-          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Pendek</td><td class="price">Rp150.000</td></tr>
-          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Panjang</td><td class="price">Rp155.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Pendek</td><td class="price">Rp160.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Panjang</td><td class="price">Rp165.000</td></tr>
         </tbody>
       </table>
     </div>
@@ -575,10 +575,10 @@
     <p class="peserta-empty" id="pesertaEmpty" style="display:none;">
       <i class="fa-solid fa-inbox"></i> Belum ada peserta pada kategori ini.
     </p>
-    <p class="peserta-offline" id="pesertaOffline" style="display:none;">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.
-    </p>
+    <div class="peserta-offline" id="pesertaOffline" style="display:none;">
+      <p class="peserta-offline-msg"><i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.</p>
+      <button type="button" class="btn btn-outline-dark peserta-retry-btn" id="pesertaRetryBtn"><i class="fa-solid fa-rotate"></i> Coba Sambungkan Ulang</button>
+    </div>
   </div>
 </section>
 
@@ -1070,34 +1070,54 @@
   // SDK Firebase (dari CDN Google) dimuat secara terpisah dan dinamis,
   // supaya kalau koneksi lambat/gagal, hanya fitur online (live peserta,
   // chat grup) yang nonaktif — bukan seluruh website/login admin.
-  let db = null;
-  let mods = null;
-  try {
-    const [{ initializeApp }, firestoreMod] = await Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-    ]);
-    mods = firestoreMod;
-    const app = initializeApp(firebaseConfig);
-    db = mods.getFirestore(app);
-  } catch (err) {
-    console.warn("SDK Firebase gagal dimuat (cek koneksi internet), fitur online dinonaktifkan:", err);
+  //
+  // PERBAIKAN: dibungkus jadi fungsi yang bisa dipanggil ULANG (baik
+  // otomatis 3x percobaan, maupun manual lewat tombol "Coba Lagi" di
+  // tampilan peserta live / dasbor admin) — supaya koneksi seluler yang
+  // lambat/tidak stabil tidak membuat fitur online mati permanen untuk
+  // seluruh sesi kunjungan.
+  async function loadFirebaseSDK(){
+    let db = null, mods = null;
+    const SDK_VER = "10.12.2";
+    for (let attempt = 1; attempt <= 3; attempt++){
+      try {
+        const [{ initializeApp }, firestoreMod] = await Promise.all([
+          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-app.js`),
+          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-firestore.js`)
+        ]);
+        mods = firestoreMod;
+        const app = initializeApp(firebaseConfig);
+        db = mods.getFirestore(app);
+        break;
+      } catch (err) {
+        console.warn(`SDK Firebase gagal dimuat (percobaan ${attempt}/3):`, err);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 1500 * attempt));
+      }
+    }
+    if (!db){
+      console.warn("SDK Firebase tetap gagal setelah 3 percobaan — cek koneksi internet.");
+      window.__lokonFirebase = null;
+    } else {
+      window.__lokonFirebase = {
+        db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
+        doc: mods.doc, updateDoc: mods.updateDoc, serverTimestamp: mods.serverTimestamp,
+        query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
+        ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
+      };
+    }
+    window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
+    return window.__lokonFirebase;
   }
 
-  // Ekspos ke script.js (non-module) lewat window, supaya tetap
-  // satu file script.js tanpa perlu mengubah semuanya jadi module.
-  window.__lokonFirebase = (db && mods) ? {
-    db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
-    doc: mods.doc, updateDoc: mods.updateDoc, serverTimestamp: mods.serverTimestamp,
-    query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
-    ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
-  } : null;
+  // Diekspos supaya tombol "Coba Sambungkan Ulang" di halaman (script.js)
+  // bisa memicu percobaan baru tanpa perlu reload seluruh halaman.
+  window.__lokonRetryFirebase = loadFirebaseSDK;
 
-  window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
+  await loadFirebaseSDK();
 })();
 </script>
 
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 </body>
 </html>
 

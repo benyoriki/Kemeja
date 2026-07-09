@@ -9,6 +9,40 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  /* =========================================================
+     0. PERBAIKAN BUG UTAMA: RACE CONDITION FIREBASE
+     Sebelumnya, kode di bawah ini (listener peserta live & fungsi
+     simpan pendaftaran) membaca window.__lokonFirebase HANYA SEKALI,
+     tepat saat 'DOMContentLoaded' terjadi. Padahal SDK Firebase
+     dimuat secara asinkron dari CDN (index.html) dan baru selesai
+     BEBERAPA SAAT setelah DOMContentLoaded — apalagi di koneksi
+     lambat. Akibatnya window.__lokonFirebase HAMPIR SELALU masih
+     null saat dibaca, sehingga pendaftaran tidak pernah tersimpan
+     dan daftar peserta live tidak pernah muncul, meskipun Firebase
+     sebenarnya berhasil tersambung beberapa detik kemudian.
+
+     waitForFirebase() memperbaiki ini dengan MENUNGGU event
+     'lokon-firebase-ready' (dikirim dari index.html setelah SDK
+     selesai dimuat) sebelum menyerah — dengan batas waktu, supaya
+     tetap ada di koneksi yang benar-benar mati.
+  ========================================================= */
+  function waitForFirebase(timeoutMs = 20000){
+    if (window.__lokonFirebase) return Promise.resolve(window.__lokonFirebase);
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        window.removeEventListener('lokon-firebase-ready', onReady);
+        clearTimeout(timer);
+        resolve(window.__lokonFirebase); // masih bisa null kalau memang gagal total
+      };
+      const onReady = () => finish();
+      window.addEventListener('lokon-firebase-ready', onReady);
+      const timer = setTimeout(finish, timeoutMs);
+    });
+  }
+
   /* ============ 1. LOADING SCREEN ============ */
   const loadingScreen = document.getElementById('loading-screen');
   const MIN_LOADING_MS = 15000; // durasi minimal loading screen tampil: 15 detik
@@ -645,7 +679,10 @@ document.addEventListener('DOMContentLoaded', () => {
      kartu "Peserta Terdaftar" pada website.
   ========================================================= */
   async function simpanKeFirestore(data){
-    const fb = window.__lokonFirebase;
+    // PERBAIKAN: tunggu hingga 20 detik untuk Firebase selesai dimuat
+    // (lihat waitForFirebase di bagian atas file) alih-alih langsung
+    // menyerah kalau SDK belum siap di detik pertama.
+    const fb = await waitForFirebase();
     if (!fb){
       // PERBAIKAN BUG: sebelumnya diam saja jika SDK Firebase gagal
       // dimuat/konfigurasi salah, sehingga pengguna tidak tahu data
@@ -1243,7 +1280,30 @@ Terima kasih.`;
     pesertaGrid.innerHTML = '';
   }
 
+  // Tombol "Coba Sambungkan Ulang" — memicu window.__lokonRetryFirebase()
+  // (didefinisikan di index.html) untuk mencoba memuat SDK Firebase lagi
+  // tanpa perlu memuat ulang seluruh halaman. Berguna di koneksi seluler
+  // yang lambat/tidak stabil.
+  const pesertaRetryBtn = document.getElementById('pesertaRetryBtn');
+  pesertaRetryBtn?.addEventListener('click', async () => {
+    pesertaRetryBtn.disabled = true;
+    pesertaRetryBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyambungkan...';
+    if (typeof window.__lokonRetryFirebase === 'function'){
+      await window.__lokonRetryFirebase();
+    }
+    if (window.__lokonFirebase){
+      showToast('Berhasil tersambung ke database!', 'success');
+      startPesertaListener();
+    } else {
+      showToast('Masih gagal tersambung. Cek koneksi internet Anda.', 'error');
+    }
+    pesertaRetryBtn.disabled = false;
+    pesertaRetryBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Coba Sambungkan Ulang';
+  });
+
+  let pesertaListenerStarted = false;
   function startPesertaListener(){
+    if (pesertaListenerStarted) return;
     const fb = window.__lokonFirebase;
     if (!fb){
       // window.__lokonFirebase hanya null jika initializeApp()/getFirestore()
@@ -1251,6 +1311,7 @@ Terima kasih.`;
       showPesertaOffline('<i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.');
       return;
     }
+    pesertaListenerStarted = true;
     try {
       const q = fb.query(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), fb.orderBy('timestamp', 'desc'));
       fb.onSnapshot(q, (snap) => {
@@ -1283,7 +1344,14 @@ Terima kasih.`;
       showPesertaOffline();
     }
   }
-  startPesertaListener();
+  // PERBAIKAN: tunggu Firebase siap dulu (bisa beberapa detik di koneksi
+  // lambat) sebelum memutuskan untuk menampilkan status "offline".
+  // Sebelumnya dipanggil langsung tanpa menunggu, sehingga HAMPIR SELALU
+  // gagal walau Firebase sebenarnya tersambung normal beberapa saat kemudian.
+  (async () => {
+    await waitForFirebase();
+    startPesertaListener();
+  })();
 
   /* =========================================================
      18b. AKUN PESERTA (SESI LOGIN) — pojok kanan navbar
@@ -1494,8 +1562,8 @@ Terima kasih.`;
     if (!session) return;
     const text = chatInput.value.trim();
     if (!text) return;
-    const fb = window.__lokonFirebase;
-    if (!fb){ showToast('Chat live tidak tersedia (Firebase belum dikonfigurasi).', 'error'); return; }
+    const fb = await waitForFirebase(8000);
+    if (!fb){ showToast('Chat live tidak tersedia (Firebase gagal tersambung). Coba lagi sesaat.', 'error'); return; }
     chatInput.value = '';
     try {
       await fb.addDoc(fb.collection(fb.db, fb.CHAT_COLLECTION), {
@@ -1516,14 +1584,18 @@ Terima kasih.`;
     chatOffline.innerHTML = reason || '<i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi, chat live tidak tersedia.';
   }
 
-  function startChatListener(){
+  async function startChatListener(){
     if (chatListenerStarted) return;
-    chatListenerStarted = true;
-    const fb = window.__lokonFirebase;
+    // PERBAIKAN: tunggu Firebase siap dulu (chat sering dibuka lebih awal
+    // dari waktu SDK selesai dimuat). Sebelumnya flag "chatListenerStarted"
+    // langsung dikunci ke true walau gagal, sehingga chat tidak akan
+    // pernah dicoba lagi meskipun Firebase belakangan berhasil tersambung.
+    const fb = await waitForFirebase();
     if (!fb){
       showChatOffline();
-      return;
+      return; // flag TIDAK dikunci — openChatPanel() boleh coba lagi nanti
     }
+    chatListenerStarted = true;
     try {
       const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.orderBy('timestamp', 'asc'), fb.limit(200));
       fb.onSnapshot(q, (snap) => {
@@ -1704,9 +1776,15 @@ Terima kasih.`;
     }
   });
 
-  adminRefreshBtn?.addEventListener('click', () => {
+  adminRefreshBtn?.addEventListener('click', async () => {
+    if (!window.__lokonFirebase && typeof window.__lokonRetryFirebase === 'function'){
+      adminRefreshBtn.disabled = true;
+      await window.__lokonRetryFirebase();
+      adminRefreshBtn.disabled = false;
+      if (window.__lokonFirebase) startPesertaListener();
+    }
     renderAdminList();
-    showToast('Data dasbor disegarkan.', 'success');
+    showToast(window.__lokonFirebase ? 'Data dasbor disegarkan.' : 'Masih belum tersambung ke database.', window.__lokonFirebase ? 'success' : 'error');
   });
 
   adminSearchInput?.addEventListener('input', (e) => {
@@ -1828,7 +1906,7 @@ Terima kasih.`;
   }
 
   async function handleAdminAction(id, action){
-    const fb = window.__lokonFirebase;
+    const fb = await waitForFirebase(8000);
     if (!fb){
       showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
       return;
