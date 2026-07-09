@@ -304,6 +304,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ============ 8. GALLERY LIGHTBOX ============ */
+  // Tombol tab "Model Pria / Model Wanita" & "Pola Pria / Pola Wanita" —
+  // satu handler generik dipakai untuk kedua grup tab di halaman ini.
+  document.querySelectorAll('.galeri-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      tab.parentElement.querySelectorAll('.galeri-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const targetEl = document.getElementById(tab.dataset.target);
+      if (!targetEl) return;
+      const panelClass = targetEl.classList.contains('pola-set') ? '.pola-set' : '.gallery-grid-set';
+      document.querySelectorAll(panelClass).forEach(p => p.classList.remove('active'));
+      targetEl.classList.add('active');
+    });
+  });
+
   const galleryItems = document.querySelectorAll('.gallery-item');
   const lightbox = document.getElementById('lightbox');
   const lightboxImg = document.getElementById('lightboxImg');
@@ -493,13 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
       }
     }
-    if (field.id === 'noWhatsapp'){
-      const digitsOnly = value.replace(/[^0-9]/g, '');
-      if (digitsOnly.length < 9 || digitsOnly.length > 15){
-        showFieldError(field, 'Masukkan nomor WhatsApp yang valid (9-15 digit).');
-        return false;
-      }
-    }
     clearFieldError(field);
     return true;
   }
@@ -620,8 +627,13 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('openWhatsApp error:', err);
     }
 
-    // Simpan ke Firestore secara asinkron (tidak menghalangi struk/WA)
-    simpanKeFirestore(data);
+    // PERUBAHAN LOGIKA BESAR: pendaftaran publik TIDAK LAGI langsung
+    // menulis ke Firestore dari perangkat pengunjung. Sebelumnya ini
+    // gagal berulang kali karena koneksi pengunjung sangat bervariasi
+    // (HP, sinyal lemah, dsb). Sekarang data cukup dikirim ke WhatsApp
+    // admin (di atas) + struk berisi Kode Unik, lalu ADMIN yang
+    // menginput manual ke Dasbor (lebih andal karena hanya 1 perangkat
+    // admin yang menulis ke database, bukan setiap pengunjung).
 
     // Animasi "memproses" & modal sukses di bawah ini murni tampilan —
     // unduhan struk dan tab WhatsApp sudah berjalan di atas.
@@ -631,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
       successModal.classList.add('active');
       submitBtn.disabled = false;
       if (downloadOk){
-        showToast('Struk berhasil diunduh & pendaftaran terkirim!', 'success');
+        showToast('Struk berhasil diunduh & pendaftaran terkirim ke admin!', 'success');
       } else {
         showToast('Pendaftaran terkirim, namun struk gagal diunduh.', 'error');
       }
@@ -640,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function collectFormData(){
     const jenisChecked = form.querySelector('input[name="jenisKemeja"]:checked');
-    const jenisLabel = jenisChecked.value === 'pendek' ? 'Tangan Pendek' : 'Tangan Panjang';
+    const jenisLabel = jenisChecked.value === 'pendek' ? 'Lengan Pendek' : 'Lengan Panjang';
     const harga = parseInt(jenisChecked.dataset.harga, 10);
     const jumlah = parseInt(jumlahInput.value, 10);
     const total = harga * jumlah;
@@ -657,7 +669,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return {
       nama: document.getElementById('nama').value.trim(),
       namaBordir: document.getElementById('namaBordir').value.trim(),
-      whatsapp: normalizeWhatsapp(document.getElementById('noWhatsapp').value),
       departemen: departemenLabel,
       gender: document.getElementById('gender').value,
       ukuranKemeja: document.getElementById('ukuranKemeja').value,
@@ -667,41 +678,41 @@ document.addEventListener('DOMContentLoaded', () => {
       total: total,
       catatan: document.getElementById('catatan').value.trim(),
       tanggal, jam,
-      metodeBayar: form.querySelector('input[name="metodeBayar"]:checked')?.value || 'tunai'
+      metodeBayar: form.querySelector('input[name="metodeBayar"]:checked')?.value || 'tunai',
+      // PERBAIKAN LOGIKA BARU: kode unik dibuat SEKALI di sini supaya
+      // sama persis antara struk JPG, pesan WhatsApp ke admin, dan yang
+      // nanti diketik ulang oleh admin saat menambahkan peserta ke
+      // dasbor — tidak lagi memakai nomor WhatsApp peserta sama sekali.
+      receiptNo: generateReceiptNo()
     };
   }
 
   /* =========================================================
-     13b. SIMPAN PENDAFTARAN KE FIREBASE (FIRESTORE)
-     Berjalan terpisah dari alur struk/WhatsApp di atas — jika
-     Firebase belum dikonfigurasi, pendaftaran tetap berhasil
-     lewat WhatsApp seperti biasa, hanya saja tidak muncul di
-     kartu "Peserta Terdaftar" pada website.
+     13b. SIMPAN PESERTA KE FIRESTORE — INPUT MANUAL OLEH ADMIN
+     PERUBAHAN LOGIKA BESAR: dulu fungsi ini dipanggil otomatis oleh
+     pengunjung publik saat submit formulir (sering gagal karena
+     koneksi HP yang macam-macam). Sekarang HANYA dipanggil dari
+     dasbor admin ("Tambah Peserta") — jauh lebih andal karena cuma
+     1 sesi admin yang menulis ke database, bukan tiap pengunjung.
   ========================================================= */
-  async function simpanKeFirestore(data){
-    // PERBAIKAN: tunggu hingga 20 detik untuk Firebase selesai dimuat
-    // (lihat waitForFirebase di bagian atas file) alih-alih langsung
-    // menyerah kalau SDK belum siap di detik pertama.
-    const fb = await waitForFirebase();
+  async function simpanPesertaAdmin(data){
+    const fb = await waitForFirebase(10000);
     if (!fb){
-      // PERBAIKAN BUG: sebelumnya diam saja jika SDK Firebase gagal
-      // dimuat/konfigurasi salah, sehingga pengguna tidak tahu data
-      // pendaftarannya tidak masuk ke database sama sekali.
-      console.warn('window.__lokonFirebase kosong: SDK Firebase gagal dimuat atau firebase-config.js gagal di-import.');
-      showToast('Struk & WhatsApp berhasil, TAPI data TIDAK tersimpan ke database (Firebase gagal dimuat). Cek console browser (F12).', 'error');
-      return null;
+      showToast('Gagal simpan: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.', 'error');
+      return { ok:false };
     }
 
-    // PERBAIKAN: metode cicilan sekarang selalu dibagi PERSIS 2 kali
-    // bayar — Pembayaran ke-1 (uang muka 50%) dan Pembayaran ke-2
-    // (pelunasan sisa 50%). Tidak ada lagi pilihan 3x/4x/6x.
+    // Cegah kode unik ganda (dicek dari data yang sudah ter-load di memori)
+    const kodeUnik = (data.kodeUnik || '').trim().toUpperCase();
+    if (pesertaData.some(p => (p.kodeUnik || '').toUpperCase() === kodeUnik)){
+      showToast('Kode unik ini sudah terdaftar. Cek kembali struk pendaftar.', 'error');
+      return { ok:false };
+    }
+
+    // Metode cicilan selalu dibagi PERSIS 2 kali bayar — Pembayaran
+    // ke-1 (uang muka 50%) dan Pembayaran ke-2 (pelunasan 50%).
     const isCicilan = data.metodeBayar === 'cicilan';
     const dpMinimal = isCicilan ? Math.round(data.total * 0.5) : data.total;
-
-    // Rincian rencana cicilan (belum ada yang dibayar — akan
-    // diperbarui oleh admin lewat panel admin saat uang masuk).
-    // Untuk metode 2x bayar, array ini hanya berisi SATU entri yang
-    // mewakili "Pembayaran ke-2 (Pelunasan)".
     const rencanaCicilan = [];
     if (isCicilan){
       const sisaSetelahDp = data.total - dpMinimal;
@@ -709,17 +720,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const payload = {
+      kodeUnik,
       nama: data.nama,
-      namaBordir: data.namaBordir,
-      whatsapp: data.whatsapp,
+      namaBordir: data.namaBordir || data.nama,
+      whatsapp: data.whatsapp || '',
       departemen: data.departemen,
       gender: data.gender,
       ukuranKemeja: data.ukuranKemeja,
       jenis: data.jenis,
       jumlah: data.jumlah,
       total: data.total,
-      catatan: data.catatan,
-      createdAtLabel: `${data.tanggal} • ${data.jam}`,
+      catatan: data.catatan || '-',
+      createdAtLabel: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
       timestamp: fb.serverTimestamp(),
       pembayaran: {
         metode: data.metodeBayar,
@@ -732,29 +744,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const ref = await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
-      // Setelah berhasil mendaftar, otomatis buat sesi akun peserta
-      // di perangkat ini (localStorage) supaya bisa langsung ikut
-      // chat grup & tampil di navbar sebagai akun terverifikasi.
-      loginAsMember({ nama: data.nama, whatsapp: data.whatsapp, docId: ref.id });
+      await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
+      showToast(`Peserta "${data.nama}" berhasil disimpan ke database.`, 'success');
+      return { ok:true };
     } catch (err){
-      // PERBAIKAN BUG: sebelumnya kegagalan simpan ke Firestore hanya
-      // dicatat di console (tidak terlihat pengguna), sehingga terlihat
-      // seperti "berhasil daftar" padahal data TIDAK masuk database.
-      // Sekarang beri tahu pengguna secara jelas + pesan spesifik sesuai
-      // kode error asli Firestore, supaya mudah didiagnosis.
-      console.warn('Gagal menyimpan ke Firestore:', err.code, err.message);
+      console.warn('Gagal menyimpan peserta:', err.code, err.message);
       let pesan;
       if (err.code === 'permission-denied'){
-        pesan = 'Struk & WhatsApp berhasil, TAPI data gagal masuk database (akses Firestore ditolak). Cek Firestore Rules di Firebase Console.';
+        pesan = 'Gagal simpan: akses Firestore ditolak. Cek Firestore Rules di Firebase Console.';
       } else if (err.code === 'not-found' || err.code === 'failed-precondition'){
-        pesan = 'Struk & WhatsApp berhasil, TAPI database Firestore belum dibuat. Buka Firebase Console → Build → Firestore Database → Create database.';
+        pesan = 'Gagal simpan: database Firestore belum dibuat. Buka Firebase Console → Build → Firestore Database.';
       } else if (err.code === 'unavailable'){
-        pesan = 'Struk & WhatsApp berhasil, TAPI koneksi ke database bermasalah. Data tidak tersimpan online, coba lagi.';
+        pesan = 'Gagal simpan: koneksi ke database bermasalah. Coba lagi.';
       } else {
-        pesan = `Struk & WhatsApp berhasil, TAPI data gagal masuk database (${err.code || 'error tidak diketahui'}).`;
+        pesan = `Gagal simpan ke database (${err.code || 'error tidak diketahui'}).`;
       }
       showToast(pesan, 'error');
+      return { ok:false };
     }
   }
 
@@ -792,7 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
       teal:'#0FD8B8', tealDeep:'#0BB89C', foam:'#F2FAFC', ink:'#0A1826',
       inkSoft:'#5A7186', line:'#E6F1F6', white:'#FFFFFF'
     };
-    const receiptNo = generateReceiptNo();
+    const receiptNo = data.receiptNo || generateReceiptNo();
 
     /* ---------- Base background + subtle dot texture ---------- */
     ctx.fillStyle = C.white;
@@ -985,21 +991,38 @@ document.addEventListener('DOMContentLoaded', () => {
     drawPerforation(ctx, cardX, y, cardW);
     y += 40;
 
-    /* ---------- QR frame ---------- */
-    const qrSize = 118;
-    const qrX = (W - qrSize) / 2;
-    ctx.fillStyle = C.foam;
-    roundRect(ctx, qrX, y, qrSize, qrSize, 14);
+    /* ---------- KODE UNIK — kotak sorotan (menggantikan placeholder QR
+       yang sebelumnya tidak fungsional). Kode ini sekarang punya fungsi
+       nyata: dipakai peserta untuk cek status pendaftaran di website
+       setelah admin memverifikasi & menginput datanya ke dasbor. ---------- */
+    const codeBoxH = 108;
+    ctx.save();
+    ctx.shadowColor = 'rgba(18,169,224,0.28)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 8;
+    const codeGrad = ctx.createLinearGradient(cardX, 0, cardX + cardW, 0);
+    codeGrad.addColorStop(0, C.navy);
+    codeGrad.addColorStop(1, '#0F3A63');
+    ctx.fillStyle = codeGrad;
+    roundRect(ctx, cardX, y, cardW, codeBoxH, 18);
     ctx.fill();
-    drawScanCorners(ctx, qrX, y, qrSize, 22, C.aqua);
-    ctx.fillStyle = C.aquaDeep;
+    ctx.restore();
+    // aksen garis gradasi brand di tepi atas kotak
+    ctx.fillStyle = C.teal;
+    roundRect(ctx, cardX, y, cardW, 5, 3);
+    ctx.fill();
+
     ctx.textAlign = 'center';
-    ctx.font = '700 11px Inter, sans-serif';
-    ctx.fillText('QR CODE', W/2, y + qrSize/2 - 2);
-    ctx.font = '400 9.5px Inter, sans-serif';
-    ctx.fillStyle = C.inkSoft;
-    ctx.fillText('(placeholder verifikasi)', W/2, y + qrSize/2 + 14);
-    y += qrSize + 38;
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.font = '700 11px "JetBrains Mono", monospace';
+    ctx.fillText('KODE UNIK ANDA — SIMPAN BAIK-BAIK', W/2, y + 28);
+    ctx.fillStyle = C.white;
+    ctx.font = '800 27px "JetBrains Mono", monospace';
+    ctx.fillText(receiptNo, W/2, y + 62);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '400 11px Inter, sans-serif';
+    ctx.fillText('Dipakai untuk cek status pembayaran lewat menu profil di website', W/2, y + 86);
+    y += codeBoxH + 34;
 
     /* ---------- Status + contact ---------- */
     ctx.fillStyle = C.tealDeep;
@@ -1128,6 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
 PENDAFTARAN KEMEJA KERJA
 PT. LOKON PRIMA
 ================================
+Kode Unik : ${data.receiptNo}
 Nama : ${data.nama}
 Nama Bordir : ${data.namaBordir}
 Departemen : ${data.departemen}
@@ -1139,7 +1163,7 @@ Total : ${formatRupiah(data.total)}
 Metode Bayar : ${data.metodeBayar === 'cicilan' ? '2x Cicilan (DP 50% + Pelunasan 50%)' : 'Tunai / Lunas Langsung'}
 Catatan : ${data.catatan}
 ================================
-Terima kasih.`;
+Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
 
     const nomorTujuan = '6285697321423';
     const url = `https://wa.me/${nomorTujuan}?text=${encodeURIComponent(pesan)}`;
@@ -1322,6 +1346,7 @@ Terima kasih.`;
         });
         renderPeserta();
         renderAdminList();
+        renderProfileWidget();
         updateChatMemberCount();
       }, (err) => {
         console.warn('Firestore listener error:', err.code, err.message);
@@ -1374,7 +1399,7 @@ Terima kasih.`;
   const profileMemberView = document.getElementById('profileMemberView');
   const openLoginBtn = document.getElementById('openLoginBtn');
   const profileLoginForm = document.getElementById('profileLoginForm');
-  const loginWhatsapp = document.getElementById('loginWhatsapp');
+  const loginKodeUnik = document.getElementById('loginKodeUnik');
   const loginSubmitBtn = document.getElementById('loginSubmitBtn');
   const loginError = document.getElementById('loginError');
   const memberAvatarInitial = document.getElementById('memberAvatarInitial');
@@ -1398,10 +1423,15 @@ Terima kasih.`;
     renderChatPermission();
     renderChatMessages();
   }
-  function loginAsMember({ nama, whatsapp, docId }){
-    saveSession({ nama, whatsapp, docId, loginAt: Date.now() });
+  // PERUBAHAN LOGIKA: login peserta sekarang pakai KODE UNIK (dari
+  // struk pendaftaran), bukan nomor WhatsApp. docId hanya tersedia
+  // setelah admin menginput data peserta ke Firestore lewat dasbor.
+  function loginAsMember({ nama, kodeUnik, docId }){
+    saveSession({ nama, kodeUnik, docId, loginAt: Date.now() });
     showToast(`Selamat datang, ${nama}! Akun peserta Anda aktif.`, 'success');
   }
+
+  const profileStatusLine = document.getElementById('profileStatusLine');
 
   function renderProfileWidget(){
     const session = getSession();
@@ -1414,7 +1444,20 @@ Terima kasih.`;
       profileMemberView.style.display = 'block';
       memberAvatarInitial.textContent = initial;
       memberNameFull.textContent = session.nama;
-      memberPhoneFull.innerHTML = `<i class="fa-brands fa-whatsapp"></i> +${session.whatsapp}`;
+      memberPhoneFull.innerHTML = `<i class="fa-solid fa-key"></i> ${escapeHtml(session.kodeUnik || '-')}`;
+
+      // Status pembayaran live, diambil dari data yang sama dipakai
+      // dasbor admin — otomatis ikut update saat admin mengubah status.
+      const record = pesertaData.find(p => p.id === session.docId) ||
+                     pesertaData.find(p => (p.kodeUnik || '').toUpperCase() === (session.kodeUnik || '').toUpperCase());
+      if (profileStatusLine){
+        if (record){
+          const info = STATUS_LABEL[record.pembayaran?.status || 'belum_dp'] || STATUS_LABEL.belum_dp;
+          profileStatusLine.innerHTML = `<i class="fa-solid ${info.icon}"></i> Status: <b>${info.label}</b> • Terbayar ${formatRupiah(record.pembayaran?.totalDibayar || 0)} / ${formatRupiah(record.total || 0)}`;
+        } else {
+          profileStatusLine.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Menunggu admin memverifikasi pendaftaran Anda.`;
+        }
+      }
     } else {
       profileName.textContent = 'Tamu';
       profileSub.textContent = 'Pengunjung';
@@ -1440,22 +1483,22 @@ Terima kasih.`;
   });
 
   loginSubmitBtn?.addEventListener('click', () => {
-    const raw = loginWhatsapp.value;
-    const norm = normalizeWhatsapp(raw);
+    const raw = (loginKodeUnik.value || '').trim().toUpperCase();
     loginError.textContent = '';
-    if (!raw.trim() || norm.length < 10){
-      loginError.textContent = 'Masukkan nomor WhatsApp yang valid.';
+    loginError.classList.remove('show');
+    if (!raw){
+      loginError.textContent = 'Masukkan kode unik dari struk pendaftaran Anda.';
       loginError.classList.add('show');
       return;
     }
-    const match = pesertaData.find(p => normalizeWhatsapp(p.whatsapp) === norm);
+    const match = pesertaData.find(p => (p.kodeUnik || '').toUpperCase() === raw);
     if (match){
-      loginAsMember({ nama: match.nama, whatsapp: norm, docId: match.id });
+      loginAsMember({ nama: match.nama, kodeUnik: match.kodeUnik, docId: match.id });
       profileWidget.classList.remove('open');
-      loginWhatsapp.value = '';
+      loginKodeUnik.value = '';
       profileLoginForm.style.display = 'none';
     } else {
-      loginError.textContent = 'Nomor tidak ditemukan. Pastikan Anda sudah mendaftar.';
+      loginError.textContent = 'Kode tidak ditemukan. Mungkin admin belum memverifikasi pendaftaran Anda — coba beberapa saat lagi.';
       loginError.classList.add('show');
     }
   });
@@ -1541,7 +1584,7 @@ Terima kasih.`;
     } else {
       chatEmpty.style.display = 'none';
       chatMessages.forEach(msg => {
-        const mine = !!(session && normalizeWhatsapp(session.whatsapp) === normalizeWhatsapp(msg.whatsapp));
+        const mine = !!(session && msg.kodeUnik && session.kodeUnik && msg.kodeUnik === session.kodeUnik);
         const el = document.createElement('div');
         el.className = 'chat-msg ' + (mine ? 'mine' : 'other');
         const time = msg._ms ? new Date(msg._ms).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '';
@@ -1568,7 +1611,7 @@ Terima kasih.`;
     try {
       await fb.addDoc(fb.collection(fb.db, fb.CHAT_COLLECTION), {
         nama: session.nama,
-        whatsapp: session.whatsapp,
+        kodeUnik: session.kodeUnik,
         pesan: text.slice(0, 500),
         timestamp: fb.serverTimestamp()
       });
@@ -1807,9 +1850,9 @@ Terima kasih.`;
       showToast('Belum ada data untuk diexport.', 'error');
       return;
     }
-    const header = ['Nama','Nama Bordir','WhatsApp','Departemen','Jenis Kelamin','Ukuran','Jenis Kemeja','Jumlah','Total','Metode Bayar','Status','Total Dibayar'];
+    const header = ['Kode Unik','Nama','Nama Bordir','WhatsApp','Departemen','Jenis Kelamin','Ukuran','Jenis Kemeja','Jumlah','Total','Metode Bayar','Status','Total Dibayar'];
     const rows = pesertaData.map(p => [
-      p.nama || '', p.namaBordir || '', p.whatsapp || '', p.departemen || '', p.gender || '',
+      p.kodeUnik || '', p.nama || '', p.namaBordir || '', p.whatsapp || '', p.departemen || '', p.gender || '',
       p.ukuranKemeja || '', p.jenis || '', p.jumlah || 0, p.total || 0,
       p.pembayaran?.metode === 'cicilan' ? '2x Cicilan' : 'Tunai',
       STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-',
@@ -1851,6 +1894,7 @@ Terima kasih.`;
       list = list.filter(p =>
         (p.nama || '').toLowerCase().includes(q) ||
         (p.whatsapp || '').toLowerCase().includes(q) ||
+        (p.kodeUnik || '').toLowerCase().includes(q) ||
         (p.departemen || '').toLowerCase().includes(q)
       );
     }
@@ -1873,7 +1917,7 @@ Terima kasih.`;
             <div class="admin-row-avatar">${initialsOf(p.nama)}</div>
             <div class="admin-row-head">
               <strong>${escapeHtml(p.nama || '-')}</strong>
-              <span>${escapeHtml(p.departemen || '-')} • ${escapeHtml(p.whatsapp || '-')}</span>
+              <span>${escapeHtml(p.departemen || '-')} • <code>${escapeHtml(p.kodeUnik || '-')}</code></span>
             </div>
           </div>
           <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
@@ -1894,7 +1938,7 @@ Terima kasih.`;
           ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
             `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
           ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : `<span class="admin-done"><i class="fa-solid fa-check-double"></i> Lunas</span>`}
-          ${p.whatsapp ? `<a class="admin-action-btn admin-action-wa" href="https://wa.me/${encodeURIComponent(p.whatsapp)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
+          ${p.whatsapp ? `<a class="admin-action-btn admin-action-wa" href="https://wa.me/${encodeURIComponent(normalizeWhatsapp(p.whatsapp))}?text=${encodeURIComponent('Halo ' + p.nama + ', kode unik pendaftaran kemeja Anda: ' + p.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
         </div>
       `;
       adminList.appendChild(row);
@@ -1944,5 +1988,91 @@ Terima kasih.`;
       showToast(`Gagal memperbarui status (${err.code || 'error'}). Coba lagi.`, 'error');
     }
   }
+
+  /* =========================================================
+     FITUR BARU: TAMBAH PESERTA MANUAL DARI DASBOR ADMIN
+     Ini menggantikan alur lama (pengunjung publik menulis langsung
+     ke Firestore). Sekarang admin yang membaca pesan WhatsApp masuk
+     dari pendaftar, lalu mengetik datanya ke sini — termasuk Kode
+     Unik yang HARUS sama persis dengan yang tertera di struk
+     pendaftar, supaya peserta bisa "login" mengecek statusnya nanti.
+  ========================================================= */
+  const adminAddBtn = document.getElementById('adminAddBtn');
+  const addPesertaOverlay = document.getElementById('addPesertaOverlay');
+  const addPesertaClose = document.getElementById('addPesertaClose');
+  const addPesertaCancelBtn = document.getElementById('addPesertaCancelBtn');
+  const addPesertaForm = document.getElementById('addPesertaForm');
+  const addPesertaError = document.getElementById('addPesertaError');
+  const addPesertaSubmitBtn = document.getElementById('addPesertaSubmitBtn');
+  const apJumlahInput = document.getElementById('apJumlah');
+  const apJenisRadios = document.querySelectorAll('input[name="apJenis"]');
+  const apTotalHargaEl = document.getElementById('apTotalHarga');
+
+  function hitungTotalAdmin(){
+    const checked = document.querySelector('input[name="apJenis"]:checked');
+    const harga = checked ? parseInt(checked.dataset.harga, 10) : 0;
+    const jumlah = parseInt(apJumlahInput?.value, 10) || 0;
+    const total = harga * jumlah;
+    if (apTotalHargaEl) apTotalHargaEl.textContent = formatRupiah(total);
+    return { harga, total };
+  }
+  apJenisRadios.forEach(r => r.addEventListener('change', hitungTotalAdmin));
+  apJumlahInput?.addEventListener('input', hitungTotalAdmin);
+
+  function openAddPesertaModal(){
+    addPesertaForm.reset();
+    addPesertaError.textContent = '';
+    hitungTotalAdmin();
+    addPesertaOverlay.classList.add('active');
+  }
+  function closeAddPesertaModal(){
+    addPesertaOverlay.classList.remove('active');
+  }
+  adminAddBtn?.addEventListener('click', openAddPesertaModal);
+  addPesertaClose?.addEventListener('click', closeAddPesertaModal);
+  addPesertaCancelBtn?.addEventListener('click', closeAddPesertaModal);
+  addPesertaOverlay?.addEventListener('click', (e) => { if (e.target === addPesertaOverlay) closeAddPesertaModal(); });
+
+  addPesertaForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    addPesertaError.textContent = '';
+
+    const kodeUnik = document.getElementById('apKodeUnik').value.trim().toUpperCase();
+    const nama = document.getElementById('apNama').value.trim();
+    const namaBordir = document.getElementById('apNamaBordir').value.trim();
+    const whatsappRaw = document.getElementById('apWhatsapp').value.trim();
+    const departemen = document.getElementById('apDepartemen').value;
+    const gender = document.getElementById('apGender').value;
+    const ukuranKemeja = document.getElementById('apUkuran').value;
+    const jumlah = parseInt(apJumlahInput.value, 10) || 1;
+    const jenisChecked = document.querySelector('input[name="apJenis"]:checked');
+    const jenis = jenisChecked?.value === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
+    const metodeBayar = document.querySelector('input[name="apMetode"]:checked')?.value || 'tunai';
+    const catatan = document.getElementById('apCatatan').value.trim();
+    const { harga, total } = hitungTotalAdmin();
+
+    if (!kodeUnik || !nama || !ukuranKemeja){
+      addPesertaError.textContent = 'Kode Unik, Nama, dan Ukuran wajib diisi.';
+      return;
+    }
+
+    addPesertaSubmitBtn.disabled = true;
+    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    const result = await simpanPesertaAdmin({
+      kodeUnik, nama, namaBordir,
+      whatsapp: whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '',
+      departemen, gender, ukuranKemeja, jenis, jumlah, harga, total, catatan, metodeBayar
+    });
+
+    addPesertaSubmitBtn.disabled = false;
+    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Peserta';
+
+    if (result.ok){
+      closeAddPesertaModal();
+    } else {
+      addPesertaError.textContent = 'Gagal menyimpan — lihat notifikasi di atas untuk detail.';
+    }
+  });
 
 });

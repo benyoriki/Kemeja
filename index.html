@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet -->
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -164,11 +164,11 @@
               </div>
             </div>
             <a href="#daftar" class="btn btn-primary btn-sm profile-drop-cta"><i class="fa-solid fa-pen-to-square"></i> Daftar Sekarang</a>
-            <button type="button" class="profile-login-link" id="openLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Sudah daftar? Masuk pakai No. WhatsApp</button>
+            <button type="button" class="profile-login-link" id="openLoginBtn"><i class="fa-solid fa-right-to-bracket"></i> Sudah daftar? Cek Status Pakai Kode Unik</button>
 
             <div class="profile-login-form" id="profileLoginForm" style="display:none;">
-              <input type="tel" id="loginWhatsapp" placeholder="Nomor WhatsApp terdaftar" inputmode="numeric">
-              <button type="button" class="btn btn-primary btn-sm" id="loginSubmitBtn"><i class="fa-solid fa-magnifying-glass"></i> Cari Akun</button>
+              <input type="text" id="loginKodeUnik" placeholder="Contoh: LP-20260709-7162" autocomplete="off" style="text-transform:uppercase;">
+              <button type="button" class="btn btn-primary btn-sm" id="loginSubmitBtn"><i class="fa-solid fa-magnifying-glass"></i> Cek Status</button>
               <small class="error-msg" id="loginError"></small>
             </div>
           </div>
@@ -179,10 +179,11 @@
               <span class="profile-avatar lg" id="memberAvatarInitial">A</span>
               <div>
                 <strong id="memberNameFull">-</strong>
-                <p id="memberPhoneFull"><i class="fa-brands fa-whatsapp"></i> -</p>
+                <p id="memberPhoneFull"><i class="fa-solid fa-key"></i> -</p>
               </div>
             </div>
             <span class="profile-badge"><i class="fa-solid fa-circle-check"></i> Akun Peserta Terverifikasi</span>
+            <p class="profile-status-line" id="profileStatusLine"></p>
             <button type="button" class="profile-logout-btn" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Keluar Akun</button>
           </div>
         </div>
@@ -363,25 +364,68 @@
       <span style="--gx:80%; --gsz:5px;  --gdur:17s; --gdel:5s"></span>
       <span style="--gx:92%; --gsz:8px;  --gdur:13s; --gdel:2.5s"></span>
     </div>
-    <div class="gallery-grid">
+
+    <div class="galeri-tabs fade-up">
+      <button type="button" class="galeri-tab active" data-target="galeriPria"><i class="fa-solid fa-person"></i> Model Pria</button>
+      <button type="button" class="galeri-tab" data-target="galeriWanita"><i class="fa-solid fa-person-dress"></i> Model Wanita</button>
+    </div>
+
+    <div class="gallery-grid gallery-grid-set active" id="galeriPria">
       <div class="gallery-item fade-up img-loading" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
-        <img src="depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA" loading="lazy">
+        <img src="depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA - Model Pria" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
       <div class="gallery-item fade-up img-loading" data-caption="Tampak Belakang - List Piping Punggung">
-        <img src="belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA" loading="lazy">
+        <img src="belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA - Model Pria" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
       <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
-        <img src="kanan.jpg" alt="Tampak Samping Kanan" loading="lazy">
+        <img src="kanan.jpg" alt="Tampak Samping Kanan - Model Pria" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
       <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kiri - Logo K3">
-        <img src="kiri.jpg" alt="Tampak Samping Kiri" loading="lazy">
+        <img src="kiri.jpg" alt="Tampak Samping Kiri - Model Pria" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
       <div class="gallery-item fade-up img-loading" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
         <img src="bordir.jpg" alt="Detail Logo Bordir" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
+      </div>
+    </div>
+
+    <!-- PERBAIKAN: grid model wanita baru. File gambar (depan_wanita.png,
+         dst) BELUM ada di repo — begitu diupload dengan nama persis di
+         bawah, foto asli otomatis tampil menggantikan kartu "Segera
+         Hadir" ini tanpa perlu ubah kode apa pun lagi. -->
+    <div class="gallery-grid gallery-grid-set" id="galeriWanita">
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Depan - Kemeja Model Wanita">
+        <img src="depan_wanita.png" alt="Tampak Depan Kemeja Kerja AQUA - Model Wanita" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
+      </div>
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Belakang - Kemeja Model Wanita">
+        <img src="belakang_wanita.png" alt="Tampak Belakang Kemeja Kerja AQUA - Model Wanita" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
+      </div>
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kanan - Model Wanita">
+        <img src="kanan_wanita.png" alt="Tampak Samping Kanan - Model Wanita" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
+      </div>
+      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kiri - Model Wanita">
+        <img src="kiri_wanita.png" alt="Tampak Samping Kiri - Model Wanita" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
+        <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
+      </div>
+      <div class="gallery-item fade-up img-loading" data-caption="Detail Bordir - Model Wanita">
+        <img src="bordir_wanita.png" alt="Detail Logo Bordir - Model Wanita" loading="lazy">
+        <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
     </div>
@@ -417,8 +461,8 @@
           <tr><td><i class="fa-solid fa-weight-hanging"></i> Gramasi</td><td>190–200 GSM</td></tr>
           <tr><td><i class="fa-solid fa-spray-can-sparkles"></i> Finishing</td><td>Pre-Shrunk, Warna Tahan Lama, Tidak Mudah Kusut</td></tr>
           <tr><td><i class="fa-solid fa-scroll"></i> Logo</td><td>Semua Logo Full Bordir Komputer</td></tr>
-          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Pendek</td><td class="price">Rp150.000</td></tr>
-          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Tangan Panjang</td><td class="price">Rp155.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Lengan Pendek</td><td class="price">Rp155.000</td></tr>
+          <tr><td><i class="fa-solid fa-shirt"></i> Kemeja Lengan Panjang</td><td class="price">Rp160.000</td></tr>
         </tbody>
       </table>
     </div>
@@ -505,7 +549,21 @@
       </div>
 
       <div class="ukuran-ilustrasi fade-up">
-        <img src="pola.jpg" alt="Ilustrasi Pola dan Cara Mengukur Badan" loading="lazy">
+        <div class="galeri-tabs pola-tabs">
+          <button type="button" class="galeri-tab active" data-target="polaPria"><i class="fa-solid fa-person"></i> Pola Pria</button>
+          <button type="button" class="galeri-tab" data-target="polaWanita"><i class="fa-solid fa-person-dress"></i> Pola Wanita</button>
+        </div>
+        <div class="pola-set active" id="polaPria">
+          <img src="pola.jpg" alt="Ilustrasi Pola dan Cara Mengukur Badan - Pria" loading="lazy">
+        </div>
+        <div class="pola-set" id="polaWanita">
+          <!-- pola_wanita.png belum diupload — otomatis tampil begitu file
+               dengan nama ini ditambahkan ke repo (lihat gallery-placeholder). -->
+          <div class="gallery-item img-loading" style="height:280px;">
+            <img src="pola_wanita.png" alt="Ilustrasi Pola dan Cara Mengukur Badan - Wanita" loading="lazy">
+            <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Ilustrasi Pola Wanita<br>Segera Hadir</span></div>
+          </div>
+        </div>
         <p>Ilustrasi pola: A) Lebar Dada, B) Panjang Badan, C) Lebar Bahu, D) Panjang Tangan, E) Lebar Lengan, F) Lebar Pergelangan, G) Kerah.</p>
       </div>
     </div>
@@ -633,6 +691,7 @@
           </div>
         </div>
         <div class="adash-header-right">
+          <button class="adash-add-btn" id="adminAddBtn" type="button"><i class="fa-solid fa-user-plus"></i> Tambah Peserta</button>
           <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
           <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
           <button class="adash-logout-btn" id="adminLogoutBtn" type="button"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
@@ -683,12 +742,134 @@
 </div>
 
 <!-- ===================================================== -->
+<!-- ADMIN: TAMBAH PESERTA MANUAL (INPUT DATA PENDAFTAR) -->
+<!-- ===================================================== -->
+<div class="admin-overlay" id="addPesertaOverlay">
+  <div class="admin-box addpeserta-box">
+    <button class="admin-close" id="addPesertaClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+
+    <h3 class="addpeserta-title"><i class="fa-solid fa-user-plus"></i> Tambah Peserta Baru</h3>
+    <p class="addpeserta-desc">Masukkan data pendaftar sesuai struk/pesan WhatsApp yang diterima. <b>Kode Unik</b> harus sama persis dengan "No. Struk" pada struk milik pendaftar.</p>
+
+    <form id="addPesertaForm" class="addpeserta-form" novalidate>
+      <div class="form-grid">
+
+        <div class="form-group full">
+          <label for="apKodeUnik">Kode Unik / No. Struk <span class="req">*</span></label>
+          <input type="text" id="apKodeUnik" placeholder="Contoh: LP-20260709-7162" required style="text-transform:uppercase;">
+        </div>
+
+        <div class="form-group">
+          <label for="apNama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="apNama" required>
+        </div>
+
+        <div class="form-group">
+          <label for="apNamaBordir">Nama Bordir</label>
+          <input type="text" id="apNamaBordir">
+        </div>
+
+        <div class="form-group">
+          <label for="apWhatsapp">Nomor WhatsApp (opsional)</label>
+          <input type="tel" id="apWhatsapp" inputmode="numeric" placeholder="Contoh: 0812xxxxxxxx">
+        </div>
+
+        <div class="form-group">
+          <label for="apDepartemen">Departemen</label>
+          <select id="apDepartemen">
+            <option value="Distribusi">Distribusi</option>
+            <option value="Gudang">Gudang</option>
+            <option value="Sales & Marketing">Sales & Marketing</option>
+            <option value="Driver / Ekspedisi">Driver / Ekspedisi</option>
+            <option value="Administrasi">Administrasi</option>
+            <option value="Keuangan">Keuangan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="apGender">Jenis Kelamin</label>
+          <select id="apGender">
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="apUkuran">Ukuran Kemeja <span class="req">*</span></label>
+          <select id="apUkuran" required>
+            <option value="">Pilih Ukuran</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+            <option value="XXXL">XXXL</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="apJumlah">Jumlah <span class="req">*</span></label>
+          <input type="number" id="apJumlah" min="1" value="1" required>
+        </div>
+
+        <div class="form-group full">
+          <label>Jenis Kemeja <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="apJenis" value="pendek" data-harga="155000" checked>
+              <span><i class="fa-solid fa-shirt"></i> Lengan Pendek <b>Rp155.000</b></span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="apJenis" value="panjang" data-harga="160000">
+              <span><i class="fa-solid fa-shirt"></i> Lengan Panjang <b>Rp160.000</b></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label>Metode Pembayaran</label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="apMetode" value="tunai" checked>
+              <span><i class="fa-solid fa-money-bill-wave"></i> Tunai / Lunas</span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="apMetode" value="cicilan">
+              <span><i class="fa-solid fa-coins"></i> 2x Cicilan</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Total Harga</label>
+          <div id="apTotalHarga" class="total-harga">Rp150.000</div>
+        </div>
+
+        <div class="form-group full">
+          <label for="apCatatan">Catatan</label>
+          <textarea id="apCatatan" rows="2"></textarea>
+        </div>
+      </div>
+
+      <small class="admin-error" id="addPesertaError"></small>
+
+      <div class="admin-login-actions">
+        <button class="btn btn-outline-dark" id="addPesertaCancelBtn" type="button">Batal</button>
+        <button class="btn btn-primary ripple" id="addPesertaSubmitBtn" type="submit"><i class="fa-solid fa-floppy-disk"></i> Simpan Peserta</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================================================== -->
 <!-- FORMULIR PENDAFTARAN -->
 <!-- ===================================================== -->
 <section id="daftar" class="section formulir">
   <div class="container">
     <div class="section-head fade-up">
       <span class="eyebrow">Formulir</span>
+
       <h2>Pendaftaran Kemeja Kerja</h2>
       <p class="section-desc">Lengkapi seluruh data dengan benar. Semua kolom wajib diisi.</p>
     </div>
@@ -706,13 +887,6 @@
         <div class="form-group">
           <label for="namaBordir">Nama Yang Akan Dibordir <span class="req">*</span></label>
           <input type="text" id="namaBordir" name="namaBordir" placeholder="Contoh: M DAUD S.M" required minlength="3">
-          <small class="error-msg"></small>
-        </div>
-
-        <div class="form-group">
-          <label for="noWhatsapp">Nomor WhatsApp Aktif <span class="req">*</span></label>
-          <input type="tel" id="noWhatsapp" name="noWhatsapp" placeholder="Contoh: 0812xxxxxxxx" required minlength="9" maxlength="15" inputmode="numeric" autocomplete="tel">
-          <small class="hint-msg"><i class="fa-solid fa-circle-info"></i> Nomor ini menjadi akun Anda untuk chat grup peserta &amp; konfirmasi pesanan.</small>
           <small class="error-msg"></small>
         </div>
 
@@ -760,12 +934,12 @@
           <label>Jenis Kemeja <span class="req">*</span></label>
           <div class="radio-group">
             <label class="radio-card">
-              <input type="radio" name="jenisKemeja" value="pendek" data-harga="150000" required>
-              <span><i class="fa-solid fa-shirt"></i> Tangan Pendek <b>Rp150.000</b></span>
+              <input type="radio" name="jenisKemeja" value="pendek" data-harga="155000" required>
+              <span><i class="fa-solid fa-shirt"></i> Lengan Pendek <b>Rp155.000</b></span>
             </label>
             <label class="radio-card">
-              <input type="radio" name="jenisKemeja" value="panjang" data-harga="155000" required>
-              <span><i class="fa-solid fa-shirt"></i> Tangan Panjang <b>Rp155.000</b></span>
+              <input type="radio" name="jenisKemeja" value="panjang" data-harga="160000" required>
+              <span><i class="fa-solid fa-shirt"></i> Lengan Panjang <b>Rp160.000</b></span>
             </label>
           </div>
           <small class="error-msg" id="jenisKemejaError"></small>
@@ -812,6 +986,10 @@
             <span>Saya menyatakan data yang saya isi sudah benar.</span>
           </label>
           <small class="error-msg" id="konfirmasiError"></small>
+        </div>
+
+        <div class="form-group full">
+          <small class="hint-msg"><i class="fa-solid fa-circle-info"></i> Setelah menekan tombol kirim, struk JPG berisi <b>Kode Unik</b> akan otomatis terunduh dan WhatsApp akan terbuka ke admin. <b>Simpan struk/kode unik ini baik-baik</b> — dipakai untuk cek status pembayaran lewat ikon profil di pojok kanan atas setelah admin memverifikasi pendaftaran Anda.</small>
         </div>
 
       </div>
@@ -1117,7 +1295,7 @@
 })();
 </script>
 
-<script src="script.js?v=8"></script>
+<script src="script.js?v=11"></script>
 </body>
 </html>
 

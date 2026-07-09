@@ -529,6 +529,19 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .galeri .container{ position:relative; z-index:1; }
 
 .gallery-grid{ display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:220px; gap:18px; }
+.galeri-tabs{
+  display:flex; justify-content:center; gap:10px; margin-bottom:28px; flex-wrap:wrap;
+}
+.galeri-tab{
+  display:inline-flex; align-items:center; gap:9px; font-size:13.5px; font-weight:700;
+  padding:12px 24px; border-radius:30px; background:var(--foam); color:var(--ink-soft);
+  border:1.5px solid var(--border); transition:var(--transition);
+}
+[data-theme="dark"] .galeri-tab{ background:var(--white); }
+.galeri-tab:hover{ border-color:var(--aqua); color:var(--aqua-deep); transform:translateY(-2px); }
+.galeri-tab.active{ background:var(--gradient-brand); color:#04213A; border-color:transparent; box-shadow:var(--shadow-glow); }
+.gallery-grid-set{ display:none; }
+.gallery-grid-set.active{ display:grid; }
 .gallery-item{
   position:relative; border-radius:var(--radius-sm); overflow:hidden; cursor:pointer;
   box-shadow:var(--shadow-soft); background:linear-gradient(135deg, rgba(18,169,224,.08), rgba(15,216,184,.08));
@@ -557,14 +570,22 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
   background-size:400% 100%; animation:skeletonShimmer 1.4s ease-in-out infinite;
 }
 
-/* Fallback rapi jika gambar gagal dimuat, tidak menampilkan ikon rusak bawaan browser */
+/* Fallback rapi jika gambar gagal/belum tersedia — bukan ikon "gambar
+   rusak" bawaan browser, tapi kartu "segera hadir" yang tetap terlihat
+   sengaja dirancang, bukan error. */
 .gallery-item.img-error img{ display:none; }
-.gallery-item.img-error::after{
-  content:"\f03e"; font-family:"Font Awesome 6 Free"; font-weight:900; z-index:1;
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:28px; color:var(--ink-soft); background:var(--foam-alt,rgba(0,0,0,.06));
-  animation:none;
+.gallery-placeholder{
+  display:none; position:absolute; inset:0; z-index:1; flex-direction:column;
+  align-items:center; justify-content:center; gap:10px; text-align:center; padding:18px;
+  background:linear-gradient(135deg, rgba(18,169,224,.14), rgba(15,216,184,.14));
 }
+.gallery-item.img-error .gallery-placeholder{ display:flex; }
+.gallery-placeholder i{
+  font-size:26px; color:var(--aqua-deep); width:52px; height:52px; border-radius:50%;
+  background:var(--white); display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--shadow-soft);
+}
+.gallery-placeholder span{ font-size:12.5px; font-weight:600; color:var(--ink-soft); line-height:1.4; }
 
 .gallery-overlay{
   position:absolute; inset:0; z-index:3; background:linear-gradient(0deg, rgba(7,16,34,.82), transparent 55%);
@@ -653,6 +674,11 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 .ukuran-ilustrasi img{ border-radius:var(--radius-sm); margin-bottom:14px; }
 .ukuran-ilustrasi p{ font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+.pola-tabs{ margin-bottom:16px; }
+.pola-tabs .galeri-tab{ padding:9px 18px; font-size:12.5px; }
+.pola-set{ display:none; }
+.pola-set.active{ display:block; }
+.pola-set .gallery-item{ border-radius:var(--radius-sm); margin-bottom:14px; }
 
 /* ============ FORM ============ */
 .formulir{ background:var(--white); }
@@ -1433,6 +1459,10 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .peserta-retry-btn{
     margin-top:16px; display:inline-flex; align-items:center; gap:8px; font-size:13px; padding:11px 20px;
 }
+.profile-status-line{
+    font-size:12px; color:var(--ink-soft); margin:2px 0 12px; padding:8px 12px;
+    background:var(--foam); border-radius:10px; text-align:center;
+}
 
 @media (max-width:900px){
     .peserta-stats{ grid-template-columns:repeat(2,1fr); }
@@ -1539,6 +1569,19 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     transition:var(--transition);
 }
 .adash-logout-btn:hover{ background:#EF5A6F; color:#fff; transform:translateY(-2px); }
+.adash-add-btn{
+    display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700;
+    padding:11px 18px; border-radius:14px; background:var(--gradient-brand); color:#04213A;
+    transition:var(--transition); box-shadow:var(--shadow-glow);
+}
+.adash-add-btn:hover{ transform:translateY(-2px); filter:brightness(1.05); }
+
+/* ---- Modal "Tambah Peserta" (input manual admin) ---- */
+.addpeserta-box{ max-width:680px; }
+.addpeserta-title{ font-size:18px; margin-bottom:8px; display:flex; align-items:center; gap:9px; }
+.addpeserta-title i{ color:var(--aqua-deep); }
+.addpeserta-desc{ font-size:13px; color:var(--ink-soft); margin-bottom:20px; }
+.addpeserta-form .form-group{ margin-bottom:16px; }
 
 /* ---- Kartu statistik ---- */
 .adash-stats{
