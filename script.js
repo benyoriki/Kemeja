@@ -720,10 +720,11 @@ document.addEventListener('DOMContentLoaded', () => {
      disubmit (selain tetap mengunduh struk & membuka WhatsApp
      sebagai notifikasi ke admin). Jika koneksi pengunjung
      bermasalah, penyimpanan otomatis ini boleh gagal dengan aman —
-     data tetap sudah terkirim ke admin lewat WhatsApp + struk, dan
-     admin tetap bisa menambahkan manual lewat Dasbor sebagai
-     cadangan (fungsi simpanPesertaAdmin di bawah ini tetap dipakai
-     untuk kasus itu).
+     data tetap sudah terkirim ke admin lewat WhatsApp + struk.
+     (Fungsi simpanPesertaAdmin di bawah masih ada di kode untuk
+     jaga-jaga, tapi tombol "Tambah Peserta" manual di Dasbor untuk
+     sementara dilepas — Dasbor sekarang hanya menyediakan Edit &
+     Hapus, karena jalur utama pendaftaran sudah otomatis.)
   ========================================================= */
   function buildPembayaranAwal(total, metodeBayar){
     const isCicilan = metodeBayar === 'cicilan';
@@ -2010,13 +2011,24 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
             `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
           ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : `<span class="admin-done"><i class="fa-solid fa-check-double"></i> Lunas</span>`}
           ${p.whatsapp ? `<a class="admin-action-btn admin-action-wa" href="https://wa.me/${encodeURIComponent(normalizeWhatsapp(p.whatsapp))}?text=${encodeURIComponent('Halo ' + p.nama + ', kode unik pendaftaran kemeja Anda: ' + p.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
+          <button class="admin-action-btn admin-action-edit" data-action="edit" data-id="${p.id}"><i class="fa-solid fa-pen"></i> Edit</button>
+          <button class="admin-action-btn admin-action-hapus" data-action="hapus" data-id="${p.id}"><i class="fa-solid fa-trash"></i> Hapus</button>
         </div>
       `;
       adminList.appendChild(row);
     });
 
     adminList.querySelectorAll('.admin-action-btn[data-action]').forEach(btn => {
-      btn.addEventListener('click', () => handleAdminAction(btn.dataset.id, btn.dataset.action));
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      if (action === 'edit'){
+        btn.addEventListener('click', () => openEditPesertaModal(id));
+      } else if (action === 'hapus'){
+        const p = pesertaData.find(x => x.id === id);
+        btn.addEventListener('click', () => hapusPesertaAdmin(id, p?.nama || 'peserta ini'));
+      } else {
+        btn.addEventListener('click', () => handleAdminAction(id, action));
+      }
     });
   }
 
@@ -2061,14 +2073,14 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   }
 
   /* =========================================================
-     FITUR BARU: TAMBAH PESERTA MANUAL DARI DASBOR ADMIN
-     Ini menggantikan alur lama (pengunjung publik menulis langsung
-     ke Firestore). Sekarang admin yang membaca pesan WhatsApp masuk
-     dari pendaftar, lalu mengetik datanya ke sini — termasuk Kode
-     Unik yang HARUS sama persis dengan yang tertera di struk
-     pendaftar, supaya peserta bisa "login" mengecek statusnya nanti.
+     DASBOR ADMIN: EDIT & HAPUS PESERTA
+     PERUBAHAN: untuk sementara, Dasbor Admin HANYA bisa mengedit
+     data peserta yang sudah ada dan menghapusnya — tombol "Tambah
+     Peserta" manual dihapus karena pendaftaran publik sekarang
+     SUDAH otomatis tersimpan ke Firestore begitu pengunjung submit
+     formulir (lihat simpanPendaftaranPublik di atas), jadi input
+     manual dobel tidak lagi diperlukan sebagai jalur utama.
   ========================================================= */
-  const adminAddBtn = document.getElementById('adminAddBtn');
   const addPesertaOverlay = document.getElementById('addPesertaOverlay');
   const addPesertaClose = document.getElementById('addPesertaClose');
   const addPesertaCancelBtn = document.getElementById('addPesertaCancelBtn');
@@ -2078,6 +2090,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   const apJumlahInput = document.getElementById('apJumlah');
   const apJenisRadios = document.querySelectorAll('input[name="apJenis"]');
   const apTotalHargaEl = document.getElementById('apTotalHarga');
+
+  let editingPesertaId = null;
 
   function hitungTotalAdmin(){
     const checked = document.querySelector('input[name="apJenis"]:checked');
@@ -2090,25 +2104,120 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   apJenisRadios.forEach(r => r.addEventListener('change', hitungTotalAdmin));
   apJumlahInput?.addEventListener('input', hitungTotalAdmin);
 
-  function openAddPesertaModal(){
+  function openEditPesertaModal(id){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p){
+      showToast('Data peserta tidak ditemukan (mungkin baru saja dihapus/berubah).', 'error');
+      return;
+    }
+    editingPesertaId = id;
     addPesertaForm.reset();
     addPesertaError.textContent = '';
+
+    document.getElementById('apKodeUnik').value = p.kodeUnik || '';
+    document.getElementById('apNama').value = p.nama || '';
+    document.getElementById('apNamaBordir').value = p.namaBordir || '';
+    document.getElementById('apWhatsapp').value = p.whatsapp || '';
+    if (p.departemen) document.getElementById('apDepartemen').value = p.departemen;
+    if (p.gender) document.getElementById('apGender').value = p.gender;
+    document.getElementById('apUkuran').value = p.ukuranKemeja || '';
+    apJumlahInput.value = p.jumlah || 1;
+    document.getElementById('apCatatan').value = (p.catatan && p.catatan !== '-') ? p.catatan : '';
+
+    const jenisVal = p.jenis === 'Lengan Panjang' ? 'panjang' : 'pendek';
+    const jenisRadio = document.querySelector(`input[name="apJenis"][value="${jenisVal}"]`);
+    if (jenisRadio) jenisRadio.checked = true;
+
+    const metodeVal = p.pembayaran?.metode === 'cicilan' ? 'cicilan' : 'tunai';
+    const metodeRadio = document.querySelector(`input[name="apMetode"][value="${metodeVal}"]`);
+    if (metodeRadio) metodeRadio.checked = true;
+
     hitungTotalAdmin();
     addPesertaOverlay.classList.add('active');
   }
   function closeAddPesertaModal(){
     addPesertaOverlay.classList.remove('active');
+    editingPesertaId = null;
   }
-  adminAddBtn?.addEventListener('click', openAddPesertaModal);
   addPesertaClose?.addEventListener('click', closeAddPesertaModal);
   addPesertaCancelBtn?.addEventListener('click', closeAddPesertaModal);
   addPesertaOverlay?.addEventListener('click', (e) => { if (e.target === addPesertaOverlay) closeAddPesertaModal(); });
+
+  /* ============ SIMPAN PERUBAHAN (UPDATE) KE FIRESTORE ============
+     Catatan: status pembayaran (pembayaran.status, dpDibayar, dsb)
+     SENGAJA tidak disentuh di sini supaya mengedit data biodata/ukuran
+     tidak pernah tidak sengaja mereset status DP/Lunas yang sudah
+     tercatat. Ubah status pembayaran lewat tombol "Tandai DP/Lunas"
+     di kartu peserta seperti biasa. */
+  async function updatePesertaAdmin(id, data){
+    const fb = await waitForFirebase(10000);
+    if (!fb){
+      showToast('Gagal simpan: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.', 'error');
+      return { ok:false };
+    }
+    const patch = {
+      nama: data.nama,
+      namaBordir: data.namaBordir || data.nama,
+      whatsapp: data.whatsapp || '',
+      departemen: data.departemen,
+      gender: data.gender,
+      ukuranKemeja: data.ukuranKemeja,
+      jenis: data.jenis,
+      jumlah: data.jumlah,
+      harga: data.harga,
+      total: data.total,
+      catatan: data.catatan || '-'
+    };
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), patch);
+      showToast(`Data "${data.nama}" berhasil diperbarui.`, 'success');
+      return { ok:true };
+    } catch (err){
+      console.warn('Gagal memperbarui peserta:', err.code, err.message);
+      let pesan;
+      if (err.code === 'permission-denied'){
+        pesan = 'Gagal simpan: akses Firestore ditolak. Cek Firestore Rules di Firebase Console.';
+      } else {
+        pesan = `Gagal simpan (${err.code || 'error tidak diketahui'}).`;
+      }
+      showToast(pesan, 'error');
+      return { ok:false };
+    }
+  }
+
+  /* ============ HAPUS PESERTA DARI FIRESTORE ============ */
+  async function hapusPesertaAdmin(id, nama){
+    const yakin = window.confirm(`Hapus pendaftaran "${nama}" secara permanen? Tindakan ini tidak bisa dibatalkan.`);
+    if (!yakin) return;
+    const fb = await waitForFirebase(10000);
+    if (!fb){
+      showToast('Gagal hapus: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.', 'error');
+      return;
+    }
+    try {
+      await fb.deleteDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id));
+      showToast(`Peserta "${nama}" berhasil dihapus.`, 'success');
+    } catch (err){
+      console.warn('Gagal menghapus peserta:', err.code, err.message);
+      let pesan;
+      if (err.code === 'permission-denied'){
+        pesan = 'Gagal hapus: akses Firestore ditolak. Pastikan Firestore Rules mengizinkan "allow delete: if true" pada koleksi pendaftaran, lalu Publish.';
+      } else {
+        pesan = `Gagal hapus (${err.code || 'error tidak diketahui'}).`;
+      }
+      showToast(pesan, 'error');
+    }
+  }
 
   addPesertaForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     addPesertaError.textContent = '';
 
-    const kodeUnik = document.getElementById('apKodeUnik').value.trim().toUpperCase();
+    if (!editingPesertaId){
+      addPesertaError.textContent = 'Tidak ada peserta yang sedang diedit. Tutup dan coba lagi dari tombol Edit.';
+      return;
+    }
+
     const nama = document.getElementById('apNama').value.trim();
     const namaBordir = document.getElementById('apNamaBordir').value.trim();
     const whatsappRaw = document.getElementById('apWhatsapp').value.trim();
@@ -2118,26 +2227,25 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     const jumlah = parseInt(apJumlahInput.value, 10) || 1;
     const jenisChecked = document.querySelector('input[name="apJenis"]:checked');
     const jenis = jenisChecked?.value === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
-    const metodeBayar = document.querySelector('input[name="apMetode"]:checked')?.value || 'tunai';
     const catatan = document.getElementById('apCatatan').value.trim();
     const { harga, total } = hitungTotalAdmin();
 
-    if (!kodeUnik || !nama || !ukuranKemeja){
-      addPesertaError.textContent = 'Kode Unik, Nama, dan Ukuran wajib diisi.';
+    if (!nama || !ukuranKemeja){
+      addPesertaError.textContent = 'Nama dan Ukuran wajib diisi.';
       return;
     }
 
     addPesertaSubmitBtn.disabled = true;
     addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
 
-    const result = await simpanPesertaAdmin({
-      kodeUnik, nama, namaBordir,
+    const result = await updatePesertaAdmin(editingPesertaId, {
+      nama, namaBordir,
       whatsapp: whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '',
-      departemen, gender, ukuranKemeja, jenis, jumlah, harga, total, catatan, metodeBayar
+      departemen, gender, ukuranKemeja, jenis, jumlah, harga, total, catatan
     });
 
     addPesertaSubmitBtn.disabled = false;
-    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Peserta';
+    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan';
 
     if (result.ok){
       closeAddPesertaModal();

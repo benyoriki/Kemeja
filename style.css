@@ -1668,6 +1668,10 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .admin-action-lunas:hover{ background:var(--gradient-brand); color:#04213A; }
 .admin-action-wa{ background:rgba(37,211,102,.14); color:#1FA855; }
 .admin-action-wa:hover{ background:#25D366; color:#fff; }
+.admin-action-edit{ background:rgba(255,177,27,.14); color:#B8860B; }
+.admin-action-edit:hover{ background:#FFB11B; color:#3A2900; }
+.admin-action-hapus{ background:rgba(239,68,68,.12); color:#DC2626; }
+.admin-action-hapus:hover{ background:#EF4444; color:#fff; }
 .admin-done{ font-size:12px; color:var(--teal-deep); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
 
 
