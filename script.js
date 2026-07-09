@@ -45,7 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ============ 1. LOADING SCREEN ============ */
   const loadingScreen = document.getElementById('loading-screen');
-  const MIN_LOADING_MS = 15000; // durasi minimal loading screen tampil: 15 detik
+  // PERBAIKAN BUG: sebelumnya nilai ini 15000 (15 detik!) dan dipaksa
+  // tampil penuh pada SETIAP kunjungan, apa pun kecepatan koneksi
+  // pengguna. Ini membuat seluruh situs (termasuk tombol "Daftar")
+  // terlihat macet/tidak responsif selama 15 detik setiap kali halaman
+  // dibuka. Diturunkan ke durasi wajar untuk animasi splash singkat.
+  const MIN_LOADING_MS = 1800;
   const loadingStartedAt = Date.now();
   function hideLoadingScreen(){
     const elapsed = Date.now() - loadingStartedAt;
@@ -627,13 +632,22 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('openWhatsApp error:', err);
     }
 
-    // PERUBAHAN LOGIKA BESAR: pendaftaran publik TIDAK LAGI langsung
-    // menulis ke Firestore dari perangkat pengunjung. Sebelumnya ini
-    // gagal berulang kali karena koneksi pengunjung sangat bervariasi
-    // (HP, sinyal lemah, dsb). Sekarang data cukup dikirim ke WhatsApp
-    // admin (di atas) + struk berisi Kode Unik, lalu ADMIN yang
-    // menginput manual ke Dasbor (lebih andal karena hanya 1 perangkat
-    // admin yang menulis ke database, bukan setiap pengunjung).
+    // PERBAIKAN BUG UTAMA: pendaftaran publik sekarang DISIMPAN LANGSUNG
+    // ke Firestore (Firestore Rules memang sudah mengizinkan ini — lihat
+    // catatan di simpanPendaftaranPublik di atas), selain tetap mengirim
+    // struk + WhatsApp ke admin sebagai notifikasi/cadangan. Ini dijalankan
+    // secara async (tidak menunda unduhan struk/WhatsApp yang sudah lebih
+    // dulu terjadi di atas), dan begitu berhasil peserta langsung
+    // auto-login supaya bisa cek status & ikut chat grup tanpa langkah
+    // tambahan.
+    simpanPendaftaranPublik(data).then((result) => {
+      if (result.ok){
+        loginAsMember({ nama: data.nama, kodeUnik: data.receiptNo, docId: result.id });
+        showToast('Pendaftaran otomatis tersimpan ke sistem!', 'success');
+      } else {
+        showToast('Struk & WhatsApp sudah terkirim, namun sinkronisasi otomatis ke database gagal. Admin akan menginput manual dari pesan WhatsApp Anda.', 'error');
+      }
+    });
 
     // Animasi "memproses" & modal sukses di bawah ini murni tampilan —
     // unduhan struk dan tab WhatsApp sudah berjalan di atas.
@@ -688,12 +702,84 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* =========================================================
-     13b. SIMPAN PESERTA KE FIRESTORE — INPUT MANUAL OLEH ADMIN
-     PERUBAHAN LOGIKA BESAR: dulu fungsi ini dipanggil otomatis oleh
-     pengunjung publik saat submit formulir (sering gagal karena
-     koneksi HP yang macam-macam). Sekarang HANYA dipanggil dari
-     dasbor admin ("Tambah Peserta") — jauh lebih andal karena cuma
-     1 sesi admin yang menulis ke database, bukan tiap pengunjung.
+     13b. SIMPAN OTOMATIS PENDAFTARAN PUBLIK KE FIRESTORE
+     PERBAIKAN BUG UTAMA (root cause "belum bisa daftar"):
+     Firestore Rules (lihat PANDUAN-FIREBASE.md / Firebase Console)
+     SUDAH didesain sejak awal supaya pengunjung publik boleh
+     "create" dokumen baru di koleksi "pendaftaran" — persis untuk
+     menyimpan pendaftaran langsung dari formulir. Namun kode
+     sebelumnya justru MENONAKTIFKAN penulisan ini sepenuhnya dan
+     mengandalkan admin mengetik ULANG setiap pendaftaran secara
+     manual dari pesan WhatsApp. Akibatnya peserta yang mengisi
+     formulir TIDAK PERNAH benar-benar "terdaftar" di sistem sampai
+     admin sempat menyalin datanya satu per satu — dan sebelum itu
+     terjadi, peserta juga tidak bisa login pakai Kode Unik atau ikut
+     chat grup, walau formulir sudah "berhasil" dikirim.
+
+     Sekarang formulir menyimpan LANGSUNG ke Firestore begitu
+     disubmit (selain tetap mengunduh struk & membuka WhatsApp
+     sebagai notifikasi ke admin). Jika koneksi pengunjung
+     bermasalah, penyimpanan otomatis ini boleh gagal dengan aman —
+     data tetap sudah terkirim ke admin lewat WhatsApp + struk, dan
+     admin tetap bisa menambahkan manual lewat Dasbor sebagai
+     cadangan (fungsi simpanPesertaAdmin di bawah ini tetap dipakai
+     untuk kasus itu).
+  ========================================================= */
+  function buildPembayaranAwal(total, metodeBayar){
+    const isCicilan = metodeBayar === 'cicilan';
+    const dpMinimal = isCicilan ? Math.round(total * 0.5) : total;
+    const rencanaCicilan = [];
+    if (isCicilan){
+      const sisaSetelahDp = total - dpMinimal;
+      rencanaCicilan.push({ ke: 1, nominal: sisaSetelahDp, dibayar: false, tanggalBayar: null });
+    }
+    return {
+      metode: metodeBayar,
+      dpMinimal,
+      dpDibayar: false,
+      cicilan: rencanaCicilan,
+      totalDibayar: 0,
+      status: 'belum_dp' // belum_dp | dp | cicilan | lunas
+    };
+  }
+
+  async function simpanPendaftaranPublik(data){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      console.warn('Auto-simpan pendaftaran gagal: Firebase belum siap/tersambung.');
+      return { ok:false, reason:'offline' };
+    }
+    const payload = {
+      kodeUnik: (data.receiptNo || '').toUpperCase(),
+      nama: data.nama,
+      namaBordir: data.namaBordir || data.nama,
+      whatsapp: '',
+      departemen: data.departemen,
+      gender: data.gender,
+      ukuranKemeja: data.ukuranKemeja,
+      jenis: data.jenis,
+      jumlah: data.jumlah,
+      total: data.total,
+      catatan: data.catatan || '-',
+      createdAtLabel: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
+      timestamp: fb.serverTimestamp(),
+      pembayaran: buildPembayaranAwal(data.total, data.metodeBayar)
+    };
+    try {
+      const docRef = await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
+      return { ok:true, id: docRef.id };
+    } catch (err){
+      console.warn('Auto-simpan pendaftaran gagal:', err.code, err.message);
+      return { ok:false, reason: err.code || 'error', err };
+    }
+  }
+
+  /* =========================================================
+     13c. SIMPAN PESERTA KE FIRESTORE — INPUT MANUAL OLEH ADMIN
+     Dipakai sebagai CADANGAN dari Dasbor Admin ("Tambah Peserta"),
+     misalnya untuk pendaftaran yang masuk lewat WhatsApp/telepon
+     langsung, atau untuk kasus auto-simpan di atas sempat gagal
+     karena koneksi pengunjung terputus saat submit.
   ========================================================= */
   async function simpanPesertaAdmin(data){
     const fb = await waitForFirebase(10000);
@@ -707,16 +793,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pesertaData.some(p => (p.kodeUnik || '').toUpperCase() === kodeUnik)){
       showToast('Kode unik ini sudah terdaftar. Cek kembali struk pendaftar.', 'error');
       return { ok:false };
-    }
-
-    // Metode cicilan selalu dibagi PERSIS 2 kali bayar — Pembayaran
-    // ke-1 (uang muka 50%) dan Pembayaran ke-2 (pelunasan 50%).
-    const isCicilan = data.metodeBayar === 'cicilan';
-    const dpMinimal = isCicilan ? Math.round(data.total * 0.5) : data.total;
-    const rencanaCicilan = [];
-    if (isCicilan){
-      const sisaSetelahDp = data.total - dpMinimal;
-      rencanaCicilan.push({ ke: 1, nominal: sisaSetelahDp, dibayar: false, tanggalBayar: null });
     }
 
     const payload = {
@@ -733,14 +809,9 @@ document.addEventListener('DOMContentLoaded', () => {
       catatan: data.catatan || '-',
       createdAtLabel: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
       timestamp: fb.serverTimestamp(),
-      pembayaran: {
-        metode: data.metodeBayar,
-        dpMinimal,
-        dpDibayar: false,
-        cicilan: rencanaCicilan,
-        totalDibayar: 0,
-        status: 'belum_dp' // belum_dp | dp | cicilan | lunas
-      }
+      // Metode cicilan selalu dibagi PERSIS 2 kali bayar — Pembayaran
+      // ke-1 (uang muka 50%) dan Pembayaran ke-2 (pelunasan 50%).
+      pembayaran: buildPembayaranAwal(data.total, data.metodeBayar)
     };
 
     try {
@@ -1381,8 +1452,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   /* =========================================================
      18b. AKUN PESERTA (SESI LOGIN) — pojok kanan navbar
      Karena situs ini murni statis (tanpa server backend), "akun"
-     peserta diverifikasi dengan mencocokkan Nomor WhatsApp yang
-     dimasukkan terhadap data pendaftaran (koleksi Firestore
+     peserta diverifikasi dengan mencocokkan Kode Unik (No. Struk)
+     yang dimasukkan terhadap data pendaftaran (koleksi Firestore
      "pendaftaran"), lalu sesi disimpan di localStorage perangkat
      tersebut. Setelah submit formulir pendaftaran, sesi otomatis
      dibuat (auto-login) sehingga peserta langsung bisa memakai
