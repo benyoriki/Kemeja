@@ -595,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === successModal) successModal.classList.remove('active');
   });
 
-  form.addEventListener('submit', function(e){
+  form.addEventListener('submit', async function(e){
     e.preventDefault();
 
     if (!validateAll()){
@@ -615,9 +615,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     submitBtn.disabled = true;
+    submitLoading.classList.add('active');
 
-    // Dipicu LANGSUNG di sini (masih dalam gestur klik pengguna) supaya
-    // browser mengunduh file & membuka tab WhatsApp tanpa dialog/izin.
+    /* =====================================================
+       PERBAIKAN BUG UTAMA (RACE CONDITION MOBILE):
+       Sebelumnya WhatsApp dibuka (openWhatsApp) SEBELUM data
+       sempat disimpan ke Firestore. Di HP, membuka wa.me
+       membuat Android langsung berpindah ke aplikasi WhatsApp
+       (app switch) — tab browser jadi background/dibekukan oleh
+       sistem HANYA BEBERAPA MILIDETIK setelah tombol ditekan,
+       sebelum permintaan simpan ke Firestore (butuh koneksi
+       jaringan, makan waktu) sempat selesai. Akibatnya struk
+       tetap berhasil diunduh & WhatsApp tetap terbuka, tapi
+       datanya TIDAK PERNAH benar-benar tersimpan ke database.
+
+       Sekarang urutannya dibalik: SIMPAN KE FIRESTORE DULU
+       (selagi tab masih aktif & fokus), baru setelah itu unduh
+       struk & buka WhatsApp. Ini menambah jeda singkat sebelum
+       WhatsApp terbuka, tapi memastikan data benar-benar masuk
+       database dulu.
+    ===================================================== */
+    const saveResult = await simpanPendaftaranPublik(data);
+    if (saveResult.ok){
+      loginAsMember({ nama: data.nama, kodeUnik: data.receiptNo, docId: saveResult.id });
+    }
+
     let downloadOk = true;
     try {
       generateStrukJPG(data);
@@ -626,42 +648,38 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('generateStrukJPG error:', err);
     }
 
+    let waResult = { win: null, url: '' };
     try {
-      openWhatsApp(data);
+      waResult = openWhatsApp(data);
     } catch (err){
       console.error('openWhatsApp error:', err);
     }
 
-    // PERBAIKAN BUG UTAMA: pendaftaran publik sekarang DISIMPAN LANGSUNG
-    // ke Firestore (Firestore Rules memang sudah mengizinkan ini — lihat
-    // catatan di simpanPendaftaranPublik di atas), selain tetap mengirim
-    // struk + WhatsApp ke admin sebagai notifikasi/cadangan. Ini dijalankan
-    // secara async (tidak menunda unduhan struk/WhatsApp yang sudah lebih
-    // dulu terjadi di atas), dan begitu berhasil peserta langsung
-    // auto-login supaya bisa cek status & ikut chat grup tanpa langkah
-    // tambahan.
-    simpanPendaftaranPublik(data).then((result) => {
-      if (result.ok){
-        loginAsMember({ nama: data.nama, kodeUnik: data.receiptNo, docId: result.id });
-        showToast('Pendaftaran otomatis tersimpan ke sistem!', 'success');
-      } else {
-        showToast('Struk & WhatsApp sudah terkirim, namun sinkronisasi otomatis ke database gagal. Admin akan menginput manual dari pesan WhatsApp Anda.', 'error');
-      }
-    });
+    submitLoading.classList.remove('active');
+    successModal.classList.add('active');
+    submitBtn.disabled = false;
 
-    // Animasi "memproses" & modal sukses di bawah ini murni tampilan —
-    // unduhan struk dan tab WhatsApp sudah berjalan di atas.
-    submitLoading.classList.add('active');
-    setTimeout(() => {
-      submitLoading.classList.remove('active');
-      successModal.classList.add('active');
-      submitBtn.disabled = false;
-      if (downloadOk){
-        showToast('Struk berhasil diunduh & pendaftaran terkirim ke admin!', 'success');
-      } else {
-        showToast('Pendaftaran terkirim, namun struk gagal diunduh.', 'error');
-      }
-    }, 1100);
+    const successModalText = document.getElementById('successModalText');
+    const waFallbackLink = document.getElementById('waFallbackLink');
+    // Kalau window.open gagal (mis. diblokir browser), tampilkan tombol
+    // manual supaya pengguna tetap bisa membuka WhatsApp sendiri.
+    if (waResult.url && (!waResult.win || waResult.win.closed)){
+      waFallbackLink.href = waResult.url;
+      waFallbackLink.style.display = 'inline-flex';
+    } else {
+      waFallbackLink.style.display = 'none';
+    }
+
+    if (saveResult.ok){
+      successModalText.textContent = 'Data Anda sudah tersimpan otomatis di sistem. Struk sudah diunduh & pesan WhatsApp ke admin sudah disiapkan.';
+      showToast('Pendaftaran tersimpan otomatis ke sistem!', 'success');
+    } else {
+      successModalText.textContent = 'Struk sudah diunduh & pesan WhatsApp ke admin sudah disiapkan, namun sinkronisasi otomatis ke database gagal — admin akan menginput manual dari pesan WhatsApp Anda.';
+      showToast('Sinkronisasi otomatis ke database gagal. Struk & WhatsApp tetap terkirim ke admin sebagai cadangan.', 'error');
+    }
+    if (!downloadOk){
+      showToast('Struk gagal diunduh, namun data pendaftaran sudah diproses.', 'error');
+    }
   });
 
   function collectFormData(){
@@ -744,8 +762,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  function withTimeout(promise, ms, timeoutValue){
+    return Promise.race([
+      promise,
+      new Promise(resolve => setTimeout(() => resolve(timeoutValue), ms))
+    ]);
+  }
+
   async function simpanPendaftaranPublik(data){
-    const fb = await waitForFirebase(8000);
+    const fb = await waitForFirebase(6000);
     if (!fb){
       console.warn('Auto-simpan pendaftaran gagal: Firebase belum siap/tersambung.');
       return { ok:false, reason:'offline' };
@@ -767,8 +792,16 @@ document.addEventListener('DOMContentLoaded', () => {
       pembayaran: buildPembayaranAwal(data.total, data.metodeBayar)
     };
     try {
-      const docRef = await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
-      return { ok:true, id: docRef.id };
+      // Batas waktu 7 detik supaya kalau koneksi macet total, pengguna
+      // tidak terjebak menunggu selamanya sebelum bisa lanjut ke
+      // unduhan struk & WhatsApp.
+      const result = await withTimeout(
+        fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload).then(docRef => ({ ok:true, id: docRef.id })),
+        7000,
+        { ok:false, reason:'timeout' }
+      );
+      if (!result.ok) console.warn('Auto-simpan pendaftaran timeout (>7s).');
+      return result;
     } catch (err){
       console.warn('Auto-simpan pendaftaran gagal:', err.code, err.message);
       return { ok:false, reason: err.code || 'error', err };
@@ -1239,7 +1272,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
 
     const nomorTujuan = '6285697321423';
     const url = `https://wa.me/${nomorTujuan}?text=${encodeURIComponent(pesan)}`;
-    window.open(url, '_blank');
+    const win = window.open(url, '_blank');
+    return { win, url };
   }
 
   /* ============ 17. FOOTER YEAR ============ */
