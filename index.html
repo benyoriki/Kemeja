@@ -634,7 +634,7 @@
       <i class="fa-solid fa-inbox"></i> Belum ada peserta pada kategori ini.
     </p>
     <div class="peserta-offline" id="pesertaOffline" style="display:none;">
-      <p class="peserta-offline-msg"><i class="fa-solid fa-triangle-exclamation"></i> Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.</p>
+      <p class="peserta-offline-msg"><i class="fa-solid fa-triangle-exclamation"></i> Belum tersambung ke database. Coba muat ulang halaman atau tekan tombol "Coba Sambungkan Ulang".</p>
       <button type="button" class="btn btn-outline-dark peserta-retry-btn" id="pesertaRetryBtn"><i class="fa-solid fa-rotate"></i> Coba Sambungkan Ulang</button>
     </div>
   </div>
@@ -1218,26 +1218,33 @@
 <!-- Firebase (modular v10 via CDN) -->
 <script type="module">
 (async () => {
-  // PERBAIKAN BUG: import statis sebelumnya membuat SELURUH script ini
-  // (termasuk Login Admin) gagal total secara diam-diam kalau
-  // firebase-config.js gagal dimuat/di-parse (mis. salah path, typo,
-  // file belum ke-deploy, dsb) — tanpa ada tanda apa pun untuk pengguna.
-  // Sekarang pakai dynamic import() yang dibungkus try/catch, supaya
-  // kegagalan ini terlihat jelas (pesan di layar + console) alih-alih
-  // membuat "Login Admin" & "Peserta Live" terlihat rusak tanpa sebab.
-  let cfg;
-  try {
-    cfg = await import("./firebase-config.js?v=6");
-  } catch (err) {
-    console.error("GAGAL memuat firebase-config.js:", err);
-    const banner = document.createElement('div');
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;padding:10px 16px;text-align:center;z-index:99999;font-family:sans-serif;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.3);';
-    banner.innerHTML = '⚠️ <b>firebase-config.js gagal dimuat.</b> Login Admin &amp; database TIDAK akan berfungsi. Buka console browser (F12) untuk detail error.';
-    document.body.prepend(banner);
-    window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
-    return;
-  }
-  const { firebaseConfig, ADMIN_USERNAME, ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION } = cfg;
+  // PERBAIKAN BUG UTAMA (root cause "firebase-config.js gagal dimuat"):
+  // Sebelumnya konfigurasi dimuat lewat import("./firebase-config.js")
+  // ke FILE TERPISAH. Saat halaman dibuka lewat protokol file:// (mis.
+  // preview di dalam aplikasi editor HP, atau index.html dibuka langsung
+  // dari penyimpanan tanpa server), browser MEMBLOKIR import modul ke
+  // file lain karena dianggap permintaan cross-origin (CORS) — walau
+  // filenya ada persis di folder yang sama. Ini bukan bug konfigurasi,
+  // tapi batasan browser terhadap file://.
+  //
+  // Solusi: konfigurasi ditulis LANGSUNG di sini (inline), tidak lagi
+  // di-import dari file terpisah, supaya tidak butuh permintaan file
+  // tambahan sama sekali. Ini membuatnya tetap berfungsi baik saat
+  // dibuka lewat file:// (preview lokal) maupun saat sudah di-hosting
+  // di domain sungguhan (https://).
+  const firebaseConfig = {
+    apiKey: "AIzaSyBg7JYwpE6mUja1j7NBC8Rfq9Snx_HX77w",
+    authDomain: "lp-kemeja.firebaseapp.com",
+    projectId: "lp-kemeja",
+    storageBucket: "lp-kemeja.firebasestorage.app",
+    messagingSenderId: "152507973931",
+    appId: "1:152507973931:web:fd9fd3fabfe862a9cf856e"
+  };
+  // Kata sandi panel admin — ganti sebelum dipakai secara nyata.
+  const ADMIN_USERNAME = "admin@gmail.com";
+  const ADMIN_PASSCODE = "123admin";
+  const FIRESTORE_COLLECTION = "pendaftaran";
+  const CHAT_COLLECTION = "chat_pesan";
 
   // Kredensial admin diisi LANGSUNG dari file lokal ini, tidak bergantung
   // pada berhasil/tidaknya SDK Firebase dimuat dari CDN. Jadi Login Admin
