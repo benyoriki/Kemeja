@@ -11,13 +11,14 @@
       aturan dasar ada di file PANDUAN-FIREBASE.md.
 ========================================================= */
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBg7JYwpE6mUja1j7NBC8Rfq9Snx_HX77w",
-  authDomain: "lp-kemeja.firebaseapp.com",
-  projectId: "lp-kemeja",
-  storageBucket: "lp-kemeja.firebasestorage.app",
-  messagingSenderId: "152507973931",
-  appId: "1:152507973931:web:fd9fd3fabfe862a9cf856e"
+const firebaseConfig = { 
+  apiKey : "AIzaSyBg7JYwpE6mUja1j7NBC8Rfq9Snx_HX77w" , 
+  authDomain : "lp-kemeja.firebaseapp.com" , 
+  URL basis data : "https://lp-kemeja-default-rtdb.asia-southeast1.firebasedatabase.app" , 
+  projectId : "lp-kemeja" , 
+  storageBucket : "lp-kemeja.firebasestorage.app" , 
+  messagingSenderId : "152507973931" , 
+  ID aplikasi : "1:152507973931:web:fd9fd3fabfe862a9cf856e" 
 };
 
 /* Kata sandi panel admin (sisi klien saja — lihat catatan
