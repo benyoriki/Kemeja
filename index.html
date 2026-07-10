@@ -50,8 +50,9 @@
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-<!-- Stylesheet -->
-<link rel="stylesheet" href="style.css?v=10">
+<!-- Stylesheet: style.css = fungsi sistem/layout, particles.css = efek visual/partikel -->
+<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="particles.css?v=2">
 </head>
 <body>
 
@@ -97,7 +98,7 @@
 
     <p class="loader-word">Solusi Kerja Cerdas 2026</p>
     <span class="loader-sub">Menyiapkan pengalaman terbaik<span class="loader-dots"><i></i><i></i><i></i></span></span>
-    <span class="loader-sub">Website Developer: benyoriki.com<span class="loader-dots"><i></i><i></i><i></i></span></span>
+    <span class="loader-sub">Dikembangkan oleh <b>benyoriki.com</b><span class="loader-dots"><i></i><i></i><i></i></span></span>
   </div>
 
   <div class="loader-progress" aria-hidden="true"><span></span></div>
@@ -122,7 +123,7 @@
       <div class="nav-links-mobile-head">
         <div class="nav-links-mobile-brand-wrap">
           <span class="nav-links-mobile-brand"><i class="fa-solid fa-shirt"></i> LOKON <b>PRIMA</b></span>
-          <a href="https://benyoriki.com/" target="_blank" rel="noopener" class="nav-dev-credit">Website Developer benyoriki.com</a>
+          <a href="https://benyoriki.com/" target="_blank" rel="noopener" class="nav-dev-credit"><i class="fa-solid fa-code"></i> Dibangun oleh benyoriki.com</a>
           <span class="nav-app-version">apk sistem v.0.1</span>
         </div>
         <button class="nav-close-btn" id="navCloseBtn" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
@@ -693,6 +694,7 @@
         <div class="adash-header-right">
           <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
           <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
+          <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i> Reset Chat Grup</button>
           <button class="adash-logout-btn" id="adminLogoutBtn" type="button"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
         </div>
       </div>
@@ -1123,7 +1125,8 @@
     </p>
 
     <div class="developer-credit">
-        <span>Website Developer</span>
+        <p class="dev-credit-tagline">Suka dengan tampilan &amp; fitur website ini?</p>
+        <span class="dev-credit-desc">Situs ini dirancang &amp; dikembangkan oleh <b>benyoriki.com</b> — jasa pembuatan website modern, cepat, dan siap jualan untuk bisnis Anda.</span>
         <a href="https://benyoriki.com/"
            target="_blank"
            rel="noopener noreferrer"
@@ -1134,7 +1137,7 @@
             <span class="particle"></span>
             <span class="particle"></span>
 
-            benyoriki.com
+            <i class="fa-solid fa-code benyoriki-link-ico"></i> Kunjungi benyoriki.com <i class="fa-solid fa-arrow-right-long benyoriki-link-arrow"></i>
 
             <span class="shine"></span>
         </a>
@@ -1166,6 +1169,7 @@
   </div>
 
   <div class="chat-body" id="chatBody">
+    <div class="chat-body-deco" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
     <div class="chat-day-sep"><span>Hari ini</span></div>
     <p class="chat-empty" id="chatEmpty" style="display:none;">
       <i class="fa-solid fa-comment-dots"></i> Belum ada percakapan. Jadilah yang pertama menyapa!
@@ -1213,6 +1217,24 @@
 <div class="submit-loading" id="submitLoading">
   <div class="spinner"></div>
   <p>Memproses pendaftaran...</p>
+</div>
+
+<!-- Confetti burst canvas (muncul singkat saat pendaftaran berhasil) -->
+<canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
+<!-- ===================================================== -->
+<!-- ADMIN: KONFIRMASI RESET / HAPUS CHAT GRUP -->
+<!-- ===================================================== -->
+<div class="confirm-overlay" id="resetChatOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3>Hapus Semua Chat Grup?</h3>
+    <p>Tindakan ini akan <b>menghapus permanen seluruh pesan</b> di Grup Chat Peserta untuk semua orang. Data yang sudah dihapus tidak bisa dikembalikan.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-outline-dark" id="resetChatCancelBtn" type="button">Batal</button>
+      <button class="btn btn-danger ripple" id="resetChatConfirmBtn" type="button"><i class="fa-solid fa-trash-can"></i> Ya, Hapus Semua</button>
+    </div>
+  </div>
 </div>
 
 <!-- Firebase (modular v10 via CDN) -->
@@ -1287,6 +1309,7 @@
         db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
         doc: mods.doc, updateDoc: mods.updateDoc, deleteDoc: mods.deleteDoc, serverTimestamp: mods.serverTimestamp,
         query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
+        getDocs: mods.getDocs, writeBatch: mods.writeBatch,
         ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
       };
     }
@@ -1302,7 +1325,9 @@
 })();
 </script>
 
-<script src="script.js?v=11"></script>
+<!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
+<script src="script.js?v=13"></script>
+<script src="particles.js?v=1"></script>
 </body>
 </html>
 
