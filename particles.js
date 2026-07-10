@@ -253,4 +253,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* =========================================================
+     2026 VISUAL REFRESH — EFEK TAMBAHAN (murni hiasan)
+  ========================================================= */
+  const reduceMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isFinePointer = window.matchMedia('(pointer: fine)').matches;
+
+  /* ---- 11. Bintang kelap-kelip di Hero ---- */
+  const twinkleLayer = document.getElementById('heroTwinkleLayer');
+  if (twinkleLayer && !reduceMotionGlobal){
+    const starCount = window.matchMedia('(pointer: coarse)').matches ? 18 : 30;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < starCount; i++){
+      const star = document.createElement('span');
+      star.className = 'twinkle-star';
+      const size = (Math.random() * 1.8 + 1).toFixed(1);
+      star.style.width = star.style.height = `${size}px`;
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.animationDuration = `${(Math.random() * 3 + 2.2).toFixed(2)}s`;
+      star.style.animationDelay = `${(Math.random() * 4).toFixed(2)}s`;
+      frag.appendChild(star);
+    }
+    twinkleLayer.appendChild(frag);
+  }
+
+  /* ---- 12. Tilt 3D lembut untuk kartu Keunggulan & Galeri (desktop) ---- */
+  if (isFinePointer && !reduceMotionGlobal){
+    document.querySelectorAll('.tilt-card').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform = `perspective(700px) rotateX(${(-py * 7).toFixed(2)}deg) rotateY(${(px * 7).toFixed(2)}deg) translateY(-2px)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+    });
+  }
+
+  /* ---- 13. Sparkle burst kecil saat memilih kartu metode pembayaran ---- */
+  document.querySelectorAll('input[name="metodeBayar"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if (reduceMotionGlobal || !e.target.checked) return;
+      const card = e.target.closest('.payment-card');
+      if (!card) return;
+      const burstCount = 6;
+      for (let i = 0; i < burstCount; i++){
+        const spark = document.createElement('span');
+        spark.className = 'fee-sparkle';
+        const angle = (Math.PI * 2 * i) / burstCount + Math.random() * 0.4;
+        const dist = 18 + Math.random() * 14;
+        spark.style.setProperty('--sx', `${(Math.cos(angle) * dist).toFixed(1)}px`);
+        spark.style.setProperty('--sy', `${(Math.sin(angle) * dist).toFixed(1)}px`);
+        spark.style.background = i % 2 === 0 ? '#0FD8B8' : '#12A9E0';
+        card.appendChild(spark);
+        setTimeout(() => spark.remove(), 600);
+      }
+    });
+  });
+
+  /* ---- 14. Tilt 3D + lift untuk Kartu Peta Lokasi (desktop) ---- */
+  const mapCardEl = document.querySelector('.map-card');
+  if (mapCardEl && isFinePointer && !reduceMotionGlobal){
+    mapCardEl.addEventListener('mousemove', (e) => {
+      const rect = mapCardEl.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      mapCardEl.style.transform =
+        `perspective(900px) rotateX(${(-py * 5).toFixed(2)}deg) rotateY(${(px * 5).toFixed(2)}deg) translateY(-8px) scale(1.012)`;
+    });
+    mapCardEl.addEventListener('mouseleave', () => { mapCardEl.style.transform = ''; });
+  }
+
 });

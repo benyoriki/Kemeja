@@ -51,8 +51,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet: style.css = fungsi sistem/layout, particles.css = efek visual/partikel -->
-<link rel="stylesheet" href="style.css?v=13">
-<link rel="stylesheet" href="particles.css?v=2">
+<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="particles.css?v=4">
 </head>
 <body>
 
@@ -106,6 +106,13 @@
 
 <!-- Scroll Progress Bar -->
 <div id="scroll-progress"></div>
+
+<!-- Site-wide floating orb decoration (2026 refresh) -->
+<div id="siteOrbLayer" aria-hidden="true">
+  <span class="site-orb site-orb-1"></span>
+  <span class="site-orb site-orb-2"></span>
+  <span class="site-orb site-orb-3"></span>
+</div>
 
 <!-- Ambient cursor glow (desktop only) -->
 <div id="cursorGlow" aria-hidden="true"></div>
@@ -208,6 +215,7 @@
   <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
   <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
   <canvas id="particleCanvas" aria-hidden="true"></canvas>
+  <div class="hero-twinkle-layer" id="heroTwinkleLayer" aria-hidden="true"></div>
   <div class="hero-overlay"></div>
 
   <div class="container hero-content">
@@ -311,32 +319,32 @@
     </div>
 
     <div class="card-grid">
-      <div class="feature-card fade-up">
+      <div class="feature-card tilt-card fade-up">
         <div class="feature-icon"><i class="fa-solid fa-layer-group"></i></div>
         <h3>Bahan American Drill / Tropical</h3>
         <p>Komposisi 65% Polyester, 35% Cotton dengan gramasi 190–200 GSM, adem dan tahan lama.</p>
       </div>
-      <div class="feature-card fade-up">
+      <div class="feature-card tilt-card fade-up">
         <div class="feature-icon"><i class="fa-solid fa-scroll"></i></div>
         <h3>Logo Full Bordir</h3>
         <p>Logo AQUA, nama karyawan, bendera, dan K3 dibordir komputer rapi dan tidak mudah pudar.</p>
       </div>
-      <div class="feature-card fade-up">
+      <div class="feature-card tilt-card fade-up">
         <div class="feature-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
         <h3>Jahitan Berkualitas</h3>
         <p>Dijahit dengan presisi tinggi untuk ketahanan pemakaian jangka panjang.</p>
       </div>
-      <div class="feature-card fade-up">
+      <div class="feature-card tilt-card fade-up">
         <div class="feature-icon"><i class="fa-solid fa-wind"></i></div>
         <h3>Nyaman Dipakai</h3>
         <p>Sirkulasi udara baik, ringan, dan tidak mengganggu pergerakan kerja.</p>
       </div>
-      <div class="feature-card fade-up">
+      <div class="feature-card tilt-card fade-up">
         <div class="feature-icon"><i class="fa-solid fa-star"></i></div>
         <h3>Desain Modern</h3>
         <p>Potongan kekinian yang tetap formal dan mencerminkan citra perusahaan.</p>
       </div>
-      <div class="feature-card fade-up">
+      <div class="feature-card tilt-card fade-up">
         <div class="feature-icon"><i class="fa-solid fa-truck-fast"></i></div>
         <h3>Cocok Aktivitas Lapangan</h3>
         <p>Dirancang tahan banting untuk mobilitas tinggi tim distribusi.</p>
@@ -372,27 +380,27 @@
     </div>
 
     <div class="gallery-grid gallery-grid-set active" id="galeriPria">
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
         <img src="depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Belakang - List Piping Punggung">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Belakang - List Piping Punggung">
         <img src="belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
         <img src="kanan.jpg" alt="Tampak Samping Kanan - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kiri - Logo K3">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kiri - Logo K3">
         <img src="kiri.jpg" alt="Tampak Samping Kiri - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
         <img src="bordir.jpg" alt="Detail Logo Bordir" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
@@ -404,27 +412,27 @@
          bawah, foto asli otomatis tampil menggantikan kartu "Segera
          Hadir" ini tanpa perlu ubah kode apa pun lagi. -->
     <div class="gallery-grid gallery-grid-set" id="galeriWanita">
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Depan - Kemeja Model Wanita">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Depan - Kemeja Model Wanita">
         <img src="depan_wanita.png" alt="Tampak Depan Kemeja Kerja AQUA - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Belakang - Kemeja Model Wanita">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Belakang - Kemeja Model Wanita">
         <img src="belakang_wanita.png" alt="Tampak Belakang Kemeja Kerja AQUA - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kanan - Model Wanita">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kanan - Model Wanita">
         <img src="kanan_wanita.png" alt="Tampak Samping Kanan - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Tampak Samping Kiri - Model Wanita">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kiri - Model Wanita">
         <img src="kiri_wanita.png" alt="Tampak Samping Kiri - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
-      <div class="gallery-item fade-up img-loading" data-caption="Detail Bordir - Model Wanita">
+      <div class="gallery-item tilt-card fade-up img-loading" data-caption="Detail Bordir - Model Wanita">
         <img src="bordir_wanita.png" alt="Detail Logo Bordir - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
@@ -955,6 +963,7 @@
         <div class="form-group">
           <label>Total Harga</label>
           <div id="totalHarga" class="total-harga">Rp0</div>
+          <small class="total-fee-note" id="totalFeeNote"></small>
         </div>
 
         <div class="form-group full">
@@ -965,20 +974,26 @@
 
         <div class="form-group full">
           <label>Metode Pembayaran <span class="req">*</span></label>
-          <div class="radio-group">
-            <label class="radio-card">
+          <div class="radio-group payment-radio-group">
+            <label class="radio-card payment-card">
               <input type="radio" name="metodeBayar" value="tunai" checked>
               <span><i class="fa-solid fa-money-bill-wave"></i> Tunai / Lunas Langsung</span>
+              <div class="fee-tag fee-tag-free"><i class="fa-solid fa-circle-check"></i> Tanpa Biaya Admin</div>
             </label>
-            <label class="radio-card">
+            <label class="radio-card payment-card">
               <input type="radio" name="metodeBayar" value="cicilan">
               <span><i class="fa-solid fa-coins"></i> Bayar 2x (Cicilan)</span>
+              <div class="fee-tag fee-tag-paid"><i class="fa-solid fa-plus"></i> Rp15.000 Biaya Admin</div>
             </label>
           </div>
+          <small class="hint-msg payment-explainer">
+            <i class="fa-solid fa-circle-info"></i>
+            <b>Tunai/Lunas</b>: bayar sekaligus, <b>tidak ada biaya tambahan apapun</b>. <b>2x Cicilan</b>: bayar bertahap, dikenakan <b>biaya admin Rp15.000</b> (satu kali saja, bukan per cicilan) untuk pencatatan &amp; pengelolaan tagihan cicilan Anda.
+          </small>
         </div>
 
         <div class="form-group full" id="cicilanOptionWrap" style="display:none;">
-          <small class="hint-msg"><i class="fa-solid fa-circle-info"></i> Pembayaran dibagi <b>2 kali</b>: Pembayaran ke-1 (uang muka) minimal 50% dari total harga, dan Pembayaran ke-2 (pelunasan sisa 50%) dibayar saat kemeja siap diambil/diantar.</small>
+          <small class="hint-msg cicilan-detail-hint"><i class="fa-solid fa-circle-info"></i> Rincian cicilan: Pembayaran ke-1 (uang muka) minimal <b>50% dari harga kemeja</b> ditambah <b>Rp15.000 biaya admin</b> dibayar di awal, lalu Pembayaran ke-2 (pelunasan sisa 50% harga kemeja, tanpa biaya tambahan) dibayar saat kemeja siap diambil/diantar.</small>
         </div>
 
         <div class="form-group full checkbox-group">
@@ -1054,30 +1069,46 @@
         </div>
       </div>
 
-      <a href="https://maps.app.goo.gl/xYbSSKz2L3DRwqnt9?g_st=ac"
-         target="_blank"
-         rel="noopener"
-         class="map-card fade-up"
-         aria-label="Buka lokasi PT. LOKON PRIMA di Google Maps">
+      <div class="map-card-frame fade-up">
+        <div class="map-live-badge"><span class="map-live-dot"></span> Lokasi Real-Time</div>
 
-        <div class="map-glow"></div>
+        <a href="https://maps.app.goo.gl/xYbSSKz2L3DRwqnt9?g_st=ac"
+           target="_blank"
+           rel="noopener"
+           class="map-card"
+           aria-label="Buka lokasi PT. LOKON PRIMA di Google Maps">
 
-        <iframe
-            src="https://www.google.com/maps?q=PT%20LOKON%20PRIMA&output=embed"
-            loading="lazy"
-            title="Peta lokasi PT. LOKON PRIMA"
-            allowfullscreen>
-        </iframe>
+          <div class="map-glow"></div>
 
-        <div class="map-overlay">
-          <div class="map-button">
-            <i class="fa-solid fa-location-arrow"></i>
-            Buka di Google Maps
+          <iframe
+              src="https://www.google.com/maps?q=PT%20LOKON%20PRIMA&output=embed"
+              loading="lazy"
+              title="Peta lokasi PT. LOKON PRIMA"
+              allowfullscreen>
+          </iframe>
+
+          <div class="map-corners" aria-hidden="true">
+            <span class="map-corner tl"></span>
+            <span class="map-corner tr"></span>
+            <span class="map-corner bl"></span>
+            <span class="map-corner br"></span>
           </div>
-        </div>
 
-        <div class="map-pulse"></div>
-      </a>
+          <div class="map-overlay">
+            <div class="map-button">
+              <i class="fa-solid fa-location-arrow"></i>
+              Buka di Google Maps
+            </div>
+          </div>
+
+          <div class="map-radar" aria-hidden="true">
+            <span class="radar-ring"></span>
+            <span class="radar-ring"></span>
+            <span class="radar-ring"></span>
+            <span class="radar-dot"></span>
+          </div>
+        </a>
+      </div>
 
     </div>
   </div>
@@ -1326,8 +1357,8 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.js?v=13"></script>
-<script src="particles.js?v=1"></script>
+<script src="script.js?v=15"></script>
+<script src="particles.js?v=3"></script>
 </body>
 </html>
 

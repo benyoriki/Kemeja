@@ -1243,22 +1243,51 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     gap:14px;
 }
 
+.map-card-frame{
+    position:relative;
+    padding:3px;
+    border-radius:calc(var(--radius-lg) + 4px);
+    background:linear-gradient(120deg, var(--aqua), var(--teal), #F2C94C, var(--aqua-deep), var(--aqua));
+    background-size:300% auto;
+    animation: mapFrameFlow 7s linear infinite;
+    box-shadow:var(--shadow-strong);
+    transition:box-shadow .5s ease;
+}
+
+.map-card-frame:hover{
+    animation-duration:3s;
+    box-shadow:
+        0 30px 70px rgba(18,169,224,.25),
+        0 0 35px rgba(15,216,184,.2);
+}
+
+.map-live-badge{
+    position:absolute; top:14px; left:14px; z-index:4;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:7px 14px; border-radius:999px;
+    background:rgba(7,16,34,.55); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    color:#fff; font-size:11.5px; font-weight:700; letter-spacing:.3px;
+    border:1px solid rgba(255,255,255,.18);
+    pointer-events:none;
+}
+
+.map-live-dot{
+    width:7px; height:7px; border-radius:50%; background:#2ee6a6; flex-shrink:0;
+    box-shadow:0 0 0 rgba(46,230,166,.7);
+    animation:mapLiveDotGlow 1.8s ease-in-out infinite;
+}
+
 .map-card{
     position:relative;
     display:block;
     overflow:hidden;
     border-radius:var(--radius-lg);
     aspect-ratio:4/3.1;
-    border:1px solid rgba(18,169,224,.15);
-    box-shadow:var(--shadow-strong);
     transition:.5s ease;
 }
 
 .map-card:hover{
-    transform:translateY(-8px);
-    box-shadow:
-        0 30px 70px rgba(18,169,224,.25),
-        0 0 35px rgba(15,216,184,.2);
+    box-shadow:inset 0 0 0 2px rgba(18,169,224,.25);
 }
 
 .map-card iframe{
@@ -1319,6 +1348,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 @media (max-width:520px){
     .map-card{ aspect-ratio:1/1.05; border-radius:var(--radius); }
+    .map-card-frame{ border-radius:calc(var(--radius) + 4px); }
     .lokasi-actions{ flex-direction:column; }
     .lokasi-actions .btn{ width:100%; justify-content:center; }
 }
@@ -1333,6 +1363,66 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     line-height:1.6;
     margin-top:4px;
 }
+
+/* ---- Payment method cards: fee tag + explainer copy ---- */
+.payment-radio-group{ align-items:stretch; }
+
+.payment-card{ display:flex; flex-direction:column; gap:10px; }
+
+.fee-tag{
+    display:inline-flex; align-items:center; gap:6px;
+    width:fit-content; padding:5px 11px; border-radius:999px;
+    font-size:11px; font-weight:700; font-family:var(--font-mono);
+    letter-spacing:.2px;
+}
+
+.fee-tag-free{
+    background:rgba(15,216,184,0.14); color:var(--teal-deep);
+    border:1px solid rgba(15,216,184,0.35);
+}
+
+.fee-tag-paid{
+    background:rgba(242,201,76,0.16); color:#9A6B00;
+    border:1px solid rgba(242,201,76,0.45);
+}
+
+[data-theme="dark"] .fee-tag-paid{ color:#F2C94C; }
+
+.payment-card:has(input:checked) .fee-tag{
+    animation:feeTagPop .35s ease;
+}
+
+@keyframes feeTagPop{
+    0%{ transform:scale(0.85); opacity:0.4; }
+    60%{ transform:scale(1.08); }
+    100%{ transform:scale(1); opacity:1; }
+}
+
+.payment-explainer{
+    background:rgba(18,169,224,0.06);
+    border:1px dashed rgba(18,169,224,0.3);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    margin-top:12px;
+}
+
+.cicilan-detail-hint{
+    background:rgba(242,201,76,0.08);
+    border:1px dashed rgba(242,201,76,0.4);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+}
+
+.total-fee-note{
+    display:block;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:8px;
+    line-height:1.5;
+}
+
+.total-fee-note b{ color:var(--aqua-deep); }
 
 /* ==========================================
    PESERTA TERDAFTAR — SECTION

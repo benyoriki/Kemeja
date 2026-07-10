@@ -277,9 +277,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submitBtn');
   const jumlahInput = document.getElementById('jumlah');
   const totalHargaEl = document.getElementById('totalHarga');
+  const totalFeeNoteEl = document.getElementById('totalFeeNote');
   const jenisKemejaRadios = document.querySelectorAll('input[name="jenisKemeja"]');
 
   const requiredFields = form.querySelectorAll('[required]');
+
+  // Biaya admin khusus untuk metode "Bayar 2x (Cicilan)". Metode
+  // "Tunai/Lunas Langsung" TIDAK dikenakan biaya tambahan apapun.
+  // Diletakkan sebagai satu konstanta supaya perhitungan total harga,
+  // struk JPG, pesan WhatsApp, dan data yang tersimpan ke Firestore
+  // selalu konsisten memakai angka yang sama.
+  const ADMIN_FEE_CICILAN = 15000;
 
   function formatRupiah(angka){
     return 'Rp' + angka.toLocaleString('id-ID');
@@ -290,12 +298,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return checked ? parseInt(checked.dataset.harga, 10) : 0;
   }
 
+  function getMetodeBayar(){
+    return form.querySelector('input[name="metodeBayar"]:checked')?.value || 'tunai';
+  }
+
   function hitungTotal(){
     const harga = getHargaSatuan();
     const jumlah = parseInt(jumlahInput.value, 10) || 0;
-    const total = harga * jumlah;
+    const subtotal = harga * jumlah;
+    const isCicilan = getMetodeBayar() === 'cicilan';
+    const biayaAdmin = isCicilan ? ADMIN_FEE_CICILAN : 0;
+    const total = subtotal + biayaAdmin;
+
     totalHargaEl.textContent = formatRupiah(total);
-    return total;
+    if (totalFeeNoteEl){
+      totalFeeNoteEl.innerHTML = isCicilan
+        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
+    }
+    return { harga, jumlah, subtotal, biayaAdmin, total };
   }
 
   jenisKemejaRadios.forEach(r => r.addEventListener('change', hitungTotal));
@@ -307,8 +328,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const cicilanOptionWrap = document.getElementById('cicilanOptionWrap');
   metodeBayarRadios.forEach(r => {
     r.addEventListener('change', () => {
-      const isCicilan = form.querySelector('input[name="metodeBayar"]:checked')?.value === 'cicilan';
+      const isCicilan = getMetodeBayar() === 'cicilan';
       cicilanOptionWrap.style.display = isCicilan ? 'block' : 'none';
+      hitungTotal();
     });
   });
 
@@ -537,7 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const jenisLabel = jenisChecked.value === 'pendek' ? 'Lengan Pendek' : 'Lengan Panjang';
     const harga = parseInt(jenisChecked.dataset.harga, 10);
     const jumlah = parseInt(jumlahInput.value, 10);
-    const total = harga * jumlah;
+    const subtotal = harga * jumlah;
+    const metodeBayar = getMetodeBayar();
+    const biayaAdmin = metodeBayar === 'cicilan' ? ADMIN_FEE_CICILAN : 0;
+    const total = subtotal + biayaAdmin;
 
     const now = new Date();
     const tanggal = now.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
@@ -557,10 +582,12 @@ document.addEventListener('DOMContentLoaded', () => {
       jenis: jenisLabel,
       jumlah: jumlah,
       harga: harga,
+      subtotal: subtotal,
+      biayaAdmin: biayaAdmin,
       total: total,
       catatan: document.getElementById('catatan').value.trim(),
       tanggal, jam,
-      metodeBayar: form.querySelector('input[name="metodeBayar"]:checked')?.value || 'tunai',
+      metodeBayar,
       // PERBAIKAN LOGIKA BARU: kode unik dibuat SEKALI di sini supaya
       // sama persis antara struk JPG, pesan WhatsApp ke admin, dan yang
       // nanti diketik ulang oleh admin saat menambahkan peserta ke
@@ -594,16 +621,22 @@ document.addEventListener('DOMContentLoaded', () => {
      sementara dilepas — Dasbor sekarang hanya menyediakan Edit &
      Hapus, karena jalur utama pendaftaran sudah otomatis.)
   ========================================================= */
-  function buildPembayaranAwal(total, metodeBayar){
+  function buildPembayaranAwal(subtotal, metodeBayar, biayaAdmin){
     const isCicilan = metodeBayar === 'cicilan';
-    const dpMinimal = isCicilan ? Math.round(total * 0.5) : total;
+    const fee = isCicilan ? (biayaAdmin || 0) : 0;
+    // DP minimal dihitung dari harga kemeja (subtotal) saja, lalu biaya
+    // admin cicilan ditambahkan ke pembayaran pertama (dibayar di muka
+    // sekali, tidak diulang di cicilan ke-2).
+    const dpProduk = isCicilan ? Math.round(subtotal * 0.5) : subtotal;
+    const dpMinimal = dpProduk + fee;
     const rencanaCicilan = [];
     if (isCicilan){
-      const sisaSetelahDp = total - dpMinimal;
+      const sisaSetelahDp = subtotal - dpProduk;
       rencanaCicilan.push({ ke: 1, nominal: sisaSetelahDp, dibayar: false, tanggalBayar: null });
     }
     return {
       metode: metodeBayar,
+      biayaAdmin: fee,
       dpMinimal,
       dpDibayar: false,
       cicilan: rencanaCicilan,
@@ -635,11 +668,12 @@ document.addEventListener('DOMContentLoaded', () => {
       ukuranKemeja: data.ukuranKemeja,
       jenis: data.jenis,
       jumlah: data.jumlah,
+      subtotal: data.subtotal,
       total: data.total,
       catatan: data.catatan || '-',
       createdAtLabel: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
       timestamp: fb.serverTimestamp(),
-      pembayaran: buildPembayaranAwal(data.total, data.metodeBayar)
+      pembayaran: buildPembayaranAwal(data.subtotal, data.metodeBayar, data.biayaAdmin)
     };
     try {
       // Batas waktu 7 detik supaya kalau koneksi macet total, pengguna
@@ -722,6 +756,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ============ 15. GENERATE STRUK JPG (CANVAS) ============ */
   function generateStrukJPG(data){
     const canvasEl = document.getElementById('strukCanvas');
+    const isCicilan = data.metodeBayar === 'cicilan';
+    const subtotalProduk = (data.subtotal !== undefined && data.subtotal !== null) ? data.subtotal : data.harga * data.jumlah;
+    const biayaAdminStruk = isCicilan ? (data.biayaAdmin || 15000) : 0;
     const rows = [
       ['Nama', data.nama],
       ['Nama Bordir', data.namaBordir],
@@ -731,11 +768,16 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Jenis Kemeja', data.jenis],
       ['Jumlah', String(data.jumlah)],
       ['Harga Satuan', formatRupiah(data.harga)],
+      ['Metode Bayar', isCicilan ? '2x Cicilan' : 'Tunai / Lunas'],
     ];
+    if (isCicilan){
+      rows.push(['Subtotal Kemeja', formatRupiah(subtotalProduk)]);
+      rows.push(['Biaya Admin Cicilan', '+ ' + formatRupiah(biayaAdminStruk)]);
+    }
 
     // Dynamic canvas height based on content
     const HEADER_H = 210;
-    const baseHeight = 720;
+    const baseHeight = 760;
     const extraPerRow = 34;
     const catatanLines = Math.ceil((data.catatan || '-').length / 50) || 1;
     const neededHeight = baseHeight + rows.length * extraPerRow + catatanLines * 18;
@@ -912,7 +954,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillText('TOTAL PEMBAYARAN', cardX + 26, y + 30);
     ctx.font = '400 12px Inter, sans-serif';
     ctx.fillStyle = 'rgba(4,33,58,0.72)';
-    ctx.fillText(`${data.jumlah} pcs  ×  ${formatRupiah(data.harga)}`, cardX + 26, y + 52);
+    const totalSubLabel = isCicilan
+      ? `${data.jumlah} pcs × ${formatRupiah(data.harga)}  +  Admin ${formatRupiah(biayaAdminStruk)}`
+      : `${data.jumlah} pcs  ×  ${formatRupiah(data.harga)}`;
+    ctx.fillText(totalSubLabel, cardX + 26, y + 52);
     ctx.textAlign = 'right';
     ctx.font = '800 26px Outfit, sans-serif';
     ctx.fillStyle = '#04213A';
@@ -987,7 +1032,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = C.inkSoft;
     ctx.font = '400 12px Inter, sans-serif';
     ctx.fillText('WhatsApp Perusahaan: +62 856-9732-1423', W/2, y);
-    y += 34;
+    y += 30;
+
+    /* ---------- Developer credit line ---------- */
+    ctx.fillStyle = 'rgba(10,24,38,0.38)';
+    ctx.font = '500 10.5px "JetBrains Mono", monospace';
+    ctx.fillText('Website ini dibuat dan dikembangkan oleh benyoriki.com', W/2, y);
+    y += 26;
 
     /* ---------- Bottom brand strip ---------- */
     const stripGrad = ctx.createLinearGradient(0, 0, W, 0);
@@ -1101,6 +1152,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ============ 16. BUKA WHATSAPP DENGAN PESAN OTOMATIS ============ */
   function openWhatsApp(data){
+    const isCicilan = data.metodeBayar === 'cicilan';
+    const subtotalProduk = (data.subtotal !== undefined && data.subtotal !== null) ? data.subtotal : data.harga * data.jumlah;
+    const biayaAdminWa = isCicilan ? (data.biayaAdmin || 15000) : 0;
+    const rincianBiaya = isCicilan
+      ? `Subtotal Kemeja : ${formatRupiah(subtotalProduk)}\nBiaya Admin Cicilan : ${formatRupiah(biayaAdminWa)}\n`
+      : '';
     const pesan =
 `================================
 PENDAFTARAN KEMEJA KERJA
@@ -1114,8 +1171,8 @@ Ukuran : ${data.ukuranKemeja}
 Jenis : ${data.jenis}
 Jumlah : ${data.jumlah}
 Harga : ${formatRupiah(data.harga)}
-Total : ${formatRupiah(data.total)}
-Metode Bayar : ${data.metodeBayar === 'cicilan' ? '2x Cicilan (DP 50% + Pelunasan 50%)' : 'Tunai / Lunas Langsung'}
+${rincianBiaya}Total : ${formatRupiah(data.total)}
+Metode Bayar : ${isCicilan ? '2x Cicilan (DP 50% Kemeja + Rp15.000 Admin, lalu Pelunasan 50%)' : 'Tunai / Lunas Langsung (Tanpa Biaya Admin)'}
 Catatan : ${data.catatan}
 ================================
 Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
