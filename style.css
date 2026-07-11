@@ -2067,6 +2067,34 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 /* =========================================================
    LIVE CHAT — TOMBOL MENGAMBANG (FAB) — refresh 2026
 ========================================================= */
+.chess-fab{
+  position:fixed; right:24px; bottom:100px; z-index:500;
+  width:62px; height:62px; border-radius:50%;
+  background:linear-gradient(120deg, #9B5CFF, #17E6E6, #F2C14E); background-size:220% 220%;
+  color:#0A0F1E; font-size:24px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 24px rgba(155,92,255,.45), 0 0 0 6px rgba(155,92,255,.1);
+  transition:var(--transition-spring);
+  animation: fabFloat 3.6s ease-in-out infinite .3s, gradFlow 8s ease infinite;
+  text-decoration:none;
+}
+
+.chess-fab:hover{ transform:translateY(-6px) scale(1.08); box-shadow:0 0 28px rgba(155,92,255,.6), 0 0 0 9px rgba(155,92,255,.16); }
+
+.chess-fab-ping{
+  position:absolute; inset:0; border-radius:50%; background:#9B5CFF;
+  opacity:.5; animation:chatPing 2.4s ease-out .4s infinite; z-index:-1;
+}
+
+.chess-fab::after{
+  content:''; position:absolute; inset:-10px; border-radius:50%; z-index:-1;
+  border:1.5px solid rgba(155,92,255,.35); animation:chatPing 2.4s ease-out 1.2s infinite;
+}
+
+@media (max-width:640px){
+  .chess-fab{ right:16px; bottom:80px; width:54px; height:54px; font-size:21px; }
+}
+
 .chat-fab{
   position:fixed; right:24px; bottom:24px; z-index:500;
   width:62px; height:62px; border-radius:50%;
