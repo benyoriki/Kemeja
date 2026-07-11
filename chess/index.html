@@ -34,7 +34,7 @@
 </div>
 
 <!-- ============ TOPBAR ============ -->
-<header class="topbar">
+<header class="topbar" id="topbar">
   <a href="../index.html#home" class="topbar-back glass">
     <i class="fa-solid fa-arrow-left"></i>
     <span>Kembali ke <b>LOKON PRIMA</b></span>
@@ -56,30 +56,54 @@
 <!-- ============ LOBBY / DASHBOARD ============ -->
 <main id="lobbyScreen" class="active">
 
+  <div class="lobby-orb-layer" aria-hidden="true">
+    <span class="lobby-orb o1"></span>
+    <span class="lobby-orb o2"></span>
+    <span class="lobby-orb o3"></span>
+  </div>
+
   <div class="lobby-hero">
+    <div class="lobby-hero-badge"><i class="fa-solid fa-chess-knight"></i> Arena Catur Resmi Peserta</div>
     <h1>Lokon Chess Arena</h1>
     <p>Papan catur 3D, ranking real-time, dan tantangan duel — khusus peserta LOKON PRIMA.</p>
+
+    <div class="lobby-stats-strip">
+      <div class="lobby-stat-chip">
+        <i class="fa-solid fa-users"></i>
+        <div><b id="statTotalPlayers">-</b><span>Total Peserta</span></div>
+      </div>
+      <div class="lobby-stat-chip">
+        <i class="fa-solid fa-circle-dot online-pulse-dot"></i>
+        <div><b id="statOnlineNow">-</b><span>Online Sekarang</span></div>
+      </div>
+      <div class="lobby-stat-chip">
+        <i class="fa-solid fa-crown"></i>
+        <div><b id="statTopRating">-</b><span>Rating Tertinggi</span></div>
+      </div>
+    </div>
   </div>
 
   <div class="mode-select-row">
     <button id="btnVsComputer" class="mode-card computer glass">
       <span class="mode-card-tag">Latihan</span>
-      <i class="fa-solid fa-robot mode-icon"></i>
+      <span class="mode-icon-badge"><i class="fa-solid fa-robot mode-icon"></i></span>
       <h3>Lawan Komputer</h3>
       <p>Main melawan mesin AI level 1–20. Tidak memengaruhi rating maupun statistik — murni untuk berlatih.</p>
+      <span class="mode-card-foot">Level 1–20 <i class="fa-solid fa-arrow-right"></i></span>
     </button>
     <button id="btnVsPlayerPanel" class="mode-card player glass">
       <span class="mode-card-tag">Ranking Aktif</span>
-      <i class="fa-solid fa-user-group mode-icon"></i>
+      <span class="mode-icon-badge"><i class="fa-solid fa-user-group mode-icon"></i></span>
       <h3>Lawan Player Online</h3>
       <p>Tantang peserta lain secara real-time. Menang/kalah memengaruhi rating ELO & statistik profil kamu.</p>
+      <span class="mode-card-foot">Real-time • ELO <i class="fa-solid fa-arrow-right"></i></span>
     </button>
   </div>
 
   <div class="lobby-grid">
     <section class="panel glass">
       <div class="panel-head">
-        <h3><i class="fa-solid fa-ranking-star"></i> Peringkat Real-Time</h3>
+        <h3><i class="fa-solid fa-ranking-star"></i> Peringkat Real-Time <span class="panel-count-chip">Top 100</span></h3>
         <input id="searchPlayerInput" class="panel-search" type="text" placeholder="Cari nama…">
       </div>
       <div id="rankingList" class="panel-list"></div>
@@ -87,7 +111,7 @@
 
     <section class="panel glass">
       <div class="panel-head">
-        <h3><i class="fa-solid fa-signal"></i> Pemain Online</h3>
+        <h3><i class="fa-solid fa-signal"></i> Pemain Online <span class="panel-count-chip online" id="onlineCountChip">0</span></h3>
       </div>
       <div id="onlineList" class="panel-list"></div>
     </section>
@@ -98,11 +122,12 @@
 <section id="gameScreen">
   <div id="board3d"></div>
 
-  <div class="game-mode-label glass" id="gameModeLabel">Memuat mode…</div>
-
-  <div class="duel-bar glass">
-    <div class="duel-bar-fill-opp" id="duelFillOpp" style="width:50%"></div>
-    <div class="duel-bar-fill-self" id="duelFillSelf" style="width:50%"></div>
+  <div class="duel-bar-wrap glass">
+    <div class="duel-bar-label" id="gameModeLabel">Memuat mode…</div>
+    <div class="duel-bar">
+      <div class="duel-bar-fill-opp" id="duelFillOpp" style="width:50%"></div>
+      <div class="duel-bar-fill-self" id="duelFillSelf" style="width:50%"></div>
+    </div>
   </div>
 
   <div class="hud-card hud-opp glass">
@@ -138,6 +163,8 @@
     <button class="dock-btn danger" id="btnResign" title="Menyerah"><i class="fa-solid fa-flag"></i></button>
     <button class="dock-btn" id="btnDraw" title="Tawarkan Remis"><i class="fa-solid fa-handshake"></i></button>
     <button class="dock-btn" id="btnUndo" title="Undo (vs komputer)"><i class="fa-solid fa-rotate-left"></i></button>
+    <button class="dock-btn" id="btnZoomOut" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+    <button class="dock-btn" id="btnZoomIn" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
     <button class="dock-btn" id="btnMute" title="Mute"><i class="fa-solid fa-volume-high"></i></button>
     <button class="dock-btn" id="btnFullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
     <button class="dock-btn" id="btnSettings" title="Pengaturan"><i class="fa-solid fa-gear"></i></button>

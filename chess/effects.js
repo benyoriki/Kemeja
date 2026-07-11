@@ -58,10 +58,10 @@ export class Chess3DScene{
     const w = el.clientWidth, h = el.clientHeight;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x05070e);
-    this.scene.fog = new THREE.FogExp2(0x05070e, 0.045);
+    this.scene.background = new THREE.Color(0x0d1526);
+    this.scene.fog = new THREE.FogExp2(0x0d1526, 0.028);
 
-    this.camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+    this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
     this._setCameraForOrientation('w', true);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -71,14 +71,14 @@ export class Chess3DScene{
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.15;
     el.appendChild(this.renderer.domElement);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
-    this.controls.minDistance = 6.5;
-    this.controls.maxDistance = 13;
+    this.controls.minDistance = 4.2;
+    this.controls.maxDistance = 26;
     this.controls.minPolarAngle = 0.35;
     this.controls.maxPolarAngle = 1.15;
     this.controls.enablePan = false;
@@ -95,10 +95,10 @@ export class Chess3DScene{
   }
 
   _setupLights(){
-    const hemi = new THREE.HemisphereLight(0x8fbfff, 0x0a0a12, 0.55);
+    const hemi = new THREE.HemisphereLight(0xd8ecff, 0x3d4b72, 1.25);
     this.scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xffffff, 1.15);
+    const sun = new THREE.DirectionalLight(0xffffff, 2.1);
     sun.position.set(6, 10, 4);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
@@ -107,6 +107,9 @@ export class Chess3DScene{
     sun.shadow.bias = -0.0015;
     this.scene.add(sun);
     this.sun = sun;
+
+    const fill = new THREE.AmbientLight(0x8a97c4, 0.75);
+    this.scene.add(fill);
 
     const cyan = new THREE.PointLight(0x17e6e6, 6, 14, 2);
     cyan.position.set(-6, 3.2, -6);
@@ -124,7 +127,7 @@ export class Chess3DScene{
 
     // Alas / dasar panggung
     const baseGeo = new THREE.CylinderGeometry(6.4, 6.7, 0.5, 48);
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x0a0e18, metalness: 0.6, roughness: 0.35 });
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x161d30, metalness: 0.55, roughness: 0.38 });
     const base = new THREE.Mesh(baseGeo, baseMat);
     base.position.y = -0.42;
     base.receiveShadow = true;
@@ -141,7 +144,7 @@ export class Chess3DScene{
 
     // Bingkai papan
     const frameGeo = new THREE.BoxGeometry(9.2, 0.32, 9.2);
-    const frameMat = new THREE.MeshStandardMaterial({ color: 0x141a2c, metalness: 0.55, roughness: 0.4 });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x232c46, metalness: 0.5, roughness: 0.42 });
     const frame = new THREE.Mesh(frameGeo, frameMat);
     frame.position.y = -0.16;
     frame.receiveShadow = true;
@@ -149,8 +152,8 @@ export class Chess3DScene{
     boardGroup.add(frame);
 
     // 64 petak
-    const lightMat = new THREE.MeshStandardMaterial({ color: 0x2a3a5c, metalness: 0.25, roughness: 0.5 });
-    const darkMat  = new THREE.MeshStandardMaterial({ color: 0x0a0e1a, metalness: 0.35, roughness: 0.4 });
+    const lightMat = new THREE.MeshStandardMaterial({ color: 0x4a6087, metalness: 0.2, roughness: 0.48 });
+    const darkMat  = new THREE.MeshStandardMaterial({ color: 0x1a2338, metalness: 0.3, roughness: 0.42 });
     const squareGeo = new THREE.BoxGeometry(SQUARE_SIZE * 0.97, 0.12, SQUARE_SIZE * 0.97);
 
     for (let f = 0; f < 8; f++){
@@ -202,7 +205,7 @@ export class Chess3DScene{
   _setupComposer(w, h){
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 0.55, 0.4, 0.18);
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 0.4, 0.4, 0.62);
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
   }
@@ -228,7 +231,12 @@ export class Chess3DScene{
   }
 
   _setCameraForOrientation(color, instant){
-    const pos = color === 'w' ? { x: 0, y: 8.6, z: 8.8 } : { x: 0, y: 8.6, z: -8.8 };
+    const aspect = this.container.clientWidth / Math.max(1, this.container.clientHeight);
+    // Layar sempit/portrait (HP) butuh jarak kamera lebih jauh supaya papan
+    // tidak terpotong di kiri-kanan; layar lebar (PC/tablet) tetap dekat.
+    const dist = aspect < 0.55 ? 12.5 : aspect < 0.8 ? 10.5 : 8.4;
+    const height = aspect < 0.55 ? 10.8 : aspect < 0.8 ? 9.2 : 7.6;
+    const pos = color === 'w' ? { x: 0, y: height, z: dist } : { x: 0, y: height, z: -dist };
     if (instant || !this.camera){
       this.camera && this.camera.position.set(pos.x, pos.y, pos.z);
       this.camera && this.camera.lookAt(0, 0, 0);
@@ -246,6 +254,22 @@ export class Chess3DScene{
     this._setCameraForOrientation(color, false);
   }
 
+  /** Dolly kamera masuk/keluar sepanjang garis pandang saat ini (dipakai tombol zoom di dock). */
+  zoomBy(factor){
+    const cam = this.camera, target = this.controls.target;
+    const dir = new THREE.Vector3().subVectors(cam.position, target);
+    const dist = dir.length();
+    const newDist = Math.min(this.controls.maxDistance, Math.max(this.controls.minDistance, dist * factor));
+    dir.setLength(newDist);
+    const from = cam.position.clone();
+    const to = new THREE.Vector3().addVectors(target, dir);
+    this._tweenValue(0, 1, 260, easeInOutQuad, (t) => {
+      cam.position.lerpVectors(from, to, t);
+    });
+  }
+  zoomIn(){ this.zoomBy(0.82); }
+  zoomOut(){ this.zoomBy(1.22); }
+
   /* ---------------- Bidak (dibuat prosedural) ---------------- */
 
   /**
@@ -256,11 +280,11 @@ export class Chess3DScene{
   createPiece(type, color){
     const isWhite = color === 'w';
     const mat = new THREE.MeshStandardMaterial({
-      color: isWhite ? 0xEDEFF5 : 0x1B2030,
-      metalness: isWhite ? 0.25 : 0.55,
-      roughness: isWhite ? 0.35 : 0.25,
-      emissive: isWhite ? 0x11151f : 0x000000,
-      emissiveIntensity: isWhite ? 0.05 : 0
+      color: isWhite ? 0xEDEFF3 : 0x717CAD,
+      metalness: isWhite ? 0.08 : 0.22,
+      roughness: isWhite ? 0.48 : 0.46,
+      emissive: isWhite ? 0x0d1520 : 0x3a2570,
+      emissiveIntensity: isWhite ? 0.04 : 0.42
     });
     const group = new THREE.Group();
     const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };

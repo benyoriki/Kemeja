@@ -307,4 +307,5 @@ export function switchScreen(screens, activeId){
     if (!el) return;
     el.classList.toggle('active', id === activeId);
   });
+  document.body.classList.toggle('in-game', activeId === 'gameScreen');
 }

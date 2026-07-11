@@ -80,7 +80,9 @@ body::before{
   position:fixed; top:0; left:0; right:0; z-index:40;
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 22px;
+  transition:opacity .25s ease, transform .25s ease;
 }
+body.in-game .topbar{ opacity:0; transform:translateY(-16px); pointer-events:none; }
 .topbar-back{
   display:flex; align-items:center; gap:10px;
   padding:8px 16px 8px 10px; border-radius:999px;
@@ -132,44 +134,96 @@ body::before{
    LOBBY
 ========================================================= */
 #lobbyScreen{
-  position:fixed; inset:0; padding:90px 22px 30px; overflow-y:auto;
+  position:fixed; inset:0; padding:90px 22px 30px; overflow-y:auto; overflow-x:hidden;
   display:none; flex-direction:column; gap:26px; max-width:1180px; margin:0 auto;
 }
 #lobbyScreen.active{ display:flex; }
 
+/* Dekorasi orb mengambang latar lobby */
+.lobby-orb-layer{ position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+.lobby-orb{ position:absolute; border-radius:50%; filter:blur(70px); opacity:.55; }
+.lobby-orb.o1{ width:340px; height:340px; top:4%; left:-8%; background:radial-gradient(circle, rgba(23,230,230,.22), transparent 70%); animation:lobbyOrbDrift1 22s ease-in-out infinite; }
+.lobby-orb.o2{ width:300px; height:300px; top:40%; right:-8%; background:radial-gradient(circle, rgba(155,92,255,.22), transparent 70%); animation:lobbyOrbDrift2 26s ease-in-out infinite; }
+.lobby-orb.o3{ width:260px; height:260px; bottom:0; left:30%; background:radial-gradient(circle, rgba(242,193,78,.14), transparent 70%); animation:lobbyOrbDrift3 30s ease-in-out infinite; }
+@keyframes lobbyOrbDrift1{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(50px,60px); } }
+@keyframes lobbyOrbDrift2{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-60px,-40px); } }
+@keyframes lobbyOrbDrift3{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(40px,-50px); } }
+@media (prefers-reduced-motion:reduce){ .lobby-orb{ animation:none; } }
+
 .lobby-hero{ text-align:center; padding:10px 0 4px; }
+.lobby-hero-badge{
+  display:inline-flex; align-items:center; gap:8px; padding:7px 16px; border-radius:999px;
+  background:rgba(23,230,230,.1); border:1px solid rgba(23,230,230,.3); color:var(--cyan);
+  font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:14px;
+}
 .lobby-hero h1{
-  font-size:clamp(26px,5vw,42px); font-weight:800;
-  background:linear-gradient(120deg, #fff, var(--cyan) 60%, var(--violet));
+  font-size:clamp(28px,5.5vw,46px); font-weight:800;
+  background:linear-gradient(120deg, #fff, var(--cyan) 55%, var(--violet));
   -webkit-background-clip:text; background-clip:text; color:transparent;
   letter-spacing:.3px;
 }
-.lobby-hero p{ color:var(--ink-dim); font-size:14px; margin-top:6px; }
+.lobby-hero p{ color:var(--ink-dim); font-size:14px; margin-top:8px; max-width:480px; margin-left:auto; margin-right:auto; }
+
+.lobby-stats-strip{ display:flex; justify-content:center; gap:12px; margin-top:22px; flex-wrap:wrap; }
+.lobby-stat-chip{
+  display:flex; align-items:center; gap:10px; padding:12px 20px; border-radius:16px;
+  background:var(--glass); border:1px solid var(--glass-border); backdrop-filter:blur(14px);
+}
+.lobby-stat-chip i{ font-size:18px; color:var(--cyan); }
+.lobby-stat-chip:nth-child(3) i{ color:var(--gold); }
+.lobby-stat-chip b{ display:block; font-family:var(--font-hud); font-size:20px; font-weight:700; line-height:1.1; }
+.lobby-stat-chip span{ font-size:10px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.05em; }
+.online-pulse-dot{ color:var(--win) !important; animation:mapLiveDotGlow 1.8s ease-in-out infinite; }
 
 .mode-select-row{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .mode-card{
-  border-radius:var(--radius); padding:26px 22px; text-align:left;
+  border-radius:var(--radius); padding:28px 24px; text-align:left;
   display:flex; flex-direction:column; gap:10px; transition:.3s ease; position:relative; overflow:hidden;
+  border:1px solid transparent;
 }
-.mode-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-glow-cyan); }
-.mode-card .mode-icon{ font-size:30px; }
-.mode-card h3{ font-size:18px; }
-.mode-card p{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
+.mode-card::before{
+  content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; opacity:0; transition:.3s;
+  background:linear-gradient(135deg, var(--cyan), transparent 40%, var(--violet));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none;
+}
+.mode-card:hover{ transform:translateY(-5px); box-shadow:var(--shadow-glow-cyan); }
+.mode-card:hover::before{ opacity:1; }
+.mode-icon-badge{
+  width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.05); margin-bottom:2px;
+}
+.mode-card .mode-icon{ font-size:26px; }
+.mode-card h3{ font-size:19px; }
+.mode-card p{ font-size:12.5px; color:var(--ink-dim); line-height:1.55; }
 .mode-card.computer .mode-icon{ color:var(--gold); }
+.mode-card.computer .mode-icon-badge{ background:rgba(242,193,78,.12); box-shadow:0 0 22px rgba(242,193,78,.15); }
 .mode-card.player .mode-icon{ color:var(--cyan); }
+.mode-card.player .mode-icon-badge{ background:rgba(23,230,230,.12); box-shadow:0 0 22px rgba(23,230,230,.15); }
 .mode-card-tag{
-  position:absolute; top:16px; right:16px; font-size:10.5px; font-weight:700;
+  position:absolute; top:18px; right:18px; font-size:10.5px; font-weight:700;
   padding:4px 10px; border-radius:999px; font-family:var(--font-mono);
 }
 .mode-card.computer .mode-card-tag{ background:rgba(242,193,78,.15); color:var(--gold); }
 .mode-card.player .mode-card-tag{ background:rgba(51,226,154,.15); color:var(--win); }
+.mode-card-foot{
+  display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; font-family:var(--font-mono);
+  color:var(--ink-dim); margin-top:6px; transition:.25s;
+}
+.mode-card:hover .mode-card-foot{ color:var(--cyan); gap:12px; }
+.mode-card.player:hover .mode-card-foot{ color:var(--win); }
 
 .lobby-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:18px; align-items:start; }
 
 .panel{ border-radius:var(--radius); padding:18px 18px 8px; }
-.panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.panel-head h3{ font-size:15px; display:flex; align-items:center; gap:8px; }
+.panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:10px; }
+.panel-head h3{ font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .panel-head h3 i{ color:var(--cyan); }
+.panel-count-chip{
+  font-family:var(--font-mono); font-size:10px; font-weight:700; padding:3px 9px; border-radius:999px;
+  background:rgba(255,255,255,.06); color:var(--ink-dim);
+}
+.panel-count-chip.online{ background:rgba(51,226,154,.14); color:var(--win); }
 .panel-search{
   background:rgba(255,255,255,.05); border:1px solid var(--glass-border); border-radius:999px;
   padding:6px 14px; font-size:12.5px; color:var(--ink); width:150px;
@@ -207,16 +261,24 @@ body::before{
 #board3d{ position:absolute; inset:0; }
 #board3d canvas{ display:block; width:100%; height:100%; touch-action:none; }
 
-.game-mode-label{
-  position:fixed; top:70px; left:50%; transform:translateX(-50%); z-index:30;
-  font-family:var(--font-mono); font-size:11.5px; padding:6px 16px; border-radius:999px; color:var(--ink-dim);
+.duel-bar-wrap{
+  position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:35;
+  width:min(360px, 78vw); border-radius:14px; padding:8px 16px 10px;
+  display:flex; flex-direction:column; gap:6px; align-items:center;
 }
+.duel-bar-label{
+  font-family:var(--font-mono); font-size:10.5px; color:var(--ink-dim);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+}
+.duel-bar{ width:100%; height:6px; border-radius:99px; overflow:hidden; display:flex; }
+.duel-bar-fill-opp{ background:linear-gradient(90deg, var(--violet), #6b3fd6); height:100%; transition:width .3s; }
+.duel-bar-fill-self{ background:linear-gradient(90deg, #12c6c6, var(--cyan)); height:100%; transition:width .3s; }
 
 .hud-card{
   position:fixed; z-index:35; width:min(300px, 42vw); border-radius:var(--radius);
   padding:12px 14px; display:flex; flex-direction:column; gap:8px;
 }
-.hud-card.hud-opp{ top:78px; left:16px; }
+.hud-card.hud-opp{ top:76px; left:16px; }
 .hud-card.hud-self{ bottom:96px; left:16px; }
 
 .hud-row-top{ display:flex; align-items:center; gap:10px; justify-content:space-between; }
@@ -238,14 +300,6 @@ body::before{
 @keyframes timerPulse{ 50%{ opacity:.4; } }
 .hud-captured{ display:flex; flex-wrap:wrap; gap:2px; min-height:20px; font-size:16px; opacity:.85; }
 .captured-piece{ line-height:1; }
-
-/* Duel energy bar — elemen ciri khas */
-.duel-bar{
-  position:fixed; top:22px; left:50%; transform:translateX(-50%); z-index:35;
-  width:min(420px, 60vw); height:8px; border-radius:99px; overflow:hidden; display:flex;
-}
-.duel-bar-fill-opp{ background:linear-gradient(90deg, var(--violet), #6b3fd6); height:100%; transition:width .3s; }
-.duel-bar-fill-self{ background:linear-gradient(90deg, #12c6c6, var(--cyan)); height:100%; transition:width .3s; }
 
 .move-history-panel{
   position:fixed; z-index:30; top:78px; right:16px; width:210px; max-height:60vh;
@@ -269,8 +323,12 @@ body::before{
 .dock-btn{
   width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   font-size:16px; color:var(--ink-dim); transition:.2s;
+  -webkit-tap-highlight-color:transparent; outline:none; appearance:none;
 }
 .dock-btn:hover{ background:rgba(255,255,255,.08); color:var(--ink); }
+.dock-btn:focus{ outline:none; }
+.dock-btn:focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; }
+.dock-btn:active{ background:rgba(23,230,230,.16); color:var(--cyan); }
 .dock-btn.danger:hover{ color:var(--danger); }
 .dock-btn.exit:hover{ color:var(--danger); }
 
@@ -399,18 +457,24 @@ input[type="range"].level-range{ width:100%; margin:10px 0 20px; }
 }
 
 @media (max-width:640px){
+  .lobby-hero-badge{ font-size:10px; padding:6px 12px; }
+  .lobby-stats-strip{ gap:8px; }
+  .lobby-stat-chip{ padding:9px 14px; flex:1 1 auto; min-width:96px; justify-content:center; }
+  .lobby-stat-chip b{ font-size:16px; }
+  .mode-card{ padding:22px 18px; }
+  .mode-icon-badge{ width:48px; height:48px; border-radius:14px; }
   .topbar{ padding:10px 12px; }
   .topbar-back span{ display:none; }
   .hud-card{ width:min(180px, 46vw); padding:9px 10px; }
   .hud-timer{ font-size:20px; min-width:56px; }
   .hud-avatar{ width:30px; height:30px; font-size:11px; }
   .hud-captured{ font-size:12px; min-height:14px; }
-  .duel-bar{ width:min(240px, 55vw); top:16px; }
-  .game-mode-label{ top:58px; font-size:10px; padding:5px 12px; }
-  .hud-card.hud-opp{ top:62px; }
+  .duel-bar-wrap{ width:min(230px, 62vw); top:14px; padding:6px 12px 8px; }
+  .duel-bar-label{ font-size:9.5px; }
+  .hud-card.hud-opp{ top:70px; }
   .hud-card.hud-self{ bottom:80px; }
-  .action-dock{ bottom:10px; gap:5px; padding:6px; }
-  .dock-btn{ width:38px; height:38px; font-size:14px; }
+  .action-dock{ bottom:10px; gap:4px; padding:5px; }
+  .dock-btn{ width:33px; height:33px; font-size:12.5px; }
   .panel-search{ width:110px; }
   .rank-row{ grid-template-columns:18px 26px 6px 1fr auto; }
   .rank-row .rank-wld, .rank-row .rank-tier{ display:none; }

@@ -35,6 +35,8 @@ const el = {
   rankingList: $('rankingList'),
   onlineList: $('onlineList'),
   searchInput: $('searchPlayerInput'),
+  statTotalPlayers: $('statTotalPlayers'), statOnlineNow: $('statOnlineNow'), statTopRating: $('statTopRating'),
+  onlineCountChip: $('onlineCountChip'),
 
   btnVsComputer: $('btnVsComputer'),
   btnVsPlayer: $('btnVsPlayerPanel'),
@@ -60,6 +62,7 @@ const el = {
   gameModeLabel: $('gameModeLabel'),
 
   btnResign: $('btnResign'), btnDraw: $('btnDraw'), btnUndo: $('btnUndo'),
+  btnZoomIn: $('btnZoomIn'), btnZoomOut: $('btnZoomOut'),
   btnMute: $('btnMute'), btnFullscreen: $('btnFullscreen'), btnSettings: $('btnSettings'), btnExit: $('btnExitGame'),
 
   settingVolume: $('settingVolume'), settingMuted: $('settingMuted'),
@@ -193,6 +196,13 @@ function renderLists(){
     onOpenProfile: openProfile,
     myKode: state.session ? state.session.kodeUnik.toUpperCase() : null
   });
+
+  const onlineCount = state.rankingCache.filter(p => p.status === 'online').length;
+  const topRating = state.rankingCache.length ? state.rankingCache[0].rating : 0;
+  if (el.statTotalPlayers) el.statTotalPlayers.textContent = state.rankingCache.length;
+  if (el.statOnlineNow) el.statOnlineNow.textContent = onlineCount;
+  if (el.statTopRating) el.statTopRating.textContent = topRating || '-';
+  if (el.onlineCountChip) el.onlineCountChip.textContent = onlineCount;
 }
 
 function updateSelfBadge(mine){
@@ -540,7 +550,13 @@ async function commitMove(from, to, promotion){
 
   if (state.vsComputer){
     await checkGameEndVsComputer();
-    if (!state.match.isGameOver()){
+    // PENTING (perbaikan bug "bidak jalan otomatis"): hanya jadwalkan
+    // giliran komputer kalau yang BARU SAJA jalan adalah bidak manusia
+    // (putih). Sebelumnya kode ini terpanggil lagi setelah komputer
+    // SENDIRI selesai jalan, sehingga Stockfish diminta mencarikan
+    // langkah terbaik untuk giliran putih (manusia) dan otomatis
+    // menjalankannya sendiri tanpa diklik user.
+    if (!state.match.isGameOver() && moveResult.color === 'w'){
       window.setTimeout(() => makeComputerMove(), 260);
     }
   } else {
@@ -769,6 +785,9 @@ function wireGameActions(){
     UI.renderMoveHistory(el.moveHistoryList, state.match.history);
     renderHud();
   });
+
+  el.btnZoomIn && el.btnZoomIn.addEventListener('click', () => { sound.click(); state.scene && state.scene.zoomIn(); });
+  el.btnZoomOut && el.btnZoomOut.addEventListener('click', () => { sound.click(); state.scene && state.scene.zoomOut(); });
 
   el.btnMute && el.btnMute.addEventListener('click', () => {
     const muted = !sound.muted;
