@@ -669,7 +669,7 @@
     <div class="section-head fade-up">
       <span class="eyebrow">Live Update</span>
       <h2>Peserta Yang Sudah Mendaftar</h2>
-      <p class="section-desc">Daftar peserta diperbarui secara langsung (real-time) setiap ada pendaftaran atau pembayaran baru.</p>
+      <p class="section-desc">Daftar peserta diperbarui secara langsung (real-time). Ketuk salah satu nama untuk melihat detail lengkapnya.</p>
     </div>
 
     <!-- Ringkasan statistik peserta -->
@@ -707,12 +707,12 @@
       </div>
     </div>
 
-    <!-- Grid kartu peserta -->
+    <!-- List ringkas peserta — tetap rapi walau jumlah peserta banyak -->
     <div class="peserta-grid" id="pesertaGrid">
       <!-- Skeleton loaders tampil sebelum data Firestore masuk -->
-      <div class="peserta-card skeleton"></div>
-      <div class="peserta-card skeleton"></div>
-      <div class="peserta-card skeleton"></div>
+      <div class="peserta-row skeleton"></div>
+      <div class="peserta-row skeleton"></div>
+      <div class="peserta-row skeleton"></div>
     </div>
 
     <p class="peserta-empty" id="pesertaEmpty" style="display:none;">
@@ -724,6 +724,36 @@
     </div>
   </div>
 </section>
+
+<!-- Modal detail peserta — dibuka saat salah satu baris di list diklik -->
+<div class="peserta-modal-overlay" id="pesertaModalOverlay">
+  <div class="peserta-modal">
+    <button type="button" class="peserta-modal-close" id="pesertaModalClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+
+    <div class="peserta-modal-top">
+      <div class="peserta-modal-avatar" id="pmAvatar">-</div>
+      <div>
+        <h3 id="pmName">-</h3>
+        <span id="pmDept">-</span>
+      </div>
+    </div>
+
+    <div class="peserta-modal-meta">
+      <span><i class="fa-solid fa-shirt"></i> <span id="pmJenis">-</span></span>
+      <span><i class="fa-solid fa-cubes"></i> <span id="pmJumlah">-</span></span>
+    </div>
+
+    <div class="peserta-modal-total" id="pmTotal">Rp0</div>
+    <div class="peserta-badge" id="pmBadge"></div>
+
+    <div class="peserta-progress" id="pmProgressWrap" style="display:none;">
+      <div class="peserta-progress-bar">
+        <div class="peserta-progress-fill" id="pmProgressFill"></div>
+      </div>
+      <span id="pmProgressText"></span>
+    </div>
+  </div>
+</div>
 
 <!-- ===================================================== -->
 <!-- PANEL ADMIN (KELOLA STATUS PEMBAYARAN) -->

@@ -1376,43 +1376,84 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     pesertaGrid.innerHTML = '';
     pesertaEmpty.style.display = list.length === 0 ? 'block' : 'none';
 
+    // PERBAIKAN TAMPILAN: dulu tiap peserta jadi kartu besar penuh detail —
+    // begitu peserta banyak, halaman jadi panjang & berantakan. Sekarang
+    // tiap peserta cuma satu baris ringkas (avatar + nama + status), detail
+    // lengkapnya baru muncul di modal saat baris itu diklik/diketuk.
     list.forEach((p, i) => {
       const status = p.pembayaran?.status || 'belum_dp';
       const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
-      const cicilanArr = p.pembayaran?.cicilan || [];
-      const cicilanTerbayar = cicilanArr.filter(c => c.dibayar).length;
       const isBaru = p._ms && (Date.now() - p._ms) < (1000 * 60 * 60 * 24); // < 24 jam
 
-      const card = document.createElement('div');
-      card.className = 'peserta-card fade-up show';
-      card.style.transitionDelay = Math.min(i * 60, 360) + 'ms';
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'peserta-row fade-up show';
+      row.style.transitionDelay = Math.min(i * 35, 300) + 'ms';
 
-      card.innerHTML = `
-        ${isBaru ? '<span class="peserta-new">Baru</span>' : ''}
-        <div class="peserta-top">
-          <div class="peserta-avatar">${initialsOf(p.nama)}</div>
-          <div class="peserta-name">
-            <h4>${escapeHtml(p.nama || '-')}</h4>
-            <span>${escapeHtml(p.departemen || '-')}</span>
-          </div>
-        </div>
-        <div class="peserta-meta">
-          <span><i class="fa-solid fa-shirt"></i> ${escapeHtml(p.jenis || '-')} • ${escapeHtml(p.ukuranKemeja || '-')}</span>
-          <span><i class="fa-solid fa-cubes"></i> ${p.jumlah || 1} pcs</span>
-        </div>
-        <div class="peserta-total">${formatRupiah(p.total || 0)}</div>
-        <div class="peserta-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</div>
-        ${p.pembayaran?.metode === 'cicilan' ? `
-          <div class="peserta-progress">
-            <div class="peserta-progress-bar">
-              <div class="peserta-progress-fill" style="width:${cicilanArr.length ? (cicilanTerbayar/cicilanArr.length*100) : 0}%"></div>
-            </div>
-            <span>${cicilanTerbayar === 1 ? 'Lunas (2/2 pembayaran)' : 'Pembayaran ke-1 (DP) selesai, menunggu pelunasan ke-2'}</span>
-          </div>` : ''}
+      row.innerHTML = `
+        <span class="peserta-row-avatar">${initialsOf(p.nama)}</span>
+        <span class="peserta-row-info">
+          <span class="peserta-row-name">${escapeHtml(p.nama || '-')}${isBaru ? '<span class="peserta-row-new">Baru</span>' : ''}</span>
+          <span class="peserta-row-dept">${escapeHtml(p.departemen || '-')}</span>
+        </span>
+        <span class="peserta-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> <b>${info.label}</b></span>
+        <i class="fa-solid fa-chevron-right peserta-row-chevron"></i>
       `;
-      pesertaGrid.appendChild(card);
+      row.addEventListener('click', () => openPesertaDetail(p));
+      pesertaGrid.appendChild(row);
     });
   }
+
+  /* =========================================================
+     18a. MODAL DETAIL PESERTA — dipanggil saat baris list diklik
+  ========================================================= */
+  const pesertaModalOverlay = document.getElementById('pesertaModalOverlay');
+  const pesertaModalClose = document.getElementById('pesertaModalClose');
+
+  function openPesertaDetail(p){
+    const status = p.pembayaran?.status || 'belum_dp';
+    const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
+    const cicilanArr = p.pembayaran?.cicilan || [];
+    const cicilanTerbayar = cicilanArr.filter(c => c.dibayar).length;
+
+    document.getElementById('pmAvatar').textContent = initialsOf(p.nama);
+    document.getElementById('pmName').textContent = p.nama || '-';
+    document.getElementById('pmDept').textContent = p.departemen || '-';
+    document.getElementById('pmJenis').textContent = `${p.jenis || '-'} • ${p.ukuranKemeja || '-'}`;
+    document.getElementById('pmJumlah').textContent = `${p.jumlah || 1} pcs`;
+    document.getElementById('pmTotal').textContent = formatRupiah(p.total || 0);
+
+    const badgeEl = document.getElementById('pmBadge');
+    badgeEl.className = `peserta-badge ${info.cls}`;
+    badgeEl.innerHTML = `<i class="fa-solid ${info.icon}"></i> ${info.label}`;
+
+    const progressWrap = document.getElementById('pmProgressWrap');
+    if (p.pembayaran?.metode === 'cicilan'){
+      progressWrap.style.display = 'block';
+      document.getElementById('pmProgressFill').style.width = (cicilanArr.length ? (cicilanTerbayar / cicilanArr.length * 100) : 0) + '%';
+      document.getElementById('pmProgressText').textContent = cicilanTerbayar === 1
+        ? 'Lunas (2/2 pembayaran)'
+        : 'Pembayaran ke-1 (DP) selesai, menunggu pelunasan ke-2';
+    } else {
+      progressWrap.style.display = 'none';
+    }
+
+    pesertaModalOverlay?.classList.add('active');
+    document.body.classList.add('peserta-modal-lock');
+  }
+
+  function closePesertaDetail(){
+    pesertaModalOverlay?.classList.remove('active');
+    document.body.classList.remove('peserta-modal-lock');
+  }
+
+  pesertaModalClose?.addEventListener('click', closePesertaDetail);
+  pesertaModalOverlay?.addEventListener('click', (e) => {
+    if (e.target === pesertaModalOverlay) closePesertaDetail();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePesertaDetail();
+  });
 
   function escapeHtml(str){
     return String(str).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
