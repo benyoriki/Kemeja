@@ -160,6 +160,16 @@
 
 @keyframes newPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.72; } }
 
+@keyframes picAvatarBreathe{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.04); }
+}
+
+@keyframes picRingPulse{
+    0%{ transform:scale(1); opacity:.5; }
+    100%{ transform:scale(1.18); opacity:0; }
+}
+
 @keyframes lunasGlow{
     0%,100%{ box-shadow:0 0 0 rgba(15,216,184,0); }
     50%{ box-shadow:0 0 16px rgba(15,216,184,.35); }
@@ -321,30 +331,29 @@
 
 .map-glow{
     position:absolute;
-    inset:-100px;
+    inset:-40px;
     background:
       radial-gradient(
       circle,
-      rgba(18,169,224,.18),
-      transparent 60%);
-    animation:mapGlow 6s linear infinite;
+      rgba(18,169,224,.14),
+      transparent 65%);
     pointer-events:none;
     z-index:0;
 }
 
-/* ---- Bingkai sudut ala "viewfinder" — aksen teknologi/modern ---- */
+/* ---- Bingkai sudut ala "viewfinder" — aksen teknologi/modern (statis, ringan) ---- */
 .map-corners{ position:absolute; inset:14px; z-index:2; pointer-events:none; }
 .map-corner{
     position:absolute; width:22px; height:22px;
     border:2.5px solid rgba(255,255,255,.85);
-    animation:mapCornerBreathe 3s ease-in-out infinite;
+    opacity:.85;
 }
 .map-corner.tl{ top:0; left:0; border-right:none; border-bottom:none; border-radius:6px 0 0 0; }
-.map-corner.tr{ top:0; right:0; border-left:none; border-bottom:none; border-radius:0 6px 0 0; animation-delay:.25s; }
-.map-corner.bl{ bottom:0; left:0; border-right:none; border-top:none; border-radius:0 0 0 6px; animation-delay:.5s; }
-.map-corner.br{ bottom:0; right:0; border-left:none; border-top:none; border-radius:0 0 6px 0; animation-delay:.75s; }
+.map-corner.tr{ top:0; right:0; border-left:none; border-bottom:none; border-radius:0 6px 0 0; }
+.map-corner.bl{ bottom:0; left:0; border-right:none; border-top:none; border-radius:0 0 0 6px; }
+.map-corner.br{ bottom:0; right:0; border-left:none; border-top:none; border-radius:0 0 6px 0; }
 
-/* ---- Radar ping "lokasi kami di sini" — pengganti map-pulse lama ---- */
+/* ---- Radar ping "lokasi kami di sini" — satu cincin saja, ringan & tetap jelas ---- */
 .map-radar{
     position:absolute; top:38%; left:50%; z-index:1; pointer-events:none;
     width:0; height:0;
@@ -355,9 +364,9 @@
     background:radial-gradient(circle, rgba(18,169,224,.4), rgba(15,216,184,.12) 60%, transparent 72%);
     transform:translate(-50%,-50%) scale(.3);
     animation:mapRadarPing 2.6s cubic-bezier(.2,.7,.3,1) infinite;
+    will-change:transform, opacity;
 }
-.radar-ring:nth-child(2){ animation-delay:.7s; }
-.radar-ring:nth-child(3){ animation-delay:1.4s; }
+.radar-ring:nth-child(n+2){ display:none; }
 .radar-dot{
     position:absolute; top:0; left:0; width:16px; height:16px; border-radius:50%;
     background:radial-gradient(circle at 35% 30%, #ff6a5c, #ff3b30);
@@ -366,7 +375,7 @@
 }
 
 @media (prefers-reduced-motion: reduce){
-    .map-corner, .radar-ring, .map-live-dot{ animation:none; }
+    .radar-ring, .map-live-dot{ animation:none; }
 }
 
 /* ---- Confetti burst (canvas) saat pendaftaran berhasil ---- */

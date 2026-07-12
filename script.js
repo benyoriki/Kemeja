@@ -14,6 +14,23 @@
    confetti saat pendaftaran berhasil yang tidak akan muncul.
 ========================================================= */
 
+/* =========================================================
+   KONFIGURASI PROGRAM IURAN — ubah angka di bawah ini sesuai
+   kesepakatan tim. TARGET_PESERTA = jumlah minimal pendaftar
+   yang dibutuhkan sebelum produksi massal dijalankan. Angka ini
+   dipakai untuk menghitung persen progress bar & status timeline
+   di section "Progress Iuran Bersama".
+========================================================= */
+const TARGET_PESERTA = 30;
+
+/* CURRENT_STAGE menentukan tahap mana yang aktif di timeline:
+   1 = Pendaftaran berjalan (default)
+   2 = Target peserta & DP sudah terkumpul, menunggu produksi
+   3 = Produksi massal sedang berjalan
+   4 = Selesai — kemeja sudah didistribusikan
+   Ubah manual angka ini saat progres program berpindah tahap. */
+const CURRENT_STAGE = 1;
+
 document.addEventListener('DOMContentLoaded', () => {
 
   /* =========================================================
@@ -1401,6 +1418,61 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     return String(str).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
+  /* =========================================================
+     18b. PROGRESS BATCH & TIMELINE — Program Iuran Bersama
+     Dipanggil setiap kali pesertaData berubah (live), dan sekali
+     saat halaman pertama kali dimuat memakai CURRENT_STAGE manual.
+  ========================================================= */
+  const heroPesertaCount = document.getElementById('heroPesertaCount');
+  const progressPesertaCount = document.getElementById('progressPesertaCount');
+  const progressDanaCount = document.getElementById('progressDanaCount');
+  const progressTargetCount = document.getElementById('progressTargetCount');
+  const progressBarFill = document.getElementById('progressBarFill');
+  const progressBarLabel = document.getElementById('progressBarLabel');
+
+  if (progressTargetCount) progressTargetCount.textContent = TARGET_PESERTA;
+
+  function updateProgressBatch(){
+    const totalPeserta = pesertaData.length;
+    const totalDana = pesertaData.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
+    const persen = TARGET_PESERTA > 0 ? Math.min(100, Math.round((totalPeserta / TARGET_PESERTA) * 100)) : 0;
+
+    if (heroPesertaCount) animateStatNumber(heroPesertaCount, totalPeserta);
+    if (progressPesertaCount) animateStatNumber(progressPesertaCount, totalPeserta);
+    if (progressDanaCount) progressDanaCount.textContent = formatRupiah(totalDana);
+    if (progressBarFill) progressBarFill.style.width = persen + '%';
+    if (progressBarLabel){
+      progressBarLabel.textContent = totalPeserta >= TARGET_PESERTA
+        ? `Target tercapai! (${totalPeserta}/${TARGET_PESERTA} peserta) — menunggu jadwal produksi`
+        : `${persen}% menuju target produksi • ${totalPeserta}/${TARGET_PESERTA} peserta`;
+    }
+  }
+
+  function updateTimeline(){
+    const steps = document.querySelectorAll('#timelineWrap .timeline-step');
+    steps.forEach(step => {
+      const n = parseInt(step.dataset.step, 10);
+      step.classList.remove('is-done', 'is-active');
+      if (n < CURRENT_STAGE) step.classList.add('is-done');
+      else if (n === CURRENT_STAGE) step.classList.add('is-active');
+    });
+  }
+  updateTimeline();
+
+  /* =========================================================
+     18c. FAQ ACCORDION
+  ========================================================= */
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const btn = item.querySelector('.faq-question');
+    btn?.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(other => {
+        if (other !== item) other.classList.remove('open');
+      });
+      item.classList.toggle('open', !isOpen);
+    });
+  });
+
   pesertaFilters?.querySelectorAll('.pfilter').forEach(btn => {
     btn.addEventListener('click', () => {
       pesertaFilters.querySelectorAll('.pfilter').forEach(b => b.classList.remove('active'));
@@ -1421,6 +1493,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       if (msgEl) msgEl.innerHTML = reason || 'Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.';
     }
     pesertaGrid.innerHTML = '';
+    if (progressBarLabel) progressBarLabel.textContent = 'Data belum bisa dimuat — cek koneksi internet.';
   }
 
   // Tombol "Coba Sambungkan Ulang" — memicu window.__lokonRetryFirebase()
@@ -1467,6 +1540,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
         renderAdminList();
         renderProfileWidget();
         updateChatMemberCount();
+        updateProgressBatch();
       }, (err) => {
         console.warn('Firestore listener error:', err.code, err.message);
         // Bedakan pesan berdasarkan kode error asli Firestore, supaya

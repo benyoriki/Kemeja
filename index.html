@@ -136,12 +136,14 @@
         <button class="nav-close-btn" id="navCloseBtn" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <a href="#home" class="active"><i class="fa-solid fa-house nav-ico"></i>Beranda</a>
+      <a href="#progress"><i class="fa-solid fa-chart-line nav-ico"></i>Progress</a>
       <a href="#tentang"><i class="fa-solid fa-circle-info nav-ico"></i>Tentang</a>
       <a href="#keunggulan"><i class="fa-solid fa-star nav-ico"></i>Keunggulan</a>
       <a href="#galeri"><i class="fa-solid fa-images nav-ico"></i>Galeri</a>
       <a href="#spesifikasi"><i class="fa-solid fa-ruler-combined nav-ico"></i>Spesifikasi</a>
       <a href="#ukuran"><i class="fa-solid fa-shirt nav-ico"></i>Ukuran</a>
       <a href="#peserta"><i class="fa-solid fa-users nav-ico"></i>Peserta</a>
+      <a href="#faq"><i class="fa-solid fa-circle-question nav-ico"></i>FAQ</a>
       <a href="#daftar" class="nav-cta"><i class="fa-solid fa-pen-to-square"></i> Daftar</a>
     </nav>
 
@@ -245,7 +247,7 @@
     <!-- Counter Stats -->
     <div class="hero-stats fade-up">
       <div class="stat-item">
-        <span class="counter" data-target="500">0</span><span class="stat-plus">+</span>
+        <span class="stat-live" id="heroPesertaCount">0</span><span class="stat-plus">+</span>
         <p>Karyawan Terdaftar</p>
       </div>
       <div class="stat-item">
@@ -267,6 +269,79 @@
     <svg viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M0,32 C240,80 480,0 720,24 C960,48 1200,88 1440,40 L1440,90 L0,90 Z" fill="var(--foam)"></path>
     </svg>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- PROGRESS BATCH & TIMELINE -->
+<!-- ===================================================== -->
+<section id="progress" class="section progress-section">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Transparansi Program</span>
+      <h2>Progress Iuran Bersama</h2>
+      <p class="section-desc">
+        Kemeja ini dibuat dengan dana urunan/pribadi peserta, dan diproduksi <b>serempak</b> —
+        bukan satu per satu — begitu jumlah pendaftar dan DP mencapai target. Datanya di
+        bawah ini real-time, langsung dari sistem pendaftaran.
+      </p>
+    </div>
+
+    <div class="progress-stats-grid fade-up">
+      <div class="progress-stat-card">
+        <i class="fa-solid fa-users"></i>
+        <span class="progress-stat-num" id="progressPesertaCount">0</span>
+        <p>Peserta Terdaftar</p>
+      </div>
+      <div class="progress-stat-card">
+        <i class="fa-solid fa-sack-dollar"></i>
+        <span class="progress-stat-num" id="progressDanaCount">Rp0</span>
+        <p>Dana Terkumpul (DP + Pelunasan)</p>
+      </div>
+      <div class="progress-stat-card">
+        <i class="fa-solid fa-bullseye"></i>
+        <span class="progress-stat-num" id="progressTargetCount">0</span>
+        <p>Target Minimal Peserta</p>
+      </div>
+    </div>
+
+    <div class="progress-bar-wrap fade-up">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+      </div>
+      <div class="progress-bar-label" id="progressBarLabel">Memuat data...</div>
+    </div>
+
+    <div class="timeline-wrap fade-up" id="timelineWrap">
+      <div class="timeline-step" data-step="1">
+        <div class="timeline-dot"><i class="fa-solid fa-pen-to-square"></i></div>
+        <div class="timeline-content">
+          <h4>Pendaftaran</h4>
+          <p>Karyawan mengisi data & menyetor DP.</p>
+        </div>
+      </div>
+      <div class="timeline-step" data-step="2">
+        <div class="timeline-dot"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        <div class="timeline-content">
+          <h4>Target Terkumpul</h4>
+          <p>Jumlah pendaftar & DP minimal tercapai.</p>
+        </div>
+      </div>
+      <div class="timeline-step" data-step="3">
+        <div class="timeline-dot"><i class="fa-solid fa-industry"></i></div>
+        <div class="timeline-content">
+          <h4>Produksi Massal</h4>
+          <p>Seluruh kemeja peserta dijahit bersamaan.</p>
+        </div>
+      </div>
+      <div class="timeline-step" data-step="4">
+        <div class="timeline-dot"><i class="fa-solid fa-box-open"></i></div>
+        <div class="timeline-content">
+          <h4>Distribusi</h4>
+          <p>Kemeja jadi dibagikan ke setiap peserta.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -381,27 +456,27 @@
 
     <div class="gallery-grid gallery-grid-set active" id="galeriPria">
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
-        <img src="depan.jpg" alt="Tampak Depan Kemeja Kerja AQUA - Model Pria" loading="lazy">
+        <img src="depan.jpg?v=1" alt="Tampak Depan Kemeja Kerja AQUA - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Belakang - List Piping Punggung">
-        <img src="belakang.jpg" alt="Tampak Belakang Kemeja Kerja AQUA - Model Pria" loading="lazy">
+        <img src="belakang.jpg?v=1" alt="Tampak Belakang Kemeja Kerja AQUA - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
-        <img src="kanan.jpg" alt="Tampak Samping Kanan - Model Pria" loading="lazy">
+        <img src="kanan.jpg?v=1" alt="Tampak Samping Kanan - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kiri - Logo K3">
-        <img src="kiri.jpg" alt="Tampak Samping Kiri - Model Pria" loading="lazy">
+        <img src="kiri.jpg?v=1" alt="Tampak Samping Kiri - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
-        <img src="bordir.jpg" alt="Detail Logo Bordir" loading="lazy">
+        <img src="bordir.jpg?v=1" alt="Detail Logo Bordir" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
@@ -413,27 +488,27 @@
          Hadir" ini tanpa perlu ubah kode apa pun lagi. -->
     <div class="gallery-grid gallery-grid-set" id="galeriWanita">
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Depan - Kemeja Model Wanita">
-        <img src="depan_wanita.png" alt="Tampak Depan Kemeja Kerja AQUA - Model Wanita" loading="lazy">
+        <img src="depan_wanita.png?v=1" alt="Tampak Depan Kemeja Kerja AQUA - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Belakang - Kemeja Model Wanita">
-        <img src="belakang_wanita.png" alt="Tampak Belakang Kemeja Kerja AQUA - Model Wanita" loading="lazy">
+        <img src="belakang_wanita.png?v=1" alt="Tampak Belakang Kemeja Kerja AQUA - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kanan - Model Wanita">
-        <img src="kanan_wanita.png" alt="Tampak Samping Kanan - Model Wanita" loading="lazy">
+        <img src="kanan_wanita.png?v=1" alt="Tampak Samping Kanan - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kiri - Model Wanita">
-        <img src="kiri_wanita.png" alt="Tampak Samping Kiri - Model Wanita" loading="lazy">
+        <img src="kiri_wanita.png?v=1" alt="Tampak Samping Kiri - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Detail Bordir - Model Wanita">
-        <img src="bordir_wanita.png" alt="Detail Logo Bordir - Model Wanita" loading="lazy">
+        <img src="bordir_wanita.png?v=1" alt="Detail Logo Bordir - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
@@ -563,13 +638,13 @@
           <button type="button" class="galeri-tab" data-target="polaWanita"><i class="fa-solid fa-person-dress"></i> Pola Wanita</button>
         </div>
         <div class="pola-set active" id="polaPria">
-          <img src="pola.jpg" alt="Ilustrasi Pola dan Cara Mengukur Badan - Pria" loading="lazy">
+          <img src="pola.jpg?v=1" alt="Ilustrasi Pola dan Cara Mengukur Badan - Pria" loading="lazy">
         </div>
         <div class="pola-set" id="polaWanita">
           <!-- pola_wanita.png belum diupload — otomatis tampil begitu file
                dengan nama ini ditambahkan ke repo (lihat gallery-placeholder). -->
           <div class="gallery-item img-loading" style="height:280px;">
-            <img src="pola_wanita.png" alt="Ilustrasi Pola dan Cara Mengukur Badan - Wanita" loading="lazy">
+            <img src="pola_wanita.png?v=1" alt="Ilustrasi Pola dan Cara Mengukur Badan - Wanita" loading="lazy">
             <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Ilustrasi Pola Wanita<br>Segera Hadir</span></div>
           </div>
         </div>
@@ -965,7 +1040,6 @@
           <small class="total-fee-note" id="totalFeeNote"></small>
         </div>
 
-
         <div class="form-group full">
           <label>Metode Pembayaran <span class="req">*</span></label>
           <div class="radio-group payment-radio-group">
@@ -1017,6 +1091,131 @@
 <!-- ===================================================== -->
 <!-- LOKASI PERUSAHAAN -->
 <!-- ===================================================== -->
+<!-- ===================================================== -->
+<!-- PENANGGUNG JAWAB -->
+<!-- ===================================================== -->
+<section id="pic" class="section pic-section">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Transparansi</span>
+      <h2>Penanggung Jawab Program</h2>
+      <p class="section-desc">
+        Dana iuran dikelola langsung oleh dua orang berikut. Hubungi mereka jika ada
+        pertanyaan seputar pendaftaran, pembayaran, atau progres produksi.
+      </p>
+    </div>
+
+    <div class="pic-grid fade-up">
+      <div class="pic-card">
+        <div class="pic-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <h4>M Daud S.M</h4>
+        <span class="pic-role">Penanggung Jawab Program</span>
+        <a href="https://wa.me/6285697321423" target="_blank" rel="noopener" class="btn btn-outline btn-sm pic-wa">
+          <i class="fa-brands fa-whatsapp"></i> +62 856-9732-1423
+        </a>
+      </div>
+      <div class="pic-card">
+        <div class="pic-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <h4>Kamil M</h4>
+        <span class="pic-role">Penanggung Jawab Program</span>
+        <a href="https://wa.me/6283151144948" target="_blank" rel="noopener" class="btn btn-outline btn-sm pic-wa">
+          <i class="fa-brands fa-whatsapp"></i> +62 831-5114-4948
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- FAQ -->
+<!-- ===================================================== -->
+<section id="faq" class="section faq-section">
+  <div class="container">
+    <div class="section-head fade-up">
+      <span class="eyebrow">Pertanyaan Umum</span>
+      <h2>FAQ Seputar Program Iuran</h2>
+    </div>
+
+    <div class="faq-list fade-up" id="faqList">
+      <div class="faq-item">
+        <button type="button" class="faq-question">
+          Kenapa harus menunggu semua peserta daftar dulu, tidak dibuat satu-satu?
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Karena kemeja ini dibuat dari dana urunan bersama, produksi dijalankan secara
+          <b>serempak</b> untuk seluruh peserta sekaligus dalam satu batch. Ini membuat
+          harga per kemeja lebih hemat (harga borongan/grosir) dan kualitas jahitan serta
+          bordir lebih konsisten karena dikerjakan oleh penjahit yang sama dalam satu waktu.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="faq-question">
+          Kapan produksi kemeja mulai dijalankan?
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Begitu jumlah pendaftar dan total DP yang terkumpul mencapai target minimal —
+          bisa dipantau langsung secara real-time di bagian <a href="#progress">Progress Iuran
+          Bersama</a> di atas — produksi massal akan langsung dijadwalkan dan diumumkan
+          kepada seluruh peserta.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="faq-question">
+          Ke mana uang DP saya disetorkan dan siapa yang memegang?
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Dana dikelola langsung oleh dua penanggung jawab program (lihat bagian
+          <a href="#pic">Penanggung Jawab</a> di atas), yang bertugas mencatat, mengumpulkan,
+          dan mempertanggungjawabkan seluruh transaksi kepada peserta.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="faq-question">
+          Bagaimana kalau target belum tercapai dalam waktu lama?
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Dana yang sudah masuk tidak akan digunakan sebelum produksi resmi dimulai.
+          Jika target ternyata tidak tercapai, keputusan lanjutan (menunggu lebih lama atau
+          pengembalian dana) akan disepakati bersama peserta melalui penanggung jawab program.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="faq-question">
+          Bagaimana cara cek status pembayaran saya sendiri?
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Gunakan kode unik yang diberikan setelah mendaftar, lalu klik "Sudah daftar? Cek
+          Status" pada menu profil di pojok kanan atas halaman ini.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button type="button" class="faq-question">
+          Apakah data (ukuran, nama bordir, dll) bisa diubah setelah daftar?
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Selama status masih "Pendaftaran" atau "Target Terkumpul" (belum masuk tahap
+          produksi), silakan hubungi salah satu penanggung jawab untuk mengubah data. Begitu
+          produksi massal dimulai, perubahan data tidak dapat dilakukan lagi.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<!-- LOKASI -->
+<!-- ===================================================== -->
 <section id="lokasi" class="section lokasi-section">
   <div class="container">
     <div class="lokasi-grid">
@@ -1047,8 +1246,15 @@
           <li>
             <span class="lokasi-detail-ico"><i class="fa-brands fa-whatsapp"></i></span>
             <div>
-              <strong>Tim Sukses: M Daud S.M</strong>
+              <strong>Penanggung Jawab: M Daud S.M</strong>
               <span>+62 856-9732-1423</span>
+            </div>
+          </li>
+          <li>
+            <span class="lokasi-detail-ico"><i class="fa-brands fa-whatsapp"></i></span>
+            <div>
+              <strong>Penanggung Jawab: Kamil M</strong>
+              <span>+62 831-5114-4948</span>
             </div>
           </li>
         </ul>
@@ -1138,8 +1344,10 @@
 
     <div class="footer-contact">
       <h4>Kontak</h4>
-      <p><i class="fa-solid fa-location-dot"></i> Tim Sukses: M Daud S.M </p>
+      <p><i class="fa-solid fa-user-tie"></i> M Daud S.M</p>
       <p><i class="fa-brands fa-whatsapp"></i> +62 856-9732-1423</p>
+      <p><i class="fa-solid fa-user-tie"></i> Kamil M</p>
+      <p><i class="fa-brands fa-whatsapp"></i> +62 831-5114-4948</p>
     </div>
   </div>
 
@@ -1359,7 +1567,7 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.js?v=18"></script>
+<script src="script.js?v=19"></script>
 <script src="particles.js?v=3"></script>
 </body>
 </html>
