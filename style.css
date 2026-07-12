@@ -2297,6 +2297,17 @@ body.peserta-modal-lock{ overflow:hidden; }
   flex-shrink:0;
 }
 
+/* Tombol aktif/nonaktifkan suara & notifikasi chat (lihat script.js #18c) */
+.chat-sound-toggle{
+  flex-shrink:0; width:34px; height:34px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(255,255,255,.15); color:#fff; font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s ease, transform .15s ease;
+}
+.chat-sound-toggle:hover{ background:rgba(255,255,255,.26); }
+.chat-sound-toggle:active{ transform:scale(.92); }
+.chat-sound-toggle.muted{ color:rgba(255,255,255,.55); }
+
 .chat-header-live .dot{ width:7px; height:7px; border-radius:50%; background:#3CF281; animation:livePulse 1.6s ease-in-out infinite; flex-shrink:0; }
 
 .chat-body{

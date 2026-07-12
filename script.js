@@ -1773,6 +1773,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   const chatInput = document.getElementById('chatInput');
   const chatLocked = document.getElementById('chatLocked');
   const chatMemberCount = document.getElementById('chatMemberCount');
+  const chatSoundToggle = document.getElementById('chatSoundToggle');
 
   let chatMessages = [];
   let unreadCount = 0;
@@ -1799,6 +1800,92 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     let hash = 0;
     for (let i = 0; i < str.length; i++){ hash = str.charCodeAt(i) + ((hash << 5) - hash); }
     return CHAT_NAME_PALETTE[Math.abs(hash) % CHAT_NAME_PALETTE.length];
+  }
+
+  /* ---------------------------------------------------------
+     18c-i. SUARA & NOTIFIKASI PESAN BARU
+     - Suara dibuat langsung lewat Web Audio API (bunyi "ding"
+       2 nada pendek) — tidak butuh file audio tambahan, jadi
+       tidak akan gagal dimuat karena masalah path/hosting.
+     - Notifikasi browser (Notification API) opsional, dipakai
+       kalau user sudah kasih izin & tab sedang tidak aktif
+       dilihat (background/minimized) atau panel chat tertutup.
+     - Preferensi ON/OFF disimpan di localStorage supaya tidak
+       perlu diaktifkan ulang tiap buka website.
+  --------------------------------------------------------- */
+  const CHAT_SOUND_KEY = 'lokon_chat_sound_on';
+  let chatSoundOn = localStorage.getItem(CHAT_SOUND_KEY) !== 'off'; // default: ON
+  let audioCtx = null;
+
+  function playChatSound(){
+    if (!chatSoundOn) return;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      // Dua nada pendek (mirip notifikasi WhatsApp/Messenger), dibuat
+      // dari oscillator + fade out cepat supaya tidak berdengung.
+      [ [880, now, 0.09], [1180, now + 0.09, 0.12] ].forEach(([freq, start, dur]) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.22, start + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + dur + 0.02);
+      });
+    } catch (err){
+      console.warn('Tidak bisa memutar suara notifikasi chat:', err);
+    }
+  }
+
+  function updateChatSoundIcon(){
+    if (!chatSoundToggle) return;
+    chatSoundToggle.classList.toggle('muted', !chatSoundOn);
+    chatSoundToggle.innerHTML = chatSoundOn
+      ? '<i class="fa-solid fa-bell"></i>'
+      : '<i class="fa-solid fa-bell-slash"></i>';
+  }
+  updateChatSoundIcon();
+
+  chatSoundToggle?.addEventListener('click', async () => {
+    chatSoundOn = !chatSoundOn;
+    localStorage.setItem(CHAT_SOUND_KEY, chatSoundOn ? 'on' : 'off');
+    updateChatSoundIcon();
+    if (chatSoundOn){
+      // Minta izin notifikasi browser saat user MENGAKTIFKAN suara —
+      // ini tetap dipicu dari klik (user gesture), jadi browser tidak
+      // akan memblokir prompt izinnya.
+      if ('Notification' in window && Notification.permission === 'default'){
+        try { await Notification.requestPermission(); } catch (err) { /* diabaikan */ }
+      }
+      playChatSound(); // beri contoh bunyi supaya user tahu sudah aktif
+      showToast('Suara & notifikasi chat diaktifkan.', 'success');
+    } else {
+      showToast('Suara & notifikasi chat dimatikan.', 'success');
+    }
+  });
+
+  function notifyNewChatMessage(msg){
+    if (!chatSoundOn) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    // Hanya tampilkan notifikasi desktop kalau chat sedang TIDAK dilihat
+    // langsung (tab di-minimize/pindah tab, atau panel chat tertutup) —
+    // supaya tidak mengganggu saat user memang sedang aktif chatting.
+    if (chatIsOpen && !document.hidden) return;
+    try {
+      const n = new Notification(`💬 ${msg.nama || 'Peserta'} (Grup LOKON PRIMA)`, {
+        body: (msg.pesan || '').slice(0, 120),
+        icon: 'https://benyoriki.github.io/Kemeja/favicon.ico',
+        tag: 'lokon-chat' // gantikan notifikasi lama, tidak menumpuk
+      });
+      n.onclick = () => { window.focus(); openChatPanel(); n.close(); };
+    } catch (err){
+      console.warn('Gagal menampilkan notifikasi chat:', err);
+    }
   }
 
   function openChatPanel(){
@@ -1938,6 +2025,13 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
         chatMessages.push(msg);
         hasChange = true;
         if (!chatFirstLoad && !chatIsOpen) addedWhileClosed++;
+
+        // Bunyi + notifikasi HANYA untuk pesan baru beneran (bukan saat
+        // memuat riwayat pertama kali) dan bukan pesan dari diri sendiri.
+        if (!chatFirstLoad && !mine){
+          playChatSound();
+          notifyNewChatMessage(msg);
+        }
       }
     });
 
@@ -2121,12 +2215,39 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   function closeAdminModal(){
     adminOverlay.classList.remove('active');
   }
-  function logoutAdmin(){
+  async function logoutAdmin(){
     adminUnlocked = false;
     adminOverlay.classList.remove('admin-dash-mode');
     stopAdminClock();
     closeAdminModal();
+    const fb = window.__lokonFirebase;
+    if (fb?.auth){
+      try { await fb.signOut(fb.auth); } catch (err){ console.warn('Gagal logout dari Firebase Auth:', err); }
+    }
     showToast('Berhasil keluar dari dasbor admin.', 'success');
+  }
+
+  // PERBAIKAN: pantau status login Firebase Authentication secara real-time.
+  // - Kalau admin sudah pernah login sebelumnya (sesi Firebase Auth masih
+  //   tersimpan di browser), dasbor otomatis kebuka lagi tanpa perlu
+  //   login ulang tiap buka halaman.
+  // - Kalau sesi berakhir/di-logout dari perangkat lain, dasbor otomatis
+  //   ikut tertutup di sini juga.
+  function watchAdminAuthState(fb){
+    fb.onAuthStateChanged(fb.auth, (user) => {
+      if (user && adminOverlay.classList.contains('active') && !adminUnlocked){
+        adminUnlocked = true;
+        adminLogin.style.display = 'none';
+        adminPanel.style.display = 'block';
+        adminOverlay.classList.add('admin-dash-mode');
+        startAdminClock();
+        renderAdminList();
+      } else if (!user && adminUnlocked){
+        adminUnlocked = false;
+        adminOverlay.classList.remove('admin-dash-mode');
+        stopAdminClock();
+      }
+    });
   }
 
   // Ketuk logo 5x dalam 1.6 detik untuk membuka panel admin
@@ -2148,30 +2269,62 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   adminLogoutBtn?.addEventListener('click', logoutAdmin);
   adminOverlay?.addEventListener('click', (e) => { if (e.target === adminOverlay) closeAdminModal(); });
 
-  adminLoginBtn?.addEventListener('click', () => {
-    const correctUser = window.__lokonAdminUsername;
-    const correctPass = window.__lokonAdminPasscode;
-    if (!correctUser || !correctPass){
-      adminLoginError.textContent = 'Firebase belum dikonfigurasi.';
-      return;
-    }
+  adminLoginBtn?.addEventListener('click', async () => {
+    const email = adminUsername.value.trim();
+    const pass = adminPasscode.value;
+
     if (parseInt(adminCaptchaInput.value, 10) !== captchaAnswer){
       adminLoginError.textContent = 'Jawaban verifikasi salah, coba lagi.';
       newCaptcha();
       return;
     }
-    if (adminUsername.value.trim() === correctUser && adminPasscode.value === correctPass){
+    if (!email || !pass){
+      adminLoginError.textContent = 'Email dan kata sandi wajib diisi.';
+      return;
+    }
+
+    adminLoginBtn.disabled = true;
+    adminLoginError.textContent = '';
+    const fb = await waitForFirebase(8000);
+    if (!fb || !fb.auth){
+      adminLoginError.textContent = 'Tidak bisa terhubung ke server login. Cek koneksi internet lalu coba lagi.';
+      adminLoginBtn.disabled = false;
+      return;
+    }
+
+    try {
+      // Login SUNGGUHAN lewat Firebase Authentication — bukan lagi
+      // dicocokkan manual di JavaScript. Akun admin dibuat lewat
+      // Firebase Console > Authentication > Users.
+      await fb.signInWithEmailAndPassword(fb.auth, email, pass);
       adminUnlocked = true;
       adminLogin.style.display = 'none';
       adminPanel.style.display = 'block';
       adminOverlay.classList.add('admin-dash-mode');
       startAdminClock();
       renderAdminList();
-    } else {
-      adminLoginError.textContent = 'Username atau kata sandi salah.';
+    } catch (err){
+      console.warn('Login admin gagal:', err.code, err.message);
+      const map = {
+        'auth/invalid-email': 'Format email tidak valid.',
+        'auth/user-not-found': 'Email admin tidak ditemukan.',
+        'auth/wrong-password': 'Kata sandi salah.',
+        'auth/invalid-credential': 'Email atau kata sandi salah.',
+        'auth/too-many-requests': 'Terlalu banyak percobaan gagal. Coba lagi beberapa menit lagi.',
+        'auth/network-request-failed': 'Koneksi bermasalah, coba lagi.'
+      };
+      adminLoginError.textContent = map[err.code] || 'Login gagal. Periksa kembali email & kata sandi.';
       newCaptcha();
+    } finally {
+      adminLoginBtn.disabled = false;
     }
   });
+
+  // Aktifkan pemantauan sesi login begitu Firebase siap.
+  (async () => {
+    const fb = await waitForFirebase();
+    if (fb?.auth) watchAdminAuthState(fb);
+  })();
 
   adminRefreshBtn?.addEventListener('click', async () => {
     if (!window.__lokonFirebase && typeof window.__lokonRetryFirebase === 'function'){

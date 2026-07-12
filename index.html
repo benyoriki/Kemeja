@@ -768,13 +768,13 @@
       <p>Khusus tim keuangan untuk memperbarui status pembayaran peserta.</p>
 
       <div class="admin-field">
-        <label for="adminUsername">Username</label>
-        <input type="text" id="adminUsername" placeholder="Masukkan username admin" autocomplete="off">
+        <label for="adminUsername">Email Admin</label>
+        <input type="email" id="adminUsername" placeholder="Masukkan email admin" autocomplete="username">
       </div>
 
       <div class="admin-field">
         <label for="adminPasscode">Kata Sandi</label>
-        <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="off">
+        <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="current-password">
       </div>
 
       <div class="admin-field admin-captcha">
@@ -1446,6 +1446,9 @@
       <strong>Grup Peserta LOKON PRIMA</strong>
       <span id="chatMemberCount"><i class="fa-solid fa-circle-notch fa-spin"></i> memuat anggota...</span>
     </div>
+    <button class="chat-sound-toggle" id="chatSoundToggle" type="button" aria-label="Aktifkan/nonaktifkan suara &amp; notifikasi chat" title="Suara &amp; notifikasi chat">
+      <i class="fa-solid fa-bell"></i>
+    </button>
     <span class="chat-header-live"><span class="dot"></span> LIVE</span>
   </div>
 
@@ -1543,21 +1546,21 @@
     messagingSenderId: "152507973931",
     appId: "1:152507973931:web:fd9fd3fabfe862a9cf856e"
   };
-  // Kata sandi panel admin — ganti sebelum dipakai secara nyata.
-  const ADMIN_USERNAME = "admin@gmail.com";
-  const ADMIN_PASSCODE = "123admin";
   const FIRESTORE_COLLECTION = "pendaftaran";
   const CHAT_COLLECTION = "chat_pesan";
 
-  // Kredensial admin diisi LANGSUNG dari file lokal ini, tidak bergantung
-  // pada berhasil/tidaknya SDK Firebase dimuat dari CDN. Jadi Login Admin
-  // tetap bisa dipakai walau internet lambat/terputus.
-  window.__lokonAdminPasscode = ADMIN_PASSCODE;
-  window.__lokonAdminUsername = ADMIN_USERNAME;
+  // CATATAN KEAMANAN (PERBAIKAN): login admin SEKARANG memakai Firebase
+  // Authentication (email/password) yang sesungguhnya, bukan lagi
+  // dicocokkan manual di kode (yang sebelumnya bisa dibaca siapa pun
+  // lewat "View Source"). Akun admin dibuat & dikelola dari Firebase
+  // Console > Authentication > Users — BUKAN dari file ini.
+  // Firestore Rules juga bisa memakai `request.auth != null` untuk
+  // membatasi siapa yang boleh mengubah/menghapus data (lihat
+  // PANDUAN-FIREBASE.md untuk contoh rules terbaru).
 
   // SDK Firebase (dari CDN Google) dimuat secara terpisah dan dinamis,
   // supaya kalau koneksi lambat/gagal, hanya fitur online (live peserta,
-  // chat grup) yang nonaktif — bukan seluruh website/login admin.
+  // chat grup, login admin) yang nonaktif — bukan seluruh website.
   //
   // PERBAIKAN: dibungkus jadi fungsi yang bisa dipanggil ULANG (baik
   // otomatis 3x percobaan, maupun manual lewat tombol "Coba Lagi" di
@@ -1565,24 +1568,27 @@
   // lambat/tidak stabil tidak membuat fitur online mati permanen untuk
   // seluruh sesi kunjungan.
   async function loadFirebaseSDK(){
-    let db = null, mods = null;
+    let db = null, auth = null, mods = null, authMods = null;
     const SDK_VER = "10.12.2";
     for (let attempt = 1; attempt <= 3; attempt++){
       try {
-        const [{ initializeApp }, firestoreMod] = await Promise.all([
+        const [{ initializeApp }, firestoreMod, authModImport] = await Promise.all([
           import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-app.js`),
-          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-firestore.js`)
+          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-firestore.js`),
+          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-auth.js`)
         ]);
         mods = firestoreMod;
+        authMods = authModImport;
         const app = initializeApp(firebaseConfig);
         db = mods.getFirestore(app);
+        auth = authMods.getAuth(app);
         break;
       } catch (err) {
         console.warn(`SDK Firebase gagal dimuat (percobaan ${attempt}/3):`, err);
         if (attempt < 3) await new Promise(r => setTimeout(r, 1500 * attempt));
       }
     }
-    if (!db){
+    if (!db || !auth){
       console.warn("SDK Firebase tetap gagal setelah 3 percobaan — cek koneksi internet.");
       window.__lokonFirebase = null;
     } else {
@@ -1591,7 +1597,12 @@
         doc: mods.doc, updateDoc: mods.updateDoc, deleteDoc: mods.deleteDoc, serverTimestamp: mods.serverTimestamp,
         query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
         getDocs: mods.getDocs, writeBatch: mods.writeBatch,
-        ADMIN_PASSCODE, FIRESTORE_COLLECTION, CHAT_COLLECTION
+        // --- Firebase Authentication (login admin) ---
+        auth,
+        signInWithEmailAndPassword: authMods.signInWithEmailAndPassword,
+        signOut: authMods.signOut,
+        onAuthStateChanged: authMods.onAuthStateChanged,
+        FIRESTORE_COLLECTION, CHAT_COLLECTION
       };
     }
     window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
