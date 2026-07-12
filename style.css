@@ -164,28 +164,37 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 
 .loader-word{
-  letter-spacing:6px; font-weight:700; font-size:15px; font-family:var(--font-display);
+  letter-spacing:5px; font-weight:700; font-size:19px; font-family:var(--font-display);
   background:linear-gradient(90deg,#fff,#BEE9FA,#fff);
   -webkit-background-clip:text; background-clip:text; color:transparent;
   background-size:200% auto; animation:shimmer 2s linear infinite;
-  margin-bottom:8px;
+  margin-bottom:6px;
 }
 
-.loader-sub{
-  display:inline-flex; align-items:center; gap:4px;
-  font-size:12px; color:rgba(255,255,255,.6); letter-spacing:.02em;
+.loader-tagline{
+  font-size:12.5px; color:rgba(255,255,255,.68); letter-spacing:.02em; margin-bottom:18px;
 }
 
-.loader-dots{ display:inline-flex; gap:3px; }
-
-.loader-dots i{
-  width:4px; height:4px; border-radius:50%; background:var(--teal);
-  animation: dotBlink 1.2s ease-in-out infinite;
+/* Baris status "sistem sedang menyiapkan..." — bergantian murni pakai
+   CSS (opacity+transform saja, tanpa JS) supaya kesan "full sistem
+   canggih" tetap ringan di HP maupun PC. */
+.loader-status{
+  position:relative; height:16px; width:min(86vw,300px); margin:0 auto;
+  font-size:11.5px; color:rgba(255,255,255,.72); letter-spacing:.01em;
 }
 
-.loader-dots i:nth-child(2){ animation-delay:.2s; }
+.loader-status span{
+  position:absolute; inset:0; opacity:0;
+  animation: statusCycle 8s ease-in-out infinite;
+  animation-delay: var(--sd, 0s);
+}
 
-.loader-dots i:nth-child(3){ animation-delay:.4s; }
+.loader-credit{
+  position:absolute; left:0; right:0; bottom:18px; text-align:center;
+  font-size:10.5px; color:rgba(255,255,255,.4); letter-spacing:.02em; z-index:2;
+}
+
+.loader-credit b{ color:rgba(255,255,255,.62); font-weight:600; }
 
 /* --- Indeterminate progress bar --- */
 .loader-progress{
@@ -203,15 +212,18 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 @media (max-width:600px){
   .loader-mark{ width:96px; height:96px; }
   .loader-shirt{ width:46px; height:46px; }
-  .loader-particles .drop:nth-child(n+11){ display:none; }
+  .loader-particles .drop:nth-child(n+5){ display:none; }
+  .loader-status{ font-size:11px; }
 }
 
 @media (prefers-reduced-motion: reduce){
   .loader-aurora, .loader-particles .drop, .loader-ring, .loader-glow,
-  .shirt-path, .loader-word, .loader-dots i, .loader-progress span{
+  .shirt-path, .loader-word, .loader-progress span, .loader-status span{
     animation:none !important;
   }
   .shirt-path{ stroke-dashoffset:0; }
+  .loader-status span{ opacity:0; }
+  .loader-status span:first-child{ opacity:1; }
 }
 
 /* ============ SCROLL PROGRESS ============ */
@@ -385,11 +397,33 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
   animation: bounceDown 1.8s infinite; z-index:2; font-size:18px; opacity:.85;
 }
 
+/* PERBAIKAN BUG: sebelumnya .wave-divider ikut jadi flex-item di dalam
+   .hero (yang punya display:flex + justify-content:center TANPA
+   flex-direction:column). Karena itu, elemen ini malah disejajarkan
+   di SAMPING blok konten (bukan di bawahnya) dan diperas jadi garis
+   tipis. Sekarang dilepas total dari alur flex (position:absolute)
+   dan dikunci ke tepi bawah section, seperti niat desain aslinya. */
 .wave-divider{
-  position:relative; line-height:0; z-index:2; margin-top:-2px;
+  position:absolute; left:0; right:0; bottom:-1px; z-index:2;
+  line-height:0; overflow:hidden; pointer-events:none;
 }
 
-.wave-divider svg{ width:100%; height:auto; display:block; }
+/* SVG berisi 2 ubin gelombang IDENTIK berdampingan (lebar gabungan
+   200%). Digeser looping persis 1 lebar ubin (-50%) — begitu animasi
+   selesai satu putaran, tampilannya identik dengan titik awal, jadi
+   loop-nya mulus tanpa "lompatan". Cuma pakai transform (murah di
+   GPU), tidak menggambar ulang apa pun → ringan di HP maupun PC. */
+.wave-svg{
+  width:200%; height:auto; display:block;
+  animation: waveDrift 22s linear infinite;
+  will-change:transform;
+}
+
+.wave-fill{ fill:var(--foam); }
+
+@media (prefers-reduced-motion: reduce){
+  .wave-svg{ animation:none; }
+}
 
 /* ============ BUTTONS ============ */
 .btn{
@@ -600,7 +634,12 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 .lightbox.active{ opacity:1; visibility:visible; }
 
-.lightbox img{ max-width:min(88vw,640px); max-height:70vh; border-radius:var(--radius-sm); box-shadow:var(--shadow-strong); }
+.lightbox img{
+  max-width:min(88vw,640px); max-height:70vh; border-radius:var(--radius-sm); box-shadow:var(--shadow-strong);
+  transform:scale(.9); transition:transform .38s cubic-bezier(.2,.8,.25,1);
+}
+
+.lightbox.active img{ transform:scale(1); }
 
 .lightbox p{ color:#fff; font-size:14px; }
 
@@ -864,6 +903,8 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .footer-wave{ position:absolute; top:0; left:0; width:100%; transform:translateY(-99%); line-height:0; pointer-events:none; }
 
 .footer-wave svg{ width:100%; height:70px; display:block; }
+
+.footer-wave-fill{ fill:var(--section-alt); }
 
 .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:44px; padding-bottom:44px; position:relative; z-index:1; }
 
@@ -2288,25 +2329,38 @@ body.peserta-modal-lock{ overflow:hidden; }
 .chat-empty i, .chat-offline i{ display:block; font-size:26px; margin-bottom:10px; opacity:.6; }
 
 .chat-msg{
-  max-width:78%; padding:9px 13px 7px; border-radius:14px; margin-bottom:8px;
-  font-size:13.5px; line-height:1.42; position:relative; z-index:1; word-wrap:break-word;
-  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  max-width:78%; padding:9px 13px 7px; border-radius:16px; margin-bottom:2px;
+  font-size:13.5px; line-height:1.44; position:relative; z-index:1; word-wrap:break-word;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
   animation: chatMsgIn .32s cubic-bezier(.2,.85,.3,1);
 }
 
 .chat-msg.mine{
   align-self:flex-end; background:var(--gradient-brand); color:#04213A; border-bottom-right-radius:4px;
+  padding-right:34px;
 }
 
 .chat-msg.other{
   align-self:flex-start; background:var(--white); color:var(--ink); border-bottom-left-radius:4px;
 }
 
-.chat-msg .chat-msg-name{ font-size:11.5px; font-weight:700; color:var(--aqua-deep); margin-bottom:2px; display:block; }
+.chat-msg .chat-msg-name{ font-size:11.5px; font-weight:700; margin-bottom:2px; display:block; }
 
 .chat-msg.mine .chat-msg-name{ display:none; }
 
-.chat-msg .chat-msg-time{ font-size:9.5px; opacity:.6; display:block; text-align:right; margin-top:3px; }
+.chat-msg-text{ display:block; white-space:pre-wrap; }
+
+.chat-msg .chat-msg-time{ font-size:9.5px; opacity:.6; display:block; text-align:right; margin-top:3px; font-variant-numeric:tabular-nums; }
+
+.chat-msg-del{
+  position:absolute; top:8px; right:8px; width:20px; height:20px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-size:10px;
+  background:rgba(4,33,58,.12); color:#04213A; opacity:.55; transition:opacity .2s ease, background .2s ease;
+}
+
+.chat-msg-del:hover{ opacity:1; background:rgba(4,33,58,.22); }
+
+@media (hover:none){ .chat-msg-del{ opacity:.7; } }
 
 .chat-footer{ flex-shrink:0; border-top:1px solid var(--line); background:rgba(255,255,255,.6); backdrop-filter:blur(14px); }
 
@@ -2491,16 +2545,48 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .pic-avatar{
   position:relative;
-  width:74px; height:74px; border-radius:50%; margin:0 auto 16px; background:var(--gradient-brand);
-  display:flex; align-items:center; justify-content:center; font-size:28px; color:#fff;
+  width:88px; height:88px; border-radius:50%; margin:0 auto 16px;
+  box-shadow:0 10px 26px rgba(18,169,224,.22);
   animation:picAvatarBreathe 3.6s ease-in-out infinite;
+  cursor:zoom-in;
+}
+
+.pic-avatar img{
+  width:100%; height:100%; object-fit:cover; display:block; border-radius:50%;
+  position:relative; z-index:2;
 }
 
 .pic-avatar::before{
   content:''; position:absolute; inset:-6px; border-radius:50%;
-  border:1.5px solid var(--aqua); opacity:.5;
+  border:1.5px solid var(--aqua); opacity:.5; pointer-events:none; z-index:1;
   animation:picRingPulse 3.6s ease-out infinite;
 }
+
+/* Cincin gradient berputar — efek modern khas "live avatar" (mis. status
+   cerita di aplikasi chat), tapi dibuat dari 1 elemen + rotate saja
+   (bukan animasi background), jadi sangat ringan di GPU. Bentuk cincin
+   didapat lewat mask, bukan menggambar ulang tiap frame. */
+.pic-avatar::after{
+  content:''; position:absolute; inset:-8px; border-radius:50%; z-index:0;
+  background:conic-gradient(from 0deg, var(--aqua), var(--teal), transparent 45%, var(--aqua));
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  animation: picRingSpin 6s linear infinite;
+  opacity:.85;
+}
+
+/* Partikel kecil melayang di sekitar foto — cuma titik kecil yang
+   redup-terang & bergerak naik-turun pelan (transform+opacity saja,
+   sangat ringan), memberi kesan "hidup" tanpa efek berat. */
+.pic-spark{
+  position:absolute; width:5px; height:5px; border-radius:50%;
+  background:var(--gradient-brand); pointer-events:none;
+  animation: picSparkFloat 3.4s ease-in-out infinite;
+}
+
+.pic-spark.s1{ top:-4px; left:8%; animation-delay:0s; }
+.pic-spark.s2{ bottom:2%; right:-6px; width:4px; height:4px; animation-delay:1.1s; }
+.pic-spark.s3{ top:38%; left:-6px; width:3.5px; height:3.5px; animation-delay:2.2s; }
 
 .pic-card h4{ font-size:17px; margin-bottom:4px; color:var(--ink); }
 
@@ -2515,7 +2601,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 .pic-wa:hover{ background:var(--gradient-brand); color:#fff; border-color:transparent; transform:translateY(-2px); }
 
 @media (prefers-reduced-motion: reduce){
-  .pic-avatar, .pic-avatar::before{ animation:none; }
+  .pic-avatar, .pic-avatar::before, .pic-avatar::after, .pic-spark{ animation:none; }
 }
 
 @media (max-width:600px){

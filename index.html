@@ -63,21 +63,13 @@
   <div class="loader-aurora" aria-hidden="true"></div>
 
   <div class="loader-particles" aria-hidden="true">
-    <span class="drop" style="--x:6%;  --s:.7;  --t:5.2s; --d:0s"></span>
-    <span class="drop" style="--x:14%; --s:1.1;  --t:6.8s; --d:.6s"></span>
-    <span class="drop" style="--x:22%; --s:.55; --t:4.6s; --d:1.4s"></span>
-    <span class="drop" style="--x:30%; --s:.9;  --t:6.1s; --d:.2s"></span>
-    <span class="drop" style="--x:38%; --s:.65; --t:5.6s; --d:2s"></span>
-    <span class="drop" style="--x:46%; --s:1;   --t:7s;   --d:.9s"></span>
-    <span class="drop" style="--x:54%; --s:.6;  --t:5s;   --d:1.7s"></span>
-    <span class="drop" style="--x:62%; --s:.95; --t:6.4s; --d:.3s"></span>
-    <span class="drop" style="--x:70%; --s:.7;  --t:5.8s; --d:2.3s"></span>
-    <span class="drop" style="--x:78%; --s:1.05; --t:6.6s; --d:1.1s"></span>
-    <span class="drop" style="--x:86%; --s:.6;  --t:5.4s; --d:.5s"></span>
-    <span class="drop" style="--x:94%; --s:.85; --t:6.9s; --d:1.9s"></span>
-    <span class="drop" style="--x:10%; --s:.5;  --t:4.8s; --d:2.6s"></span>
-    <span class="drop" style="--x:50%; --s:.8;  --t:5.9s; --d:2.9s"></span>
-    <span class="drop" style="--x:90%; --s:.5;  --t:5.1s; --d:3.2s"></span>
+    <span class="drop" style="--x:10%; --s:.7;  --t:5.6s; --d:0s"></span>
+    <span class="drop" style="--x:24%; --s:1.1; --t:6.8s; --d:.6s"></span>
+    <span class="drop" style="--x:38%; --s:.6;  --t:5s;   --d:1.6s"></span>
+    <span class="drop" style="--x:52%; --s:.9;  --t:6.2s; --d:.3s"></span>
+    <span class="drop" style="--x:66%; --s:.65; --t:5.4s; --d:2.1s"></span>
+    <span class="drop" style="--x:80%; --s:1;   --t:6.6s; --d:1s"></span>
+    <span class="drop" style="--x:92%; --s:.6;  --t:5.2s; --d:1.9s"></span>
   </div>
 
   <div class="loader-content">
@@ -96,12 +88,19 @@
       </svg>
     </div>
 
-    <p class="loader-word">Solusi Kerja Cerdas 2026</p>
-    <span class="loader-sub">Menyiapkan pengalaman terbaik<span class="loader-dots"><i></i><i></i><i></i></span></span>
-    <span class="loader-sub">Dikembangkan oleh <b>benyoriki.com</b><span class="loader-dots"><i></i><i></i><i></i></span></span>
+    <p class="loader-word">LOKON PRIMA</p>
+    <p class="loader-tagline">Sistem Iuran &amp; Progres Kemeja Kerja</p>
+
+    <div class="loader-status" aria-hidden="true">
+      <span style="--sd:0s">Menghubungkan ke server...</span>
+      <span style="--sd:2s">Menyinkronkan data peserta real-time...</span>
+      <span style="--sd:4s">Menyiapkan progress &amp; dashboard...</span>
+      <span style="--sd:6s">Hampir siap, mohon tunggu...</span>
+    </div>
   </div>
 
   <div class="loader-progress" aria-hidden="true"><span></span></div>
+  <span class="loader-credit">Dikembangkan oleh <b>benyoriki.com</b></span>
 </div>
 
 <!-- Scroll Progress Bar -->
@@ -265,9 +264,9 @@
     <i class="fa-solid fa-chevron-down"></i>
   </div>
 
-  <div class="wave-divider">
-    <svg viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,32 C240,80 480,0 720,24 C960,48 1200,88 1440,40 L1440,90 L0,90 Z" fill="var(--foam)"></path>
+  <div class="wave-divider" aria-hidden="true">
+    <svg class="wave-svg" viewBox="0 0 2880 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path class="wave-fill" d="M0,32 C240,80 480,0 720,24 C960,48 1200,88 1440,40 C1680,80 1920,0 2160,24 C2400,48 2640,88 2880,40 L2880,90 L0,90 Z"></path>
     </svg>
   </div>
 </section>
@@ -1138,7 +1137,12 @@
 
     <div class="pic-grid fade-up">
       <div class="pic-card">
-        <div class="pic-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="pic-avatar">
+          <img src="pic-daud.jpg" alt="Foto M Daud S.M" loading="lazy" decoding="async">
+          <span class="pic-spark s1"></span>
+          <span class="pic-spark s2"></span>
+          <span class="pic-spark s3"></span>
+        </div>
         <h4>M Daud S.M</h4>
         <span class="pic-role">Penanggung Jawab Program</span>
         <a href="https://wa.me/6285697321423" target="_blank" rel="noopener" class="btn btn-outline btn-sm pic-wa">
@@ -1146,7 +1150,12 @@
         </a>
       </div>
       <div class="pic-card">
-        <div class="pic-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="pic-avatar">
+          <img src="pic-kamil.jpg" alt="Foto Kamil M" loading="lazy" decoding="async">
+          <span class="pic-spark s1"></span>
+          <span class="pic-spark s2"></span>
+          <span class="pic-spark s3"></span>
+        </div>
         <h4>Kamil M</h4>
         <span class="pic-role">Penanggung Jawab Program</span>
         <a href="https://wa.me/6283151144948" target="_blank" rel="noopener" class="btn btn-outline btn-sm pic-wa">
@@ -1349,9 +1358,9 @@
 <!-- FOOTER -->
 <!-- ===================================================== -->
 <footer class="footer">
-  <div class="footer-wave">
+  <div class="footer-wave" aria-hidden="true">
     <svg viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,40 C240,0 480,72 720,36 C960,0 1200,64 1440,24 L1440,0 L0,0 Z" fill="var(--section-alt)"></path>
+      <path class="footer-wave-fill" d="M0,40 C240,0 480,72 720,36 C960,0 1200,64 1440,24 L1440,0 L0,0 Z"></path>
     </svg>
   </div>
   <div class="container footer-grid">

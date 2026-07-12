@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // pengguna. Ini membuat seluruh situs (termasuk tombol "Daftar")
   // terlihat macet/tidak responsif selama 15 detik setiap kali halaman
   // dibuka. Diturunkan ke durasi wajar untuk animasi splash singkat.
-  const MIN_LOADING_MS = 1800;
+  const MIN_LOADING_MS = 7000;
   const loadingStartedAt = Date.now();
   function hideLoadingScreen(){
     const elapsed = Date.now() - loadingStartedAt;
@@ -283,6 +283,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') lightbox.classList.remove('active');
+  });
+
+  // Foto Penanggung Jawab — klik untuk lihat versi penuh di lightbox yang sama
+  document.querySelectorAll('.pic-avatar').forEach(av => {
+    av.addEventListener('click', () => {
+      const imgEl = av.querySelector('img');
+      if (!imgEl) return;
+      lightboxImg.src = imgEl.src;
+      lightboxImg.alt = imgEl.alt;
+      lightboxCaption.textContent = imgEl.alt.replace(/^Foto\s+/i, '');
+      lightbox.classList.add('active');
+    });
   });
 
 
@@ -1767,6 +1779,28 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   let chatIsOpen = false;
   let chatListenerStarted = false;
 
+  // PERBAIKAN PERFORMA: dulu setiap ada 1 pesan baru masuk, SEMUA pesan
+  // (bisa sampai 200) dihapus & dibuat ulang dari nol — termasuk animasi
+  // "masuk"-nya ikut terulang untuk pesan yang sudah lama ada. Ini yang
+  // bikin chat makin berat/patah-patah seiring chat makin ramai.
+  // Sekarang dipakai pendekatan incremental: hanya pesan yang benar-benar
+  // baru/berubah/dihapus yang disentuh di DOM.
+  const chatMsgElements = new Map(); // id pesan -> elemen DOM
+  let chatFirstLoad = true;
+  let lastChatSentAt = 0;
+  const CHAT_COOLDOWN_MS = 2500; // jeda minimal antar kirim pesan, cegah spam
+
+  // Warna label nama dibuat konsisten per orang (dihitung dari nama),
+  // bukan gambar avatar — supaya tetap ringan tapi tiap orang gampang
+  // dibedakan warnanya di dalam grup.
+  const CHAT_NAME_PALETTE = ['#FF6B6B','#F0913C','#F0B429','#3CCB7F','#12A9E0','#6C8CFF','#B06CFF','#FF6CAE'];
+  function chatNameColor(nama){
+    const str = nama || 'Peserta';
+    let hash = 0;
+    for (let i = 0; i < str.length; i++){ hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+    return CHAT_NAME_PALETTE[Math.abs(hash) % CHAT_NAME_PALETTE.length];
+  }
+
   function openChatPanel(){
     chatIsOpen = true;
     chatOverlay.classList.add('active');
@@ -1810,27 +1844,113 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   }
   renderChatPermission();
 
+  // Membuat 1 elemen bubble pesan. animate=false dipakai saat rebuild
+  // penuh (login/logout/reset) supaya tidak semua bubble ikut memutar
+  // ulang animasi "masuk" sekaligus — cukup berat kalau pesannya banyak.
+  function buildChatMsgEl(msg, mine, animate){
+    const el = document.createElement('div');
+    el.className = 'chat-msg ' + (mine ? 'mine' : 'other');
+    el.dataset.id = msg.id;
+    if (!animate) el.style.animation = 'none';
+    const time = msg._ms ? new Date(msg._ms).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '';
+    const senderName = (msg.nama || 'Peserta').split(' ')[0];
+    el.innerHTML = `
+      ${mine ? '' : `<span class="chat-msg-name" style="color:${chatNameColor(msg.nama)}">${escapeHtml(senderName)}</span>`}
+      <span class="chat-msg-text">${escapeHtml(msg.pesan || '')}</span>
+      <span class="chat-msg-time">${time}</span>
+      ${mine ? `<button type="button" class="chat-msg-del" aria-label="Hapus pesan ini" title="Hapus pesan ini"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+    `;
+    if (mine){
+      el.querySelector('.chat-msg-del')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteOwnChatMessage(msg.id);
+      });
+    }
+    return el;
+  }
+
+  async function deleteOwnChatMessage(id){
+    if (!confirm('Hapus pesan ini untuk semua orang di grup?')) return;
+    const fb = await waitForFirebase(6000);
+    if (!fb){ showToast('Tidak bisa menghapus, koneksi bermasalah. Coba lagi.', 'error'); return; }
+    try {
+      await fb.deleteDoc(fb.doc(fb.db, fb.CHAT_COLLECTION, id));
+    } catch (err){
+      console.warn('Gagal menghapus pesan:', err);
+      showToast('Gagal menghapus pesan, coba lagi.', 'error');
+    }
+  }
+
+  // Rebuild PENUH — dipakai untuk kasus yang jarang terjadi saja
+  // (login/logout, atau setelah admin reset seluruh chat), karena hanya
+  // saat itu sisi bubble (kiri/kanan) semua pesan perlu dihitung ulang.
   function renderChatMessages(){
     const session = getSession();
     chatBody.querySelectorAll('.chat-msg').forEach(el => el.remove());
-    if (chatMessages.length === 0){
-      chatEmpty.style.display = 'block';
-    } else {
-      chatEmpty.style.display = 'none';
-      chatMessages.forEach(msg => {
-        const mine = !!(session && msg.kodeUnik && session.kodeUnik && msg.kodeUnik === session.kodeUnik);
-        const el = document.createElement('div');
-        el.className = 'chat-msg ' + (mine ? 'mine' : 'other');
-        const time = msg._ms ? new Date(msg._ms).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '';
-        el.innerHTML = `
-          <span class="chat-msg-name">${escapeHtml((msg.nama || 'Peserta').split(' ')[0])}</span>
-          ${escapeHtml(msg.pesan || '')}
-          <span class="chat-msg-time">${time}</span>
-        `;
-        chatBody.appendChild(el);
-      });
-    }
+    chatMsgElements.clear();
+    chatEmpty.style.display = chatMessages.length === 0 ? 'block' : 'none';
+    chatMessages.forEach(msg => {
+      const mine = !!(session && msg.kodeUnik && session.kodeUnik && msg.kodeUnik === session.kodeUnik);
+      const el = buildChatMsgEl(msg, mine, false);
+      chatBody.appendChild(el);
+      chatMsgElements.set(msg.id, el);
+    });
     chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  // Patch INKREMENTAL — jalur utama yang dipakai tiap kali listener
+  // Firestore melaporkan perubahan (pesan baru masuk/dihapus). Jauh lebih
+  // ringan karena cuma menyentuh DOM untuk pesan yang benar-benar berubah.
+  function applyChatChanges(changes, session){
+    let addedWhileClosed = 0;
+    let hasChange = false;
+
+    changes.forEach(change => {
+      const docData = change.doc.data();
+      const ms = docData.timestamp?.toMillis ? docData.timestamp.toMillis() : Date.now();
+      const msg = { id: change.doc.id, ...docData, _ms: ms };
+
+      if (change.type === 'removed'){
+        chatMsgElements.get(msg.id)?.remove();
+        chatMsgElements.delete(msg.id);
+        chatMessages = chatMessages.filter(m => m.id !== msg.id);
+        hasChange = true;
+        return;
+      }
+
+      const mine = !!(session && msg.kodeUnik && session.kodeUnik && msg.kodeUnik === session.kodeUnik);
+
+      if (change.type === 'modified'){
+        const old = chatMsgElements.get(msg.id);
+        const fresh = buildChatMsgEl(msg, mine, false);
+        if (old) old.replaceWith(fresh); else chatBody.appendChild(fresh);
+        chatMsgElements.set(msg.id, fresh);
+        chatMessages = chatMessages.map(m => m.id === msg.id ? msg : m);
+        hasChange = true;
+        return;
+      }
+
+      // 'added' — hanya proses kalau memang belum ada di DOM
+      if (!chatMsgElements.has(msg.id)){
+        const el = buildChatMsgEl(msg, mine, !chatFirstLoad);
+        chatBody.appendChild(el);
+        chatMsgElements.set(msg.id, el);
+        chatMessages.push(msg);
+        hasChange = true;
+        if (!chatFirstLoad && !chatIsOpen) addedWhileClosed++;
+      }
+    });
+
+    if (!hasChange) return;
+    chatEmpty.style.display = chatMessages.length === 0 ? 'block' : 'none';
+    if (addedWhileClosed > 0){
+      unreadCount += addedWhileClosed;
+      updateChatBadge();
+    }
+    if (chatIsOpen){
+      const nearBottom = (chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight) < 160;
+      if (nearBottom) requestAnimationFrame(() => { chatBody.scrollTop = chatBody.scrollHeight; });
+    }
   }
 
   chatForm?.addEventListener('submit', async (e) => {
@@ -1839,8 +1959,17 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     if (!session) return;
     const text = chatInput.value.trim();
     if (!text) return;
+
+    // Anti-spam ringan sisi klien: cegah kirim beruntun terlalu cepat.
+    const now = Date.now();
+    if (now - lastChatSentAt < CHAT_COOLDOWN_MS){
+      showToast('Tunggu sebentar sebelum mengirim pesan lagi.', 'error');
+      return;
+    }
+
     const fb = await waitForFirebase(8000);
     if (!fb){ showToast('Chat live tidak tersedia (Firebase gagal tersambung). Coba lagi sesaat.', 'error'); return; }
+    lastChatSentAt = now;
     chatInput.value = '';
     try {
       await fb.addDoc(fb.collection(fb.db, fb.CHAT_COLLECTION), {
@@ -1876,17 +2005,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     try {
       const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.orderBy('timestamp', 'asc'), fb.limit(200));
       fb.onSnapshot(q, (snap) => {
-        const prevCount = chatMessages.length;
-        chatMessages = snap.docs.map(d => {
-          const docData = d.data();
-          const ms = docData.timestamp?.toMillis ? docData.timestamp.toMillis() : Date.now();
-          return { id: d.id, ...docData, _ms: ms };
-        });
-        renderChatMessages();
-        if (prevCount !== 0 && chatMessages.length > prevCount && !chatIsOpen){
-          unreadCount += (chatMessages.length - prevCount);
-          updateChatBadge();
-        }
+        applyChatChanges(snap.docChanges(), getSession());
+        chatFirstLoad = false;
       }, (err) => {
         console.warn('Chat listener error:', err.code, err.message);
         let reason;

@@ -62,6 +62,17 @@
   100%{ left:100%; }
 }
 
+@keyframes statusCycle{
+  0%, 4%{ opacity:0; transform:translateY(6px); }
+  9%, 19%{ opacity:1; transform:translateY(0); }
+  24%, 100%{ opacity:0; transform:translateY(-6px); }
+}
+
+@keyframes waveDrift{
+  from{ transform:translateX(0); }
+  to{ transform:translateX(-50%); }
+}
+
 @keyframes orbFloat1{
   0%,100%{ transform:translate(0,0) scale(1); }
   50%{ transform:translate(40px,50px) scale(1.15); }
@@ -170,6 +181,13 @@
     100%{ transform:scale(1.18); opacity:0; }
 }
 
+@keyframes picSparkFloat{
+    0%, 100%{ transform:translateY(0) scale(.8); opacity:0; }
+    50%{ transform:translateY(-9px) scale(1.15); opacity:1; }
+}
+
+@keyframes picRingSpin{ to{ transform:rotate(360deg); } }
+
 @keyframes lunasGlow{
     0%,100%{ box-shadow:0 0 0 rgba(15,216,184,0); }
     50%{ box-shadow:0 0 16px rgba(15,216,184,.35); }
@@ -197,18 +215,20 @@
 
 /* ============ ELEMEN DEKORASI / PARTIKEL ============ */
 
-/* --- Aurora drifting background --- */
+/* --- Aurora drifting background — disederhanakan biar ringan saat
+   halaman baru dibuka (justru saat HP paling sibuk memuat resource lain) --- */
 .loader-aurora{
-  position:absolute; inset:-20%;
+  position:absolute; inset:-10%;
   background:
-    radial-gradient(38% 32% at 20% 25%, rgba(18,169,224,.35), transparent 70%),
-    radial-gradient(34% 30% at 82% 20%, rgba(15,216,184,.28), transparent 70%),
-    radial-gradient(40% 36% at 50% 85%, rgba(10,132,196,.28), transparent 70%);
-  filter:blur(30px);
-  animation: auroraDrift 9s ease-in-out infinite alternate;
+    radial-gradient(38% 32% at 20% 25%, rgba(18,169,224,.30), transparent 70%),
+    radial-gradient(40% 36% at 82% 80%, rgba(15,216,184,.24), transparent 70%);
+  filter:blur(20px);
+  animation: auroraDrift 11s ease-in-out infinite alternate;
+  will-change:transform;
 }
 
-/* --- Water-droplet particles (nod to AQUA product) --- */
+/* --- Water-droplet particles (nod to AQUA product) — dikurangi jumlah
+   & dihapus box-shadow individual (lebih hemat GPU/paint) --- */
 .loader-particles{ position:absolute; inset:0; pointer-events:none; }
 
 .loader-particles .drop{
@@ -219,8 +239,8 @@
   border-radius:50% 50% 50% 0;
   transform:rotate(45deg);
   opacity:0;
-  box-shadow:0 0 10px rgba(18,169,224,.55);
   animation: dropRise var(--t) ease-in var(--d) infinite;
+  will-change:transform, opacity;
 }
 
 #particleCanvas{
