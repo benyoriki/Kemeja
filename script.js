@@ -600,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
       subtotal: subtotal,
       biayaAdmin: biayaAdmin,
       total: total,
-      catatan: document.getElementById('catatan').value.trim(),
+      catatan: (document.getElementById('catatan')?.value || '').trim(),
       tanggal, jam,
       metodeBayar,
       // PERBAIKAN LOGIKA BARU: kode unik dibuat SEKALI di sini supaya
