@@ -207,11 +207,26 @@ document.addEventListener('DOMContentLoaded', () => {
   galleryItems.forEach(item => {
     const img = item.querySelector('img');
     if (img) {
+      let retried = false;
       const markLoaded = () => {
         item.classList.remove('img-loading');
+        item.classList.remove('img-error');
         img.classList.add('img-loaded');
       };
       const markError = () => {
+        // PERBAIKAN: sebelumnya begitu 1x gagal (mis. koneksi HP sempat
+        // putus sebentar) langsung dianggap error permanen & kartu
+        // "Segera Hadir" muncul, padahal gambarnya sendiri ada di repo.
+        // Sekarang dicoba ulang otomatis 1x (dengan cache-buster baru)
+        // sebelum benar-benar ditandai gagal.
+        if (!retried){
+          retried = true;
+          setTimeout(() => {
+            const bust = (img.src.includes('?') ? '&' : '?') + 'retry=' + Date.now();
+            img.src = img.getAttribute('src').split('?')[0] + bust;
+          }, 900);
+          return;
+        }
         item.classList.remove('img-loading');
         item.classList.add('img-error');
       };
@@ -287,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Diletakkan sebagai satu konstanta supaya perhitungan total harga,
   // struk JPG, pesan WhatsApp, dan data yang tersimpan ke Firestore
   // selalu konsisten memakai angka yang sama.
-  const ADMIN_FEE_CICILAN = 15000;
+  const ADMIN_FEE_CICILAN = 5000;
 
   function formatRupiah(angka){
     return 'Rp' + angka.toLocaleString('id-ID');
@@ -513,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let downloadOk = true;
     try {
-      generateStrukJPG(data);
+      await generateStrukJPG(data);
     } catch (err){
       downloadOk = false;
       console.error('generateStrukJPG error:', err);
@@ -754,33 +769,74 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ============ 15. GENERATE STRUK JPG (CANVAS) ============ */
-  function generateStrukJPG(data){
+  /* ---------- Pastikan font kanvas benar-benar termuat ----------
+     PERBAIKAN BUG TERSEMBUNYI: sebelumnya struk langsung digambar
+     tanpa menunggu font Outfit/Inter/JetBrains Mono selesai dimuat
+     browser. Kalau struknya dibuat sebelum font siap (mis. koneksi
+     lambat), canvas diam-diam jatuh ke font default sistem (Arial/
+     Times) tanpa ada tanda error apa pun — hasil unduhan jadi terlihat
+     "murahan" walau kodenya sudah benar. Sekarang digambar HANYA
+     setelah font dipastikan siap. */
+  async function ensureStrukFontsLoaded(){
+    const specs = [
+      '700 16px Outfit', '800 16px Outfit',
+      '400 16px Inter', '500 16px Inter', '700 16px Inter',
+      '400 16px "JetBrains Mono"', '500 16px "JetBrains Mono"',
+      '600 16px "JetBrains Mono"', '700 16px "JetBrains Mono"', '800 16px "JetBrains Mono"'
+    ];
+    try {
+      await Promise.all(specs.map(f => document.fonts.load(f)));
+      await document.fonts.ready;
+    } catch (err){
+      console.warn('Pemuatan font struk gagal, memakai font fallback:', err);
+    }
+  }
+
+  async function generateStrukJPG(data){
+    await ensureStrukFontsLoaded();
     const canvasEl = document.getElementById('strukCanvas');
     const isCicilan = data.metodeBayar === 'cicilan';
     const subtotalProduk = (data.subtotal !== undefined && data.subtotal !== null) ? data.subtotal : data.harga * data.jumlah;
-    const biayaAdminStruk = isCicilan ? (data.biayaAdmin || 15000) : 0;
-    const rows = [
-      ['Nama', data.nama],
-      ['Nama Bordir', data.namaBordir],
-      ['Departemen', data.departemen],
-      ['Jenis Kelamin', data.gender],
-      ['Ukuran', data.ukuranKemeja],
+    const biayaAdminStruk = isCicilan ? (data.biayaAdmin || 5000) : 0;
+
+    // Data dikelompokkan jadi 2 bagian supaya lebih mudah dipindai mata,
+    // bukan satu daftar panjang tak berujung seperti sebelumnya.
+    const pesananRows = [
       ['Jenis Kemeja', data.jenis],
       ['Jumlah', String(data.jumlah)],
       ['Harga Satuan', formatRupiah(data.harga)],
       ['Metode Bayar', isCicilan ? '2x Cicilan' : 'Tunai / Lunas'],
     ];
     if (isCicilan){
-      rows.push(['Subtotal Kemeja', formatRupiah(subtotalProduk)]);
-      rows.push(['Biaya Admin Cicilan', '+ ' + formatRupiah(biayaAdminStruk)]);
+      pesananRows.push(['Subtotal Kemeja', formatRupiah(subtotalProduk)]);
+      pesananRows.push(['Biaya Admin Cicilan', '+ ' + formatRupiah(biayaAdminStruk)]);
     }
+    const sections = [
+      { title: 'DATA PESERTA', rows: [
+        ['Nama', data.nama],
+        ['Nama Bordir', data.namaBordir],
+        ['Departemen', data.departemen],
+        ['Jenis Kelamin', data.gender],
+        ['Ukuran', data.ukuranKemeja],
+      ]},
+      { title: 'RINCIAN PESANAN', rows: pesananRows }
+    ];
+    const totalRowCount = sections.reduce((n, s) => n + s.rows.length, 0);
+    const SECTION_HEAD_H = 28;
+
+    // Down payment (dibayar sekarang) vs sisa pelunasan — hanya relevan
+    // untuk metode cicilan. Dihitung ulang di sini pakai rumus yang sama
+    // persis dengan buildPembayaranAwal() supaya angkanya konsisten.
+    const dpProduk = isCicilan ? Math.round(subtotalProduk * 0.5) : subtotalProduk;
+    const dpSekarang = dpProduk + biayaAdminStruk;
+    const sisaPelunasan = subtotalProduk - dpProduk;
 
     // Dynamic canvas height based on content
     const HEADER_H = 210;
-    const baseHeight = 760;
+    const baseHeight = 800 + (isCicilan ? 110 : 0);
     const extraPerRow = 34;
     const catatanLines = Math.ceil((data.catatan || '-').length / 50) || 1;
-    const neededHeight = baseHeight + rows.length * extraPerRow + catatanLines * 18;
+    const neededHeight = baseHeight + totalRowCount * extraPerRow + sections.length * SECTION_HEAD_H + catatanLines * 18;
     const W = 700;
     const H = Math.max(1020, neededHeight);
     canvasEl.width = W;
@@ -897,43 +953,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     y += 92 + 40;
 
-    /* ---------- Detail Pendaftaran ---------- */
-    ctx.font = '700 12px "JetBrains Mono", monospace';
-    ctx.fillStyle = C.aquaDeep;
-    ctx.fillText('DETAIL PENDAFTARAN', cardX + 4, y);
-    ctx.fillStyle = C.teal;
-    ctx.fillRect(cardX + 4, y + 8, 30, 3);
-    y += 30;
-
+    /* ---------- Detail Pendaftaran (dikelompokkan 2 bagian) ---------- */
     const rowH = extraPerRow;
     const detailTop = y;
+    const cardInnerH = totalRowCount * rowH + sections.length * SECTION_HEAD_H + 16;
     ctx.save();
     ctx.shadowColor = 'rgba(11,37,69,0.08)';
     ctx.shadowBlur = 16;
     ctx.shadowOffsetY = 6;
     ctx.fillStyle = C.foam;
-    roundRect(ctx, cardX, detailTop, cardW, rows.length * rowH + 20, 16);
+    roundRect(ctx, cardX, detailTop, cardW, cardInnerH, 16);
     ctx.fill();
     ctx.restore();
 
-    y += 4;
-    rows.forEach(([label, value], i) => {
-      const rowY = y + i * rowH + rowH/2 + 12;
-      if (i % 2 === 1){
-        ctx.fillStyle = 'rgba(11,37,69,0.025)';
-        ctx.fillRect(cardX + 6, y + i * rowH + 12, cardW - 12, rowH);
-      }
-      ctx.font = '500 13.5px Inter, sans-serif';
-      ctx.fillStyle = C.inkSoft;
+    y += 8;
+    sections.forEach((section) => {
+      ctx.font = '700 11px "JetBrains Mono", monospace';
+      ctx.fillStyle = C.aquaDeep;
       ctx.textAlign = 'left';
-      ctx.fillText(label, cardX + 26, rowY);
-      ctx.font = '700 13.5px Inter, sans-serif';
-      ctx.fillStyle = C.ink;
-      ctx.textAlign = 'right';
-      ctx.fillText(value || '-', cardX + cardW - 26, rowY);
+      ctx.fillText(section.title, cardX + 22, y + 14);
+      y += SECTION_HEAD_H;
+
+      section.rows.forEach(([label, value], i) => {
+        const rowY = y + rowH/2 + 2;
+        if (i % 2 === 1){
+          ctx.fillStyle = 'rgba(11,37,69,0.025)';
+          ctx.fillRect(cardX + 6, y, cardW - 12, rowH);
+        }
+        ctx.font = '500 13.5px Inter, sans-serif';
+        ctx.fillStyle = C.inkSoft;
+        ctx.textAlign = 'left';
+        ctx.fillText(label, cardX + 26, rowY);
+        ctx.font = '700 13.5px Inter, sans-serif';
+        ctx.fillStyle = C.ink;
+        ctx.textAlign = 'right';
+        ctx.fillText(value || '-', cardX + cardW - 26, rowY);
+        y += rowH;
+      });
     });
     ctx.textAlign = 'left';
-    y = detailTop + rows.length * rowH + 20 + 36;
+    y = detailTop + cardInnerH + 36;
 
     /* ---------- Total pembayaran ---------- */
     const totalH = 78;
@@ -963,7 +1022,54 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = '#04213A';
     ctx.fillText(formatRupiah(data.total), cardX + cardW - 26, y + 48);
     ctx.textAlign = 'left';
-    y += totalH + 38;
+    y += totalH + (isCicilan ? 20 : 38);
+
+    /* ---------- Bayar Sekarang vs Sisa Pelunasan (khusus cicilan) ----------
+       Sebelumnya struk cicilan hanya menampilkan TOTAL gabungan, padahal
+       yang sebenarnya perlu dibayar SAAT INI cuma sebagian (DP + admin).
+       Kotak ini membuat itu eksplisit supaya peserta tidak bingung /
+       tidak membayar penuh di awal secara keliru. */
+    if (isCicilan){
+      const dpBoxH = 84;
+      ctx.save();
+      ctx.shadowColor = 'rgba(11,37,69,0.1)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 6;
+      ctx.fillStyle = C.navy;
+      roundRect(ctx, cardX, y, cardW, dpBoxH, 16);
+      ctx.fill();
+      ctx.restore();
+
+      const halfW = cardW / 2;
+      // Garis pemisah vertikal
+      ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cardX + halfW, y + 14); ctx.lineTo(cardX + halfW, y + dpBoxH - 14); ctx.stroke();
+
+      ctx.textAlign = 'center';
+      ctx.font = '700 10.5px "JetBrains Mono", monospace';
+      ctx.fillStyle = C.teal;
+      ctx.fillText('BAYAR SEKARANG', cardX + halfW/2, y + 24);
+      ctx.font = '800 21px Outfit, sans-serif';
+      ctx.fillStyle = C.white;
+      ctx.fillText(formatRupiah(dpSekarang), cardX + halfW/2, y + 50);
+      ctx.font = '400 10.5px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillText('DP 50% + Admin', cardX + halfW/2, y + 68);
+
+      ctx.font = '700 10.5px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillText('SISA PELUNASAN', cardX + halfW + halfW/2, y + 24);
+      ctx.font = '800 21px Outfit, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(formatRupiah(sisaPelunasan), cardX + halfW + halfW/2, y + 50);
+      ctx.font = '400 10.5px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillText('Saat kemeja diambil', cardX + halfW + halfW/2, y + 68);
+
+      ctx.textAlign = 'left';
+      y += dpBoxH + 30;
+    }
 
     /* ---------- Catatan ---------- */
     ctx.font = '700 12px "JetBrains Mono", monospace';
@@ -1154,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openWhatsApp(data){
     const isCicilan = data.metodeBayar === 'cicilan';
     const subtotalProduk = (data.subtotal !== undefined && data.subtotal !== null) ? data.subtotal : data.harga * data.jumlah;
-    const biayaAdminWa = isCicilan ? (data.biayaAdmin || 15000) : 0;
+    const biayaAdminWa = isCicilan ? (data.biayaAdmin || 5000) : 0;
     const rincianBiaya = isCicilan
       ? `Subtotal Kemeja : ${formatRupiah(subtotalProduk)}\nBiaya Admin Cicilan : ${formatRupiah(biayaAdminWa)}\n`
       : '';
@@ -1172,7 +1278,7 @@ Jenis : ${data.jenis}
 Jumlah : ${data.jumlah}
 Harga : ${formatRupiah(data.harga)}
 ${rincianBiaya}Total : ${formatRupiah(data.total)}
-Metode Bayar : ${isCicilan ? '2x Cicilan (DP 50% Kemeja + Rp15.000 Admin, lalu Pelunasan 50%)' : 'Tunai / Lunas Langsung (Tanpa Biaya Admin)'}
+Metode Bayar : ${isCicilan ? '2x Cicilan (DP 50% Kemeja + Rp5.000 Admin, lalu Pelunasan 50%)' : 'Tunai / Lunas Langsung (Tanpa Biaya Admin)'}
 Catatan : ${data.catatan}
 ================================
 Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
@@ -2049,7 +2155,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
         btn.addEventListener('click', () => openEditPesertaModal(id));
       } else if (action === 'hapus'){
         const p = pesertaData.find(x => x.id === id);
-        btn.addEventListener('click', () => hapusPesertaAdmin(id, p?.nama || 'peserta ini'));
+        btn.addEventListener('click', () => hapusPesertaAdmin(id, p?.nama || 'peserta ini', p?.kodeUnik));
       } else {
         btn.addEventListener('click', () => handleAdminAction(id, action));
       }
@@ -2210,7 +2316,13 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   }
 
   /* ============ HAPUS PESERTA DARI FIRESTORE ============ */
-  async function hapusPesertaAdmin(id, nama){
+  // PERBAIKAN BUG: sebelumnya menghapus peserta di sini TIDAK ikut menghapus
+  // profil catur-nya (koleksi "chess_players", dibuat oleh modul chess/).
+  // Karena kode unik selalu dibuat baru setiap kali daftar ulang, peserta yang
+  // sudah dihapus lalu daftar lagi akan tampak "dobel" di ranking/dasbor catur
+  // (profil lama jadi data hantu yang tidak pernah terhapus). Sekarang saat
+  // peserta dihapus di sini, profil catur terkait (jika ada) ikut dihapus.
+  async function hapusPesertaAdmin(id, nama, kodeUnik){
     const yakin = window.confirm(`Hapus pendaftaran "${nama}" secara permanen? Tindakan ini tidak bisa dibatalkan.`);
     if (!yakin) return;
     const fb = await waitForFirebase(10000);
@@ -2220,6 +2332,20 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     }
     try {
       await fb.deleteDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id));
+
+      // Best-effort: hapus juga profil catur terkait (kalau pernah main).
+      // Dibungkus try-catch terpisah supaya kalau ini gagal (mis. rules
+      // belum diupdate, atau peserta memang belum pernah buka menu catur
+      // sehingga dokumennya tidak ada), penghapusan peserta di atas TETAP
+      // dianggap berhasil.
+      if (kodeUnik){
+        try {
+          await fb.deleteDoc(fb.doc(fb.db, 'chess_players', String(kodeUnik).toUpperCase()));
+        } catch (chessErr){
+          console.warn('Gagal menghapus profil catur terkait (diabaikan, tidak fatal):', chessErr.code, chessErr.message);
+        }
+      }
+
       showToast(`Peserta "${nama}" berhasil dihapus.`, 'success');
     } catch (err){
       console.warn('Gagal menghapus peserta:', err.code, err.message);
