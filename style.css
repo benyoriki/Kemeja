@@ -1585,7 +1585,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 
 .peserta-row{
-    width:100%; display:flex; align-items:center; gap:14px;
+    width:100%; display:flex; align-items:center; gap:14px; position:relative;
     background:var(--white); border:1px solid var(--line); border-radius:16px;
     padding:12px 16px; text-align:left; cursor:pointer;
     font-family:var(--font-body); transition:var(--transition), box-shadow .35s ease, border-color .35s ease;
@@ -1609,18 +1609,83 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     .peserta-row-enter{ opacity:1; transform:none; transition:none; }
 }
 
-/* ---- Baris peserta yang SUDAH LUNAS: border & glow emas spesial ---- */
+/* =========================================================
+   TAMPILAN SPESIAL — PESERTA SUDAH LUNAS
+   Peserta lunas otomatis "naik" ke atas daftar (lihat sort di
+   script.js) dan diberi beberapa lapis efek visual supaya jelas
+   menonjol dari peserta lain: kartu emas berkilau + garis sinar
+   yang menyapu + bintang berkelip di sudut-sudut + entrance yang
+   sedikit "memantul" (bukan sekadar fade biasa). Semua efek pakai
+   transform/opacity saja (bukan properti yang memicu reflow) biar
+   tetap ringan & mulus di HP maupun desktop.
+========================================================= */
 .peserta-row-lunas{
-    border-color:rgba(240,180,41,.45);
-    background:linear-gradient(120deg, rgba(240,180,41,.06), var(--white) 40%);
-    animation: lunasRowShine 3.2s ease-in-out infinite;
+    border-color:rgba(240,180,41,.5);
+    background:linear-gradient(120deg, rgba(240,180,41,.07), var(--white) 45%);
+    animation: lunasRowShine 3s ease-in-out infinite;
 }
-[data-theme="dark"] .peserta-row-lunas{ background:linear-gradient(120deg, rgba(240,180,41,.08), var(--foam) 40%); }
+[data-theme="dark"] .peserta-row-lunas{ background:linear-gradient(120deg, rgba(240,180,41,.1), var(--foam) 45%); }
 @keyframes lunasRowShine{
     0%, 100%{ box-shadow:0 0 0 rgba(240,180,41,0); }
-    50%{ box-shadow:0 4px 18px rgba(240,180,41,.22); }
+    50%{ box-shadow:0 6px 22px rgba(240,180,41,.28), 0 0 0 1px rgba(240,180,41,.18) inset; }
 }
 @media (prefers-reduced-motion: reduce){ .peserta-row-lunas{ animation:none; } }
+
+/* Entrance khusus lunas: sedikit overshoot/"memantul" biar terasa lebih
+   istimewa dibanding baris biasa yang cuma fade+slide datar. */
+.peserta-row-enter.show.peserta-row-lunas{
+    transition:opacity .6s cubic-bezier(.34,1.56,.64,1), transform .6s cubic-bezier(.34,1.56,.64,1),
+      box-shadow .35s ease, border-color .35s ease;
+}
+@media (prefers-reduced-motion: reduce){ .peserta-row-enter.show.peserta-row-lunas{ transition:none; } }
+
+/* Garis sinar yang menyapu dari kiri ke kanan secara berkala — dibungkus
+   di span terpisah (bukan langsung di .peserta-row) supaya overflow:hidden
+   hanya memotong sinarnya saja, TIDAK ikut memotong mahkota/bintang yang
+   sedikit "keluar" dari tepi kartu. */
+.lunas-shine{
+    position:absolute; inset:0; border-radius:16px; overflow:hidden; pointer-events:none; z-index:0;
+}
+.lunas-shine::after{
+    content:''; position:absolute; top:0; left:0; width:45%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,.65), transparent);
+    transform:translateX(-180%) skewX(-20deg);
+    animation: lunasShineSweep 3.4s ease-in-out infinite;
+}
+@keyframes lunasShineSweep{
+    0%{ transform:translateX(-180%) skewX(-20deg); }
+    55%, 100%{ transform:translateX(280%) skewX(-20deg); }
+}
+@media (prefers-reduced-motion: reduce){ .lunas-shine::after{ animation:none; display:none; } }
+
+/* Bintang kecil berkelip di sudut-sudut kartu — 2 di HP, 4 di layar lebar */
+.lunas-sparkle{
+    position:absolute; color:#FFD65A; font-size:9px; pointer-events:none; z-index:1;
+    animation: lunasTwinkle 2.6s ease-in-out infinite;
+    filter:drop-shadow(0 0 3px rgba(240,180,41,.85));
+}
+.lunas-sparkle.ls1{ top:5px; left:7px; animation-delay:0s; }
+.lunas-sparkle.ls2{ bottom:5px; left:7px; animation-delay:.9s; font-size:7px; }
+.lunas-sparkle.ls3{ top:5px; right:7px; animation-delay:1.7s; }
+.lunas-sparkle.ls4{ bottom:5px; right:7px; animation-delay:.5s; font-size:7px; }
+@keyframes lunasTwinkle{
+    0%, 100%{ opacity:0; transform:scale(.3) rotate(0deg); }
+    50%{ opacity:1; transform:scale(1) rotate(25deg); }
+}
+@media (max-width:560px){
+    .lunas-sparkle.ls2, .lunas-sparkle.ls4{ display:none; }
+}
+@media (prefers-reduced-motion: reduce){ .lunas-sparkle{ animation:none; display:none; } }
+
+/* Label pemisah grup "Sudah Lunas" / "Peserta Lainnya" di tab Semua */
+.peserta-group-header{
+    font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--ink-soft); padding:6px 4px 2px; display:flex; align-items:center; gap:6px;
+}
+.peserta-group-header-lunas{ color:#C98A0E; }
+.peserta-group-header-lunas i{ animation: lunasHeaderWiggle 2s ease-in-out infinite; }
+@keyframes lunasHeaderWiggle{ 0%,100%{ transform:rotate(0deg); } 50%{ transform:rotate(-10deg); } }
+@media (prefers-reduced-motion: reduce){ .peserta-group-header-lunas i{ animation:none; } }
 
 .peserta-row-avatar-wrap{ position:relative; flex-shrink:0; }
 

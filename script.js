@@ -1455,6 +1455,21 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
       list = list.filter(p => (p.nama || '').toLowerCase().includes(q) || (p.departemen || '').toLowerCase().includes(q));
     }
 
+    // TAMPILAN SPESIAL PESERTA LUNAS: peserta yang sudah Lunas otomatis
+    // "naik" ke paling atas daftar (di atas peserta lain), supaya mereka
+    // lebih menonjol. Memakai .sort() bawaan JS yang stabil (urutan asli
+    // antar peserta dengan status sama tetap terjaga), jadi ini murni
+    // memindahkan grup "lunas" ke depan tanpa mengacak urutan lainnya.
+    list = list
+      .map((p, idx) => ({ p, idx }))
+      .sort((a, b) => {
+        const aLunas = a.p.pembayaran?.status === 'lunas' ? 0 : 1;
+        const bLunas = b.p.pembayaran?.status === 'lunas' ? 0 : 1;
+        if (aLunas !== bLunas) return aLunas - bLunas;
+        return a.idx - b.idx;
+      })
+      .map(x => x.p);
+
     // Statistik dihitung dari SELURUH data (bukan hasil filter)
     const total = pesertaData.length;
     const menunggu = pesertaData.filter(p => (p.pembayaran?.status || 'belum_dp') === 'belum_dp').length;
@@ -1468,6 +1483,15 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
     pesertaGrid.innerHTML = '';
     pesertaEmpty.style.display = list.length === 0 ? 'block' : 'none';
     if (pesertaScrollHint) pesertaScrollHint.style.display = list.length > 8 ? 'flex' : 'none';
+
+    // Label pemisah grup "Sudah Lunas" vs "Peserta Lainnya" — hanya
+    // ditampilkan di tab "Semua" dan cuma kalau memang ada campuran
+    // (supaya jelas kenapa nama-nama lunas melompat ke atas).
+    const showGroupHeaders = currentFilter === 'semua'
+      && list.some(p => p.pembayaran?.status === 'lunas')
+      && list.some(p => p.pembayaran?.status !== 'lunas');
+    let lunasHeaderShown = false;
+    let othersHeaderShown = false;
 
     // PERBAIKAN TAMPILAN: dulu tiap peserta jadi kartu besar penuh detail —
     // begitu peserta banyak, halaman jadi panjang & berantakan. Sekarang
@@ -1487,12 +1511,35 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
       // Tidak ditampilkan bareng label "Baru" supaya tidak dobel/berisik.
       const isEdited = !isBaru && p._editedMs && (Date.now() - p._editedMs) < (1000 * 60 * 60 * 24);
 
+      if (showGroupHeaders){
+        if (isLunas && !lunasHeaderShown){
+          const header = document.createElement('div');
+          header.className = 'peserta-group-header peserta-group-header-lunas';
+          header.innerHTML = '<i class="fa-solid fa-trophy"></i> Sudah Lunas';
+          pesertaGrid.appendChild(header);
+          lunasHeaderShown = true;
+        } else if (!isLunas && !othersHeaderShown && lunasHeaderShown){
+          const header = document.createElement('div');
+          header.className = 'peserta-group-header';
+          header.innerHTML = 'Peserta Lainnya';
+          pesertaGrid.appendChild(header);
+          othersHeaderShown = true;
+        }
+      }
+
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'peserta-row peserta-row-enter' + (isLunas ? ' peserta-row-lunas' : '');
       row.style.transitionDelay = Math.min(i * 35, 300) + 'ms';
 
       row.innerHTML = `
+        ${isLunas ? '<span class="lunas-shine" aria-hidden="true"></span>' : ''}
+        ${isLunas ? `
+          <span class="lunas-sparkle ls1" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+          <span class="lunas-sparkle ls2" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+          <span class="lunas-sparkle ls3" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+          <span class="lunas-sparkle ls4" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+        ` : ''}
         <span class="peserta-row-avatar-wrap">
           <span class="peserta-row-avatar">${initialsOf(p.nama)}</span>
           ${isLunas ? `<span class="peserta-crown" title="Sudah lunas!"><i class="fa-solid fa-crown"></i></span>` : ''}
