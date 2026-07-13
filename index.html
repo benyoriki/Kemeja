@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet: style.css = fungsi sistem/layout, particles.css = efek visual/partikel -->
-<link rel="stylesheet" href="style.css?v=16">
+<link rel="stylesheet" href="style.css?v=18">
 <link rel="stylesheet" href="particles.css?v=4">
 </head>
 <body>
@@ -663,6 +663,8 @@
     <span class="pfloat pfloat-2"><i class="fa-solid fa-shirt"></i></span>
     <span class="pfloat pfloat-3"><i class="fa-solid fa-droplet"></i></span>
     <span class="pfloat pfloat-4"><i class="fa-solid fa-shirt"></i></span>
+    <span class="pfloat pfloat-5"><i class="fa-solid fa-sparkles"></i></span>
+    <span class="pfloat pfloat-6"><i class="fa-solid fa-star"></i></span>
   </div>
   <div class="container">
     <div class="section-head fade-up">
@@ -706,13 +708,19 @@
       </div>
     </div>
 
-    <!-- List ringkas peserta — tetap rapi walau jumlah peserta banyak -->
-    <div class="peserta-grid" id="pesertaGrid">
-      <!-- Skeleton loaders tampil sebelum data Firestore masuk -->
-      <div class="peserta-row skeleton"></div>
-      <div class="peserta-row skeleton"></div>
-      <div class="peserta-row skeleton"></div>
+    <!-- List ringkas peserta — tetap rapi walau jumlah peserta banyak.
+         Dibungkus kotak dengan tinggi terbatas (~8 baris terlihat) supaya
+         halaman TIDAK ikut memanjang ke bawah walau peserta terus bertambah —
+         sisanya tinggal digeser (scroll) di dalam kotak ini saja. -->
+    <div class="peserta-list-wrap" id="pesertaListWrap">
+      <div class="peserta-grid" id="pesertaGrid">
+        <!-- Skeleton loaders tampil sebelum data Firestore masuk -->
+        <div class="peserta-row skeleton"></div>
+        <div class="peserta-row skeleton"></div>
+        <div class="peserta-row skeleton"></div>
+      </div>
     </div>
+    <p class="peserta-scroll-hint" id="pesertaScrollHint" style="display:none;"><i class="fa-solid fa-chevron-down"></i> Geser untuk lihat peserta lainnya</p>
 
     <p class="peserta-empty" id="pesertaEmpty" style="display:none;">
       <i class="fa-solid fa-inbox"></i> Belum ada peserta pada kategori ini.
@@ -820,6 +828,7 @@
         <div class="adash-header-right">
           <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
           <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
+          <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
           <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
           <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
         </div>
@@ -1534,6 +1543,40 @@
   </div>
 </div>
 
+<!-- ===================================================== -->
+<!-- ADMIN: KONFIRMASI PERUBAHAN (GENERIK, dipakai untuk SEMUA
+     aksi di dasbor: ubah status bayar, edit data, hapus peserta) -->
+<!-- ===================================================== -->
+<div class="confirm-overlay" id="adminGenericConfirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="agcIcon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <h3 id="agcTitle">Konfirmasi Perubahan</h3>
+    <div id="agcMessage" class="agc-message">Apakah Anda yakin?</div>
+    <small class="admin-error" id="agcError"></small>
+    <div class="confirm-actions">
+      <button class="btn btn-outline-dark" id="agcCancelBtn" type="button">Batal</button>
+      <button class="btn btn-primary ripple" id="agcConfirmBtn" type="button"><i class="fa-solid fa-check"></i> <span id="agcConfirmLabel">Ya, Simpan</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ADMIN: RIWAYAT AKTIVITAS ADMIN (log siapa mengubah apa) -->
+<!-- ===================================================== -->
+<div class="admin-overlay" id="adminHistoryOverlay">
+  <div class="admin-box history-box">
+    <button class="admin-close" id="adminHistoryClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+    <h3 class="addpeserta-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Aktivitas Admin</h3>
+    <p class="addpeserta-desc">Catatan otomatis setiap perubahan yang dilakukan admin di dasbor ini: siapa, kapan, dan apa yang diubah.</p>
+    <div class="adash-search" style="margin-bottom:14px;">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="adminHistorySearch" placeholder="Cari nama admin, nama peserta, atau jenis aksi...">
+    </div>
+    <div class="admin-history-list" id="adminHistoryList"><!-- diisi via JS --></div>
+    <p class="adash-empty" id="adminHistoryEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Belum ada riwayat aktivitas.</p>
+  </div>
+</div>
+
 <!-- Firebase (modular v10 via CDN) -->
 <script type="module">
 (async () => {
@@ -1631,7 +1674,7 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.js?v=19"></script>
+<script src="script.js?v=22"></script>
 <script src="particles.js?v=3"></script>
 </body>
 </html>

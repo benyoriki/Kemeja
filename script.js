@@ -1327,6 +1327,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   const pesertaGrid = document.getElementById('pesertaGrid');
   const pesertaEmpty = document.getElementById('pesertaEmpty');
   const pesertaOffline = document.getElementById('pesertaOffline');
+  const pesertaScrollHint = document.getElementById('pesertaScrollHint');
   const pesertaSearch = document.getElementById('pesertaSearch');
   const pesertaFilters = document.getElementById('pesertaFilters');
   const statTotal = document.getElementById('statTotal');
@@ -1343,7 +1344,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     belum_dp: { label:'Menunggu DP', cls:'badge-warn', icon:'fa-hourglass-half' },
     dp:       { label:'DP Terbayar', cls:'badge-info', icon:'fa-hand-holding-dollar' },
     cicilan:  { label:'Cicilan 2x Berjalan', cls:'badge-info', icon:'fa-coins' },
-    lunas:    { label:'Lunas', cls:'badge-success', icon:'fa-circle-check' }
+    lunas:    { label:'Lunas', cls:'badge-success', icon:'fa-crown' }
   };
 
   function initialsOf(nama){
@@ -1387,25 +1388,38 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
 
     pesertaGrid.innerHTML = '';
     pesertaEmpty.style.display = list.length === 0 ? 'block' : 'none';
+    if (pesertaScrollHint) pesertaScrollHint.style.display = list.length > 8 ? 'flex' : 'none';
 
     // PERBAIKAN TAMPILAN: dulu tiap peserta jadi kartu besar penuh detail —
     // begitu peserta banyak, halaman jadi panjang & berantakan. Sekarang
     // tiap peserta cuma satu baris ringkas (avatar + nama + status), detail
-    // lengkapnya baru muncul di modal saat baris itu diklik/diketuk.
+    // lengkapnya baru muncul di modal saat baris itu diklik/diketuk. List
+    // dibatasi tinggi (lihat .peserta-list-wrap di CSS, ~8 baris terlihat)
+    // dan digeser (scroll) di dalam kotaknya sendiri, supaya halaman tidak
+    // ikut memanjang ke bawah walau peserta yang mendaftar makin banyak.
+    const rows = [];
     list.forEach((p, i) => {
       const status = p.pembayaran?.status || 'belum_dp';
       const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
-      const isBaru = p._ms && (Date.now() - p._ms) < (1000 * 60 * 60 * 24); // < 24 jam
+      const isBaru = p._ms && (Date.now() - p._ms) < (1000 * 60 * 60 * 24); // < 24 jam sejak daftar
+      const isLunas = status === 'lunas';
+      // "Diperbarui Admin": muncul 24 jam sejak TERAKHIR admin ubah data
+      // peserta ini (edit/ubah status), lalu otomatis hilang sendiri.
+      // Tidak ditampilkan bareng label "Baru" supaya tidak dobel/berisik.
+      const isEdited = !isBaru && p._editedMs && (Date.now() - p._editedMs) < (1000 * 60 * 60 * 24);
 
       const row = document.createElement('button');
       row.type = 'button';
-      row.className = 'peserta-row fade-up show';
+      row.className = 'peserta-row peserta-row-enter' + (isLunas ? ' peserta-row-lunas' : '');
       row.style.transitionDelay = Math.min(i * 35, 300) + 'ms';
 
       row.innerHTML = `
-        <span class="peserta-row-avatar">${initialsOf(p.nama)}</span>
+        <span class="peserta-row-avatar-wrap">
+          <span class="peserta-row-avatar">${initialsOf(p.nama)}</span>
+          ${isLunas ? `<span class="peserta-crown" title="Sudah lunas!"><i class="fa-solid fa-crown"></i></span>` : ''}
+        </span>
         <span class="peserta-row-info">
-          <span class="peserta-row-name">${escapeHtml(p.nama || '-')}${isBaru ? '<span class="peserta-row-new">Baru</span>' : ''}</span>
+          <span class="peserta-row-name">${escapeHtml(p.nama || '-')}${isBaru ? '<span class="peserta-row-new">Baru</span>' : ''}${isEdited ? '<span class="peserta-row-edited"><i class="fa-solid fa-pen"></i> Diperbarui</span>' : ''}</span>
           <span class="peserta-row-dept">${escapeHtml(p.departemen || '-')}</span>
         </span>
         <span class="peserta-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> <b>${info.label}</b></span>
@@ -1413,6 +1427,17 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       `;
       row.addEventListener('click', () => openPesertaDetail(p));
       pesertaGrid.appendChild(row);
+      rows.push(row);
+    });
+
+    // Entrance animation dipicu 1 frame SETELAH elemen tertempel ke DOM,
+    // supaya transisi CSS-nya benar-benar berjalan (bukan langsung "jump")
+    // di semua browser — bukan cuma andalan waktu penempelan yang kadang
+    // tidak konsisten.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        rows.forEach(r => r.classList.add('show'));
+      });
     });
   }
 
@@ -1425,8 +1450,6 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   function openPesertaDetail(p){
     const status = p.pembayaran?.status || 'belum_dp';
     const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
-    const cicilanArr = p.pembayaran?.cicilan || [];
-    const cicilanTerbayar = cicilanArr.filter(c => c.dibayar).length;
 
     document.getElementById('pmAvatar').textContent = initialsOf(p.nama);
     document.getElementById('pmName').textContent = p.nama || '-';
@@ -1442,10 +1465,12 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     const progressWrap = document.getElementById('pmProgressWrap');
     if (p.pembayaran?.metode === 'cicilan'){
       progressWrap.style.display = 'block';
-      document.getElementById('pmProgressFill').style.width = (cicilanArr.length ? (cicilanTerbayar / cicilanArr.length * 100) : 0) + '%';
-      document.getElementById('pmProgressText').textContent = cicilanTerbayar === 1
+      document.getElementById('pmProgressFill').style.width = (status === 'lunas' ? 100 : status === 'belum_dp' ? 0 : 50) + '%';
+      document.getElementById('pmProgressText').textContent = status === 'lunas'
         ? 'Lunas (2/2 pembayaran)'
-        : 'Pembayaran ke-1 (DP) selesai, menunggu pelunasan ke-2';
+        : status === 'belum_dp'
+          ? 'Belum ada pembayaran masuk'
+          : 'Pembayaran ke-1 (DP) selesai, menunggu pelunasan ke-2';
     } else {
       progressWrap.style.display = 'none';
     }
@@ -1587,7 +1612,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
         pesertaData = snap.docs.map(d => {
           const docData = d.data();
           const ms = docData.timestamp?.toMillis ? docData.timestamp.toMillis() : null;
-          return { id: d.id, ...docData, _ms: ms };
+          const editedMs = docData.adminEditedAt?.toMillis ? docData.adminEditedAt.toMillis() : null;
+          return { id: d.id, ...docData, _ms: ms, _editedMs: editedMs };
         });
         renderPeserta();
         renderAdminList();
@@ -2169,11 +2195,167 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   const adashCicilan = document.getElementById('adashCicilan');
   const adashLunas = document.getElementById('adashLunas');
 
+  // ---- Riwayat Aktivitas Admin ----
+  const adminHistoryBtn = document.getElementById('adminHistoryBtn');
+  const adminHistoryOverlay = document.getElementById('adminHistoryOverlay');
+  const adminHistoryClose = document.getElementById('adminHistoryClose');
+  const adminHistoryList = document.getElementById('adminHistoryList');
+  const adminHistoryEmpty = document.getElementById('adminHistoryEmpty');
+  const adminHistorySearch = document.getElementById('adminHistorySearch');
+
+  // ---- Modal Konfirmasi Generik ----
+  const agcOverlay = document.getElementById('adminGenericConfirmOverlay');
+  const agcTitle = document.getElementById('agcTitle');
+  const agcMessage = document.getElementById('agcMessage');
+  const agcError = document.getElementById('agcError');
+  const agcCancelBtn = document.getElementById('agcCancelBtn');
+  const agcConfirmBtn = document.getElementById('agcConfirmBtn');
+  const agcConfirmLabel = document.getElementById('agcConfirmLabel');
+
   let adminUnlocked = false;
   let captchaAnswer = null;
   let adminFilter = 'semua';
   let adminSearch = '';
   let adminClockTimer = null;
+
+  /* =========================================================
+     PERBAIKAN: MODAL KONFIRMASI GENERIK + RIWAYAT AKTIVITAS ADMIN
+     - showAdminConfirm(): dipakai SEBELUM setiap perubahan data di
+       dasbor (ubah status bayar, edit peserta, hapus peserta, reset
+       chat) supaya admin selalu ditanya ulang "yakin?" dengan
+       keterangan jelas apa yang akan berubah, sebelum benar-benar
+       disimpan ke Firestore.
+     - logAdminAction(): setiap kali perubahan BENAR-BENAR disimpan,
+       dicatat ke koleksi Firestore "admin_log" (siapa/admin yang
+       login, jam & tanggal, jenis aksi, dan detail perubahannya)
+       supaya bisa ditelusuri lewat tombol "Riwayat Aktivitas Admin".
+  ========================================================= */
+  let agcResolver = null;
+
+  function showAdminConfirm({ title, messageHtml, confirmLabel = 'Ya, Simpan', danger = false }){
+    return new Promise((resolve) => {
+      if (!agcOverlay){ resolve(true); return; }
+      agcResolver = resolve;
+      agcTitle.textContent = title || 'Konfirmasi Perubahan';
+      agcMessage.innerHTML = messageHtml || 'Apakah Anda yakin ingin menyimpan perubahan ini?';
+      agcConfirmLabel.textContent = confirmLabel;
+      agcConfirmBtn.className = danger ? 'btn btn-danger ripple' : 'btn btn-primary ripple';
+      if (agcError) agcError.textContent = '';
+      agcOverlay.classList.add('active');
+    });
+  }
+  function closeAdminConfirm(result){
+    if (agcOverlay) agcOverlay.classList.remove('active');
+    if (typeof agcResolver === 'function'){
+      const r = agcResolver;
+      agcResolver = null;
+      r(result);
+    }
+  }
+  agcCancelBtn?.addEventListener('click', () => closeAdminConfirm(false));
+  agcConfirmBtn?.addEventListener('click', () => closeAdminConfirm(true));
+  agcOverlay?.addEventListener('click', (e) => { if (e.target === agcOverlay) closeAdminConfirm(false); });
+
+  function getAdminEmail(){
+    return window.__lokonFirebase?.auth?.currentUser?.email || 'Admin (tidak diketahui)';
+  }
+
+  const ADMIN_LOG_COLLECTION = 'admin_log';
+
+  async function logAdminAction(aksi, detail, targetLabel){
+    try {
+      const fb = window.__lokonFirebase;
+      if (!fb) return;
+      const now = new Date();
+      await fb.addDoc(fb.collection(fb.db, ADMIN_LOG_COLLECTION), {
+        admin: getAdminEmail(),
+        aksi,
+        target: targetLabel || '-',
+        detail: detail || '-',
+        waktu: now.toISOString(),
+        waktuTampil: now.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) +
+          ' • ' + now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
+        serverWaktu: fb.serverTimestamp ? fb.serverTimestamp() : null
+      });
+    } catch (err){
+      // Gagal mencatat riwayat TIDAK BOLEH membatalkan aksi utama yang
+      // sudah berhasil disimpan — cukup dicatat di console sebagai warning.
+      console.warn('Gagal mencatat riwayat admin (diabaikan, tidak fatal):', err.code, err.message);
+    }
+  }
+
+  const AKSI_ICON = {
+    hapus: { cls:'aksi-hapus', icon:'fa-trash' },
+    edit: { cls:'aksi-edit', icon:'fa-pen' },
+    status: { cls:'aksi-status', icon:'fa-coins' },
+    chat: { cls:'aksi-chat', icon:'fa-comment-slash' },
+    login: { cls:'aksi-status', icon:'fa-right-to-bracket' }
+  };
+
+  let adminHistoryCache = [];
+  let adminHistoryLoaded = false;
+
+  async function loadAdminHistory(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Tidak bisa memuat riwayat: Firebase belum tersambung.', 'error');
+      return;
+    }
+    try {
+      let snap;
+      if (typeof fb.getDocs === 'function' && typeof fb.query === 'function'){
+        const q = fb.query(fb.collection(fb.db, ADMIN_LOG_COLLECTION), fb.orderBy('waktu', 'desc'), fb.limit(300));
+        snap = await fb.getDocs(q);
+      } else {
+        snap = await fb.getDocs(fb.collection(fb.db, ADMIN_LOG_COLLECTION));
+      }
+      adminHistoryCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      adminHistoryLoaded = true;
+      renderAdminHistory();
+    } catch (err){
+      console.warn('Gagal memuat riwayat admin:', err.code, err.message);
+      showToast('Gagal memuat riwayat aktivitas. Cek Firestore Rules koleksi "admin_log".', 'error');
+    }
+  }
+
+  function renderAdminHistory(){
+    if (!adminHistoryList) return;
+    const q = (adminHistorySearch?.value || '').trim().toLowerCase();
+    let list = adminHistoryCache.slice();
+    if (q){
+      list = list.filter(h =>
+        (h.admin || '').toLowerCase().includes(q) ||
+        (h.aksi || '').toLowerCase().includes(q) ||
+        (h.target || '').toLowerCase().includes(q) ||
+        (h.detail || '').toLowerCase().includes(q)
+      );
+    }
+    adminHistoryList.innerHTML = '';
+    if (adminHistoryEmpty) adminHistoryEmpty.style.display = list.length === 0 ? 'block' : 'none';
+    list.forEach(h => {
+      const aksiKey = h.aksi === 'hapus' ? 'hapus' : h.aksi === 'edit' ? 'edit' : h.aksi === 'chat' ? 'chat' : 'status';
+      const meta = AKSI_ICON[aksiKey] || AKSI_ICON.status;
+      const item = document.createElement('div');
+      item.className = 'admin-history-item';
+      item.innerHTML = `
+        <div class="admin-history-top">
+          <span class="admin-history-admin"><i class="fa-solid fa-user-shield"></i> ${escapeHtml(h.admin || '-')}</span>
+          <span class="admin-history-time">${escapeHtml(h.waktuTampil || '-')}</span>
+        </div>
+        <span class="admin-history-aksi ${meta.cls}"><i class="fa-solid ${meta.icon}"></i> ${escapeHtml(h.aksi || '-')}</span>
+        <div class="admin-history-detail"><b>${escapeHtml(h.target || '-')}</b> — ${escapeHtml(h.detail || '-')}</div>
+      `;
+      adminHistoryList.appendChild(item);
+    });
+  }
+
+  adminHistoryBtn?.addEventListener('click', () => {
+    adminHistoryOverlay?.classList.add('active');
+    loadAdminHistory();
+  });
+  adminHistoryClose?.addEventListener('click', () => adminHistoryOverlay?.classList.remove('active'));
+  adminHistoryOverlay?.addEventListener('click', (e) => { if (e.target === adminHistoryOverlay) adminHistoryOverlay.classList.remove('active'); });
+  adminHistorySearch?.addEventListener('input', renderAdminHistory);
 
   function newCaptcha(){
     const a = Math.floor(Math.random() * 8) + 1;
@@ -2312,6 +2494,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       adminOverlay.classList.add('admin-dash-mode');
       startAdminClock();
       renderAdminList();
+      logAdminAction('login', 'Admin berhasil masuk ke dasbor.', email);
     } catch (err){
       console.warn('Login admin gagal:', err.code, err.message);
       const map = {
@@ -2458,6 +2641,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       chatMessages = [];
       renderChatMessages();
       showToast(`Berhasil menghapus ${docs.length} pesan. Grup chat sudah bersih.`, 'success');
+      await logAdminAction('chat', `Menghapus seluruh ${docs.length} pesan di grup chat peserta (reset total).`, 'Grup Chat Peserta');
       closeResetChatConfirm();
     } catch (err){
       console.warn('Gagal menghapus chat grup:', err);
@@ -2530,15 +2714,16 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
         </div>
         ${isCicilan ? `
           <div class="admin-row-progress">
-            <div class="admin-row-progress-bar"><div class="admin-row-progress-fill" style="width:${status==='belum_dp'?0:(cicilanTerbayar?100:50)}%"></div></div>
-            <span>${status==='belum_dp' ? 'Belum bayar sama sekali' : (cicilanTerbayar ? 'Lunas — 2/2 pembayaran selesai' : 'Pembayaran ke-1 (DP) selesai, menunggu ke-2')} • Terkumpul ${formatRupiah(p.pembayaran?.totalDibayar || 0)}</span>
+            <div class="admin-row-progress-bar"><div class="admin-row-progress-fill" style="width:${status==='lunas' ? 100 : status==='belum_dp' ? 0 : 50}%"></div></div>
+            <span>${status==='belum_dp' ? 'Belum bayar sama sekali' : status==='lunas' ? 'Lunas — 2/2 pembayaran selesai' : 'Pembayaran ke-1 (DP) selesai, menunggu ke-2'} • Terkumpul ${formatRupiah(p.pembayaran?.totalDibayar || 0)}</span>
           </div>` : ''}
         <div class="admin-row-actions">
           <div class="admin-row-actions-primary">
             ${status === 'belum_dp' ? `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai ${isCicilan ? 'DP (1/2)' : 'Lunas'} Terbayar</button>` : ''}
             ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
               `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
-            ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : `<span class="admin-done"><i class="fa-solid fa-check-double"></i> Lunas</span>`}
+            ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : ''}
+            <button class="admin-action-btn admin-action-ubahstatus" data-action="ubahstatus" data-id="${p.id}" title="Perbaiki status kalau salah pencet — status bisa diubah lagi kapan saja"><i class="fa-solid fa-rotate-left"></i> Ubah Status</button>
           </div>
           <div class="admin-row-actions-icons">
             ${p.whatsapp ? `<a class="admin-icon-action wa" title="Chat WhatsApp" href="https://wa.me/${encodeURIComponent(normalizeWhatsapp(p.whatsapp))}?text=${encodeURIComponent('Halo ' + p.nama + ', kode unik pendaftaran kemeja Anda: ' + p.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
@@ -2558,6 +2743,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       } else if (action === 'hapus'){
         const p = pesertaData.find(x => x.id === id);
         btn.addEventListener('click', () => hapusPesertaAdmin(id, p?.nama || 'peserta ini', p?.kodeUnik));
+      } else if (action === 'ubahstatus'){
+        btn.addEventListener('click', () => openUbahStatusConfirm(id));
       } else {
         btn.addEventListener('click', () => handleAdminAction(id, action));
       }
@@ -2565,14 +2752,10 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   }
 
   async function handleAdminAction(id, action){
-    const fb = await waitForFirebase(8000);
-    if (!fb){
-      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
-      return;
-    }
     const p = pesertaData.find(x => x.id === id);
     if (!p) return;
     const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
+    const statusLama = STATUS_LABEL[pembayaran.status || 'belum_dp']?.label || '-';
 
     if (action === 'dp'){
       pembayaran.dpDibayar = true;
@@ -2595,12 +2778,114 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       (pembayaran.cicilan || []).forEach(c => { c.dibayar = true; });
     }
 
+    const statusBaru = STATUS_LABEL[pembayaran.status || 'belum_dp']?.label || '-';
+    const confirmed = await showAdminConfirm({
+      title: 'Ubah Status Pembayaran?',
+      messageHtml: `
+        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${escapeHtml(p.nama || '-')} (${escapeHtml(p.kodeUnik || '-')})</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Status</span><span>${escapeHtml(statusLama)} <span class="agc-arrow">→</span> ${escapeHtml(statusBaru)}</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Total Dibayar</span><span>${formatRupiah(pembayaran.totalDibayar || 0)}</span></div>
+        <p style="margin-top:12px;">Pastikan sudah benar sebelum disimpan. Status ini masih bisa diubah lagi nanti lewat tombol "Ubah Status" kalau ternyata salah pencet.</p>
+      `,
+      confirmLabel: 'Ya, Simpan Perubahan'
+    });
+    if (!confirmed) return;
+
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
     try {
-      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran });
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran, adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date() });
       showToast('Status pembayaran berhasil diperbarui.', 'success');
+      await logAdminAction('status', `Status diubah dari "${statusLama}" menjadi "${statusBaru}". Total dibayar: ${formatRupiah(pembayaran.totalDibayar || 0)}.`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
     } catch (err){
       console.warn('Gagal memperbarui status pembayaran:', err.code, err.message);
       showToast(`Gagal memperbarui status (${err.code || 'error'}). Coba lagi.`, 'error');
+    }
+  }
+
+  /* =========================================================
+     PERBAIKAN: UBAH STATUS SECARA MANUAL (bisa dikembalikan lagi)
+     Sebelumnya begitu status jadi "Lunas", tidak ada cara mengubahnya
+     kembali kalau admin salah pencet (mis. seharusnya baru DP/Cicilan
+     ke-1, tapi tombol "Lunas" ke-pencet). Fitur ini membiarkan admin
+     memilih status pembayaran SECARA BEBAS (Belum Bayar / DP / Lunas)
+     kapan saja, lewat tombol "Ubah Status" yang selalu tersedia.
+  ========================================================= */
+  function openUbahStatusConfirm(id){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const isCicilan = p.pembayaran?.metode === 'cicilan';
+    const statusSekarang = p.pembayaran?.status || 'belum_dp';
+    const opsi = isCicilan
+      ? [ ['belum_dp','Belum Bayar Sama Sekali'], ['dp','DP Terbayar (1/2)'], ['lunas','Lunas (2/2)'] ]
+      : [ ['belum_dp','Belum Bayar'], ['lunas','Lunas'] ];
+
+    showAdminConfirm({
+      title: 'Ubah Status Pembayaran Secara Manual',
+      messageHtml: `
+        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${escapeHtml(p.nama || '-')} (${escapeHtml(p.kodeUnik || '-')})</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Status saat ini</span><span>${escapeHtml(STATUS_LABEL[statusSekarang]?.label || '-')}</span></div>
+        <p style="margin:10px 0 4px;">Pilih status pembayaran yang benar. Gunakan ini untuk memperbaiki kalau sebelumnya salah pencet tombol status (mis. tidak sengaja ke "Lunas").</p>
+        <select class="agc-status-select" id="agcStatusSelect">
+          ${opsi.map(([val, label]) => `<option value="${val}" ${val === statusSekarang ? 'selected' : ''}>${label}</option>`).join('')}
+        </select>
+      `,
+      confirmLabel: 'Ya, Terapkan Status Ini'
+    }).then((confirmed) => {
+      if (!confirmed) return;
+      const select = document.getElementById('agcStatusSelect');
+      const targetStatus = select ? select.value : statusSekarang;
+      terapkanStatusManual(id, targetStatus);
+    });
+  }
+
+  async function terapkanStatusManual(id, targetStatus){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const statusLama = STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-';
+    const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
+    const cicilanArr = pembayaran.cicilan || [];
+
+    if (targetStatus === 'belum_dp'){
+      pembayaran.status = 'belum_dp';
+      pembayaran.dpDibayar = false;
+      pembayaran.totalDibayar = 0;
+      cicilanArr.forEach(c => { c.dibayar = false; delete c.tanggalBayar; });
+    } else if (targetStatus === 'dp'){
+      pembayaran.status = 'dp';
+      pembayaran.dpDibayar = true;
+      if (cicilanArr[0]){
+        cicilanArr[0].dibayar = true;
+        if (!cicilanArr[0].tanggalBayar) cicilanArr[0].tanggalBayar = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+      }
+      if (cicilanArr[1]){ cicilanArr[1].dibayar = false; delete cicilanArr[1].tanggalBayar; }
+      pembayaran.totalDibayar = cicilanArr[0]?.nominal || pembayaran.dpMinimal || 0;
+    } else if (targetStatus === 'lunas'){
+      pembayaran.status = 'lunas';
+      pembayaran.dpDibayar = true;
+      cicilanArr.forEach(c => {
+        c.dibayar = true;
+        if (!c.tanggalBayar) c.tanggalBayar = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+      });
+      pembayaran.totalDibayar = p.total;
+    }
+    pembayaran.cicilan = cicilanArr;
+
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran, adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date() });
+      showToast('Status pembayaran berhasil diubah.', 'success');
+      await logAdminAction('status', `Status diubah manual dari "${statusLama}" menjadi "${STATUS_LABEL[targetStatus]?.label}". Total dibayar: ${formatRupiah(pembayaran.totalDibayar || 0)}.`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
+    } catch (err){
+      console.warn('Gagal mengubah status manual:', err.code, err.message);
+      showToast(`Gagal mengubah status (${err.code || 'error'}). Coba lagi.`, 'error');
     }
   }
 
@@ -2698,7 +2983,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       jumlah: data.jumlah,
       harga: data.harga,
       total: data.total,
-      catatan: data.catatan || '-'
+      catatan: data.catatan || '-',
+      adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date()
     };
     try {
       await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), patch);
@@ -2725,7 +3011,12 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   // (profil lama jadi data hantu yang tidak pernah terhapus). Sekarang saat
   // peserta dihapus di sini, profil catur terkait (jika ada) ikut dihapus.
   async function hapusPesertaAdmin(id, nama, kodeUnik){
-    const yakin = window.confirm(`Hapus pendaftaran "${nama}" secara permanen? Tindakan ini tidak bisa dibatalkan.`);
+    const yakin = await showAdminConfirm({
+      title: 'Hapus Data Peserta Ini?',
+      messageHtml: `<p>Anda akan <b>menghapus permanen</b> pendaftaran atas nama <b>${escapeHtml(nama)}</b> (${escapeHtml(kodeUnik || '-')}). Seluruh data pembayaran &amp; profil catur terkait ikut terhapus. Tindakan ini <b>tidak bisa dibatalkan</b>.</p>`,
+      confirmLabel: 'Ya, Hapus Permanen',
+      danger: true
+    });
     if (!yakin) return;
     const fb = await waitForFirebase(10000);
     if (!fb){
@@ -2749,6 +3040,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       }
 
       showToast(`Peserta "${nama}" berhasil dihapus.`, 'success');
+      await logAdminAction('hapus', `Data peserta dihapus permanen dari dasbor.`, `${nama} (${kodeUnik || '-'})`);
     } catch (err){
       console.warn('Gagal menghapus peserta:', err.code, err.message);
       let pesan;
@@ -2787,19 +3079,53 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       return;
     }
 
-    addPesertaSubmitBtn.disabled = true;
-    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-
-    const result = await updatePesertaAdmin(editingPesertaId, {
+    const dataBaru = {
       nama, namaBordir,
       whatsapp: whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '',
       departemen, gender, ukuranKemeja, jenis, jumlah, harga, total, catatan
+    };
+
+    // ---- Bangun daftar perubahan (diff) untuk ditampilkan di popup konfirmasi ----
+    const pLama = pesertaData.find(x => x.id === editingPesertaId) || {};
+    const bandingan = [
+      ['Nama', pLama.nama || '-', dataBaru.nama || '-'],
+      ['Nama Bordir', pLama.namaBordir || '-', dataBaru.namaBordir || '-'],
+      ['WhatsApp', pLama.whatsapp || '-', dataBaru.whatsapp || '-'],
+      ['Departemen', pLama.departemen || '-', dataBaru.departemen || '-'],
+      ['Ukuran', pLama.ukuranKemeja || '-', dataBaru.ukuranKemeja || '-'],
+      ['Jenis Kemeja', pLama.jenis || '-', dataBaru.jenis || '-'],
+      ['Jumlah', String(pLama.jumlah || 0), String(dataBaru.jumlah || 0)],
+      ['Total', formatRupiah(pLama.total || 0), formatRupiah(dataBaru.total || 0)],
+      ['Catatan', pLama.catatan || '-', dataBaru.catatan || '-']
+    ].filter(([, lama, baru]) => String(lama) !== String(baru));
+
+    if (bandingan.length === 0){
+      addPesertaError.textContent = 'Tidak ada perubahan yang perlu disimpan.';
+      return;
+    }
+
+    const diffHtml = bandingan.map(([label, lama, baru]) =>
+      `<div class="agc-diff-row"><span class="agc-diff-label">${escapeHtml(label)}</span><span>${escapeHtml(lama)} <span class="agc-arrow">→</span> ${escapeHtml(baru)}</span></div>`
+    ).join('');
+
+    const confirmed = await showAdminConfirm({
+      title: 'Simpan Perubahan Data Peserta?',
+      messageHtml: `<p style="margin-bottom:10px;">Data <b>${escapeHtml(pLama.nama || nama)}</b> (${escapeHtml(pLama.kodeUnik || '-')}) akan diubah sebagai berikut:</p>${diffHtml}`,
+      confirmLabel: 'Ya, Simpan Perubahan'
     });
+    if (!confirmed) return;
+
+    addPesertaSubmitBtn.disabled = true;
+    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    const result = await updatePesertaAdmin(editingPesertaId, dataBaru);
 
     addPesertaSubmitBtn.disabled = false;
     addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan';
 
     if (result.ok){
+      const ringkasan = bandingan.map(([label, lama, baru]) => `${label}: "${lama}" → "${baru}"`).join('; ');
+      await logAdminAction('edit', ringkasan, `${pLama.nama || nama} (${pLama.kodeUnik || '-'})`);
       closeAddPesertaModal();
     } else {
       addPesertaError.textContent = 'Gagal menyimpan — lihat notifikasi di atas untuk detail.';

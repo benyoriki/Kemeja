@@ -199,6 +199,27 @@
 
 @keyframes livePulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
 
+/* ---- List peserta: label "Baru" / "Diperbarui" + efek kilau baris ---- */
+@keyframes flagShimmer{ to{ background-position:-200% center; } }
+
+@keyframes rowFlashPop{
+    0%{ box-shadow:0 0 0 0 rgba(15,216,184,.45), var(--shadow-soft); background:rgba(15,216,184,.14); }
+    60%{ box-shadow:0 0 0 10px rgba(15,216,184,0), var(--shadow-soft); }
+    100%{ box-shadow:0 0 0 0 rgba(15,216,184,0); background:var(--white); }
+}
+
+@keyframes scrollHintBounce{
+    0%,100%{ transform:translateY(0); opacity:.85; }
+    50%{ transform:translateY(4px); opacity:1; }
+}
+
+@keyframes particleDrift{
+    0%{ transform:translate3d(0,0,0) scale(1); opacity:0; }
+    10%{ opacity:.8; }
+    90%{ opacity:.5; }
+    100%{ transform:translate3d(var(--pdx,20px),var(--pdy,-120px),0) scale(.6); opacity:0; }
+}
+
 /* ---- 2026 refresh: chat panel ---- */
 @keyframes fabFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
 

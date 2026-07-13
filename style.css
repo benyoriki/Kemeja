@@ -1490,6 +1490,10 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 .pfloat-4{ top:75%; left:14%; font-size:26px; animation-duration:18s; animation-delay:-2s; }
 
+.pfloat-5{ top:36%; left:48%; font-size:18px; color:rgba(240,180,41,.28); animation-duration:9s; animation-delay:-4s; }
+
+.pfloat-6{ top:85%; left:70%; font-size:16px; color:rgba(240,180,41,.22); animation-duration:11s; animation-delay:-7s; }
+
 @media (prefers-reduced-motion: reduce){ .pfloat{ animation:none; } }
 
 .peserta-stats{
@@ -1558,6 +1562,24 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 .admin-btn{ display:none; }
 
+.peserta-list-wrap{
+    position:relative; max-height:600px; overflow-y:auto; overflow-x:hidden;
+    padding:2px 6px 2px 2px; margin:0 -6px; scroll-behavior:smooth;
+    scrollbar-width:thin; scrollbar-color:var(--aqua-deep) transparent;
+}
+.peserta-list-wrap::-webkit-scrollbar{ width:6px; }
+.peserta-list-wrap::-webkit-scrollbar-track{ background:transparent; }
+.peserta-list-wrap::-webkit-scrollbar-thumb{
+    background:linear-gradient(180deg,#12A9E0,#0FD8B8); border-radius:10px;
+}
+.peserta-scroll-hint{
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    font-size:12.5px; color:var(--ink-soft); margin:12px 0 0; font-weight:600;
+    animation: hintBounce 1.6s ease-in-out infinite;
+}
+@keyframes hintBounce{ 0%,100%{ transform:translateY(0); opacity:.55; } 50%{ transform:translateY(4px); opacity:1; } }
+@media (prefers-reduced-motion: reduce){ .peserta-scroll-hint{ animation:none; } }
+
 .peserta-grid{
     display:flex; flex-direction:column; gap:10px; position:relative; z-index:1;
 }
@@ -1566,18 +1588,64 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     width:100%; display:flex; align-items:center; gap:14px;
     background:var(--white); border:1px solid var(--line); border-radius:16px;
     padding:12px 16px; text-align:left; cursor:pointer;
-    font-family:var(--font-body); transition:var(--transition);
+    font-family:var(--font-body); transition:var(--transition), box-shadow .35s ease, border-color .35s ease;
 }
 
 [data-theme="dark"] .peserta-row{ background:var(--foam); }
 
-.peserta-row:hover{ transform:translateX(4px); border-color:rgba(18,169,224,.35); box-shadow:var(--shadow-soft); }
+.peserta-row:hover{
+    transform:translateX(4px) scale(1.012); border-color:rgba(18,169,224,.4);
+    box-shadow:0 10px 24px rgba(18,169,224,.14);
+}
+
+/* ---- Animasi masuk (entrance) tiap baris — ringan, cuma CSS transition ---- */
+.peserta-row-enter{ opacity:0; transform:translateY(20px) scale(.95); }
+.peserta-row-enter.show{
+    opacity:1; transform:translateY(0) scale(1);
+    transition:opacity .55s cubic-bezier(.2,.8,.3,1), transform .55s cubic-bezier(.2,.8,.3,1),
+      box-shadow .35s ease, border-color .35s ease;
+}
+@media (prefers-reduced-motion: reduce){
+    .peserta-row-enter{ opacity:1; transform:none; transition:none; }
+}
+
+/* ---- Baris peserta yang SUDAH LUNAS: border & glow emas spesial ---- */
+.peserta-row-lunas{
+    border-color:rgba(240,180,41,.45);
+    background:linear-gradient(120deg, rgba(240,180,41,.06), var(--white) 40%);
+    animation: lunasRowShine 3.2s ease-in-out infinite;
+}
+[data-theme="dark"] .peserta-row-lunas{ background:linear-gradient(120deg, rgba(240,180,41,.08), var(--foam) 40%); }
+@keyframes lunasRowShine{
+    0%, 100%{ box-shadow:0 0 0 rgba(240,180,41,0); }
+    50%{ box-shadow:0 4px 18px rgba(240,180,41,.22); }
+}
+@media (prefers-reduced-motion: reduce){ .peserta-row-lunas{ animation:none; } }
+
+.peserta-row-avatar-wrap{ position:relative; flex-shrink:0; }
 
 .peserta-row-avatar{
     width:42px; height:42px; min-width:42px; border-radius:50%;
     background:var(--gradient-brand); color:#04213A; font-weight:700; font-size:13.5px;
     display:flex; align-items:center; justify-content:center; font-family:var(--font-display);
 }
+
+/* ---- Mahkota kecil di pojok avatar peserta yang sudah Lunas ----
+   Permanen selama status = lunas; otomatis hilang begitu admin
+   mengubah statusnya (karena elemen ini hanya dirender kalau isLunas). */
+.peserta-crown{
+    position:absolute; top:-7px; right:-6px; width:19px; height:19px; border-radius:50%;
+    background:linear-gradient(135deg,#FFD65A,#F0B429 55%,#C97A00);
+    color:#5a3d00; display:flex; align-items:center; justify-content:center; font-size:10px;
+    box-shadow:0 0 0 2px var(--white), 0 2px 6px rgba(201,122,0,.5);
+    animation: crownBounce 2.4s ease-in-out infinite;
+}
+[data-theme="dark"] .peserta-crown{ box-shadow:0 0 0 2px var(--foam), 0 2px 6px rgba(201,122,0,.5); }
+@keyframes crownBounce{
+    0%, 100%{ transform:translateY(0) rotate(-6deg); }
+    50%{ transform:translateY(-2px) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce){ .peserta-crown{ animation:none; } }
 
 .peserta-row-info{
     flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;
@@ -1600,6 +1668,16 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     animation: newPulse 1.8s ease-in-out infinite;
 }
 
+/* ---- Label sementara "Diperbarui" — muncul 24 jam sejak admin
+   terakhir mengubah data peserta ini, lalu hilang otomatis sendiri
+   (dihitung dari adminEditedAt di script.js, bukan CSS). ---- */
+.peserta-row-edited{
+    flex-shrink:0; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    background:linear-gradient(120deg,#8A5CF6,#3E7CFF); color:#fff; padding:2px 8px; border-radius:20px;
+    display:inline-flex; align-items:center; gap:4px;
+    animation: newPulse 1.8s ease-in-out infinite;
+}
+
 .peserta-row-badge{
     flex-shrink:0; display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:30px;
     font-size:11.5px; font-weight:600; white-space:nowrap;
@@ -1611,11 +1689,16 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 .badge-info{ background:rgba(18,169,224,.14); color:var(--aqua-deep); }
 
+/* ---- Badge "Lunas" dibuat spesial: emas & berkilau, biar bikin
+   peserta lain yang belum lunas "iri" lihatnya :) ---- */
 .badge-success{
-    background:linear-gradient(120deg, rgba(15,216,184,.22), rgba(18,169,224,.22));
-    color:var(--teal-deep);
-    animation: lunasGlow 2.4s ease-in-out infinite;
+    background:linear-gradient(120deg, #FFE9A8, #F0B429 45%, #FFD65A);
+    background-size:220% 100%;
+    color:#5a3d00; font-weight:800;
+    animation: lunasGlow 2.4s ease-in-out infinite, lunasSweep 3s linear infinite;
 }
+@keyframes lunasSweep{ 0%{ background-position:0% 50%; } 100%{ background-position:220% 50%; } }
+@media (prefers-reduced-motion: reduce){ .badge-success{ animation:none; } }
 
 .peserta-badge{
     display:inline-flex; align-items:center; gap:7px; padding:7px 14px; border-radius:30px;
@@ -1648,6 +1731,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     .peserta-row-badge b{ display:none; }
     .peserta-row-badge{ padding:8px; }
     .peserta-row-dept{ display:none; }
+    .peserta-list-wrap{ max-height:520px; }
 }
 
 /* =========================================================
@@ -2039,6 +2123,39 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .adash-add-btn:hover{ transform:translateY(-2px); filter:brightness(1.05); }
 
+/* ---- Modal Konfirmasi Generik (status bayar, edit, hapus) ---- */
+.agc-message{ font-size:14px; color:var(--ink-soft); line-height:1.7; margin-bottom:18px; text-align:left; }
+.agc-message b{ color:var(--ink); }
+.agc-message .agc-diff-row{ display:flex; gap:6px; flex-wrap:wrap; padding:6px 0; border-bottom:1px dashed rgba(120,120,120,.25); }
+.agc-message .agc-diff-row:last-child{ border-bottom:none; }
+.agc-message .agc-diff-label{ font-weight:700; min-width:110px; color:var(--ink); }
+.agc-message .agc-arrow{ color:#EF5A6F; font-weight:700; }
+.agc-status-select{
+  width:100%; padding:11px 14px; border-radius:12px; border:1.5px solid rgba(120,120,120,.3);
+  font-size:14px; font-weight:600; margin-top:10px; background:var(--white); color:var(--ink);
+}
+[data-theme="dark"] .agc-status-select{ background:var(--foam); color:var(--ink); }
+
+/* ---- Riwayat Aktivitas Admin ---- */
+.history-box{ max-width:640px; width:100%; text-align:left; max-height:88vh; overflow-y:auto; }
+.admin-history-list{ display:flex; flex-direction:column; gap:10px; }
+.admin-history-item{
+  border:1px solid rgba(120,120,120,.2); border-radius:14px; padding:13px 15px; background:rgba(120,120,120,.04);
+}
+.admin-history-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+.admin-history-admin{ font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:6px; }
+.admin-history-admin i{ color:#3E7CFF; }
+.admin-history-time{ font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+.admin-history-aksi{
+  display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:800; padding:3px 10px;
+  border-radius:20px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;
+}
+.admin-history-aksi.aksi-hapus{ background:rgba(239,90,111,.14); color:#EF5A6F; }
+.admin-history-aksi.aksi-edit{ background:rgba(62,124,255,.14); color:#3E7CFF; }
+.admin-history-aksi.aksi-status{ background:rgba(46,190,140,.14); color:#1E9E6E; }
+.admin-history-aksi.aksi-chat{ background:rgba(255,170,40,.16); color:#C97A00; }
+.admin-history-detail{ font-size:13px; color:var(--ink-soft); line-height:1.6; }
+
 /* ---- Modal "Tambah Peserta" (input manual admin) ---- */
 .addpeserta-box{ max-width:680px; }
 
@@ -2210,6 +2327,9 @@ body.peserta-modal-lock{ overflow:hidden; }
 .admin-action-lunas{ background:rgba(15,216,184,.16); color:var(--teal); border-color:rgba(15,216,184,.25); }
 
 .admin-action-lunas:hover{ background:var(--gradient-brand); color:#04213A; }
+
+.admin-action-ubahstatus{ background:rgba(155,120,255,.14); color:#8A5CF6; border-color:rgba(155,120,255,.25); }
+.admin-action-ubahstatus:hover{ background:#8A5CF6; color:#fff; border-color:transparent; }
 
 .admin-done{ font-size:12px; color:var(--teal); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
 
