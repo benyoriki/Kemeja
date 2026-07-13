@@ -51,8 +51,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet: style.css = fungsi sistem/layout, particles.css = efek visual/partikel -->
-<link rel="stylesheet" href="style.css?v=18">
-<link rel="stylesheet" href="particles.css?v=4">
+<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="particles.css?v=5">
 </head>
 <body>
 
@@ -193,6 +193,9 @@
             </div>
             <span class="profile-badge"><i class="fa-solid fa-circle-check"></i> Akun Peserta Terverifikasi</span>
             <p class="profile-status-line" id="profileStatusLine"></p>
+            <button type="button" class="profile-pay-btn ripple" id="openPayModalBtn" style="display:none;">
+              <i class="fa-solid fa-wallet"></i> Bayar Sekarang via Transfer
+            </button>
             <button type="button" class="profile-logout-btn" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i> Keluar Akun</button>
           </div>
         </div>
@@ -763,6 +766,56 @@
 </div>
 
 <!-- ===================================================== -->
+<!-- MODAL: BAYAR SEKARANG VIA TRANSFER BANK (untuk Peserta yang sudah login) -->
+<!-- ===================================================== -->
+<div class="pay-modal-overlay" id="payModalOverlay">
+  <div class="pay-modal">
+    <button type="button" class="peserta-modal-close" id="payModalClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+
+    <span class="pm-particle pm-p1" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
+    <span class="pm-particle pm-p2" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></span>
+    <span class="pm-particle pm-p3" aria-hidden="true"><i class="fa-solid fa-money-bill-wave"></i></span>
+
+    <div class="pay-modal-head">
+      <span class="pay-modal-icon"><i class="fa-solid fa-wallet"></i></span>
+      <h3>Bayar Sekarang</h3>
+      <p>Transfer ke rekening resmi panitia, lalu kirim bukti transfer agar segera diverifikasi.</p>
+    </div>
+
+    <div class="pay-modal-amount">
+      <span id="pmAmountLabel">Jumlah Yang Harus Dibayar</span>
+      <b id="pmAmountDue">Rp0</b>
+      <small id="pmAmountNote"></small>
+    </div>
+
+    <div class="btc-account pm-account">
+      <div class="btc-account-info">
+        <span class="btc-bank-name"><i class="fa-solid fa-university"></i> BANK BCA</span>
+        <span class="btc-account-number" id="pmAccountNumber">0830142452</span>
+        <span class="btc-account-holder"><i class="fa-solid fa-user"></i> a.n. KAMIL MUHAMAD NUR</span>
+      </div>
+      <button type="button" class="btc-copy-btn ripple" id="pmCopyBtn" data-copy-value="0830142452">
+        <i class="fa-solid fa-copy"></i> <span>Salin No. Rek</span>
+      </button>
+    </div>
+
+    <ol class="btc-steps">
+      <li>Transfer sesuai nominal di atas ke rekening BCA tersebut.</li>
+      <li>Screenshot / foto bukti transfer yang sudah berhasil.</li>
+      <li>Tekan tombol di bawah untuk membuka WhatsApp panitia, lalu lampirkan foto bukti transfer pada chat yang terbuka.</li>
+    </ol>
+
+    <input type="file" id="pmProofFile" accept="image/*" style="display:none;">
+
+    <button type="button" class="btn btn-primary btn-submit ripple" id="pmSendProofBtn">
+      <i class="fa-brands fa-whatsapp"></i> Kirim Bukti Transfer ke Panitia
+    </button>
+    <small class="hint-msg pm-hint" id="pmProofFileName"><i class="fa-solid fa-circle-info"></i> Anda bisa memilih foto bukti transfer terlebih dahulu (opsional) agar tinggal dilampirkan di WhatsApp yang terbuka.</small>
+    <button type="button" class="btc-copy-btn ripple pm-attach-btn" id="pmAttachBtn"><i class="fa-solid fa-paperclip"></i> <span>Pilih Foto Bukti Transfer</span></button>
+  </div>
+</div>
+
+<!-- ===================================================== -->
 <!-- PANEL ADMIN (KELOLA STATUS PEMBAYARAN) -->
 <!-- ===================================================== -->
 <div class="admin-overlay" id="adminOverlay">
@@ -1133,6 +1186,49 @@
       <button type="submit" class="btn btn-primary btn-submit ripple" id="submitBtn" disabled>
         <i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran
       </button>
+
+      <!-- ===================================================== -->
+      <!-- KARTU TRANSFER BANK — channel pembayaran resmi          -->
+      <!-- Baru tampil SETELAH checkbox "Saya menyatakan data..." -->
+      <!-- dicentang, dan tampil di BAWAH tombol "Kirim           -->
+      <!-- Pendaftaran" (bukan di atasnya).                       -->
+      <!-- ===================================================== -->
+      <div class="form-group full" id="bankTransferWrap" style="display:none;">
+        <div class="bank-transfer-card" id="bankTransferCard">
+          <span class="btc-particle btc-p1" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
+          <span class="btc-particle btc-p2" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></span>
+          <span class="btc-particle btc-p3" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
+          <span class="btc-particle btc-p4" aria-hidden="true"><i class="fa-solid fa-money-bill-wave"></i></span>
+          <span class="btc-shimmer" aria-hidden="true"></span>
+
+          <div class="btc-head">
+            <span class="btc-bank-icon"><i class="fa-solid fa-building-columns"></i></span>
+            <div>
+              <b>Pembayaran via Transfer Bank</b>
+              <p>Silakan transfer sesuai metode &amp; nominal yang dipilih di atas ke rekening resmi panitia berikut:</p>
+            </div>
+          </div>
+
+          <div class="btc-account">
+            <div class="btc-account-info">
+              <span class="btc-bank-name"><i class="fa-solid fa-university"></i> BANK BCA</span>
+              <span class="btc-account-number" id="btcAccountNumber">0830142452</span>
+              <span class="btc-account-holder"><i class="fa-solid fa-user"></i> a.n. KAMIL MUHAMAD NUR</span>
+            </div>
+            <button type="button" class="btc-copy-btn ripple" id="btcCopyBtn" data-copy-value="0830142452">
+              <i class="fa-solid fa-copy"></i> <span>Salin No. Rek</span>
+            </button>
+          </div>
+
+          <ol class="btc-steps">
+            <li>Transfer sesuai nominal <b>Total Harga</b> di atas ke rekening BCA di atas.</li>
+            <li>Screenshot / foto bukti transfer yang sudah berhasil.</li>
+            <li>Kirim bukti transfer ke panitia lewat WhatsApp setelah menekan tombol "Kirim Pendaftaran".</li>
+          </ol>
+
+          <small class="hint-msg btc-note"><i class="fa-solid fa-shield-halved"></i> Pastikan nama pengirim transfer sesuai data pendaftar agar mudah dicocokkan panitia. Simpan bukti transfer sampai status pembayaran Anda terverifikasi Lunas/DP di menu profil.</small>
+        </div>
+      </div>
     </form>
   </div>
 </section>
@@ -1674,8 +1770,8 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.js?v=22"></script>
-<script src="particles.js?v=3"></script>
+<script src="script.js?v=24"></script>
+<script src="particles.js?v=4"></script>
 </body>
 </html>
 

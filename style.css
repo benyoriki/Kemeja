@@ -2899,3 +2899,160 @@ body.peserta-modal-lock{ overflow:hidden; }
 @media (max-width:600px){
   .pic-grid{ grid-template-columns:1fr; }
 }
+
+/* =========================================================
+   TRANSFER BANK — kartu channel pembayaran (formulir)
+   + tombol "Bayar Sekarang" (profil peserta) + modal bayar
+   Animasi partikel murni CSS ada di particles.css
+========================================================= */
+.bank-transfer-card{
+  position:relative; overflow:hidden;
+  border-radius:var(--radius); padding:24px 22px;
+  background:linear-gradient(145deg, var(--navy-deep) 0%, var(--navy) 55%, var(--navy-mid) 100%);
+  border:1px solid rgba(18,169,224,0.25);
+  box-shadow:var(--shadow-strong);
+  isolation:isolate;
+}
+
+.btc-head{ position:relative; z-index:2; display:flex; align-items:flex-start; gap:14px; margin-bottom:18px; }
+
+.btc-bank-icon{
+  flex:none; width:46px; height:46px; border-radius:14px;
+  background:var(--gradient-brand); color:#04213A; font-size:19px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 22px rgba(18,169,224,.35);
+}
+
+.btc-head b{ color:#fff; font-family:var(--font-display); font-size:16px; display:block; margin-bottom:4px; }
+
+.btc-head p{ color:rgba(234,244,250,0.72); font-size:13px; line-height:1.55; margin:0; }
+
+.btc-account{
+  position:relative; z-index:2;
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14);
+  border-radius:16px; padding:16px 18px; margin-bottom:18px;
+  backdrop-filter:blur(6px);
+}
+
+.btc-account-info{ display:flex; flex-direction:column; gap:6px; }
+
+.btc-bank-name{
+  font-family:var(--font-mono); font-size:11.5px; font-weight:700; letter-spacing:.06em;
+  color:var(--teal); display:flex; align-items:center; gap:7px;
+}
+
+.btc-account-number{
+  font-family:var(--font-mono); font-weight:800; font-size:23px; letter-spacing:.03em; color:#fff;
+}
+
+.btc-account-holder{ font-size:12.5px; color:rgba(234,244,250,0.78); display:flex; align-items:center; gap:7px; }
+
+.btc-copy-btn{
+  flex:none; display:inline-flex; align-items:center; gap:8px;
+  padding:11px 18px; border-radius:12px; border:none; cursor:pointer;
+  background:var(--gradient-brand); color:#04213A; font-weight:700; font-size:13px;
+  font-family:var(--font-body); transition:var(--transition);
+  box-shadow:0 8px 20px rgba(18,169,224,.3);
+}
+
+.btc-copy-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(18,169,224,.4); }
+
+.btc-copy-btn.copied{ background:linear-gradient(120deg,#0FD8B8,#0BB89C); }
+
+.btc-steps{
+  position:relative; z-index:2; margin:0 0 14px 20px; padding:0; display:flex; flex-direction:column; gap:7px;
+}
+
+.btc-steps li{ color:rgba(234,244,250,0.82); font-size:13px; line-height:1.55; }
+
+.btc-steps b{ color:#fff; }
+
+.btc-note{ position:relative; z-index:2; color:rgba(234,244,250,0.6) !important; }
+
+.btc-note i{ color:var(--teal); }
+
+[data-theme="dark"] .bank-transfer-card{ border-color:rgba(18,169,224,0.35); }
+
+@media (max-width:560px){
+  .btc-account{ flex-direction:column; align-items:stretch; }
+  .btc-copy-btn{ justify-content:center; }
+  .btc-account-number{ font-size:20px; }
+  .btc-particle{ display:none; }
+}
+
+/* ---------- Tombol "Bayar Sekarang" di dropdown profil ---------- */
+.profile-pay-btn{
+  width:100%; display:flex; align-items:center; justify-content:center; gap:9px;
+  padding:12px 16px; margin:12px 0 10px; border:none; border-radius:12px; cursor:pointer;
+  background:var(--gradient-brand); color:#04213A; font-weight:700; font-size:13.5px;
+  font-family:var(--font-body); transition:var(--transition);
+  box-shadow:0 8px 22px rgba(18,169,224,.32);
+}
+
+.profile-pay-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 28px rgba(18,169,224,.42); }
+
+/* ---------- Modal "Bayar Sekarang" ---------- */
+.pay-modal-overlay{
+  position:fixed; inset:0; z-index:4600;
+  background:rgba(4,10,20,.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; visibility:hidden; transition:var(--transition);
+}
+
+.pay-modal-overlay.active{ opacity:1; visibility:visible; }
+
+.pay-modal{
+  position:relative; overflow:hidden; isolation:isolate;
+  background:var(--white); border-radius:var(--radius-lg); padding:32px 26px;
+  max-width:440px; width:100%; box-shadow:var(--shadow-strong);
+  transform:translateY(16px) scale(.97); transition:var(--transition-spring);
+  max-height:90vh; overflow-y:auto;
+}
+
+.pay-modal-overlay.active .pay-modal{ transform:translateY(0) scale(1); }
+
+.pay-modal-head{ position:relative; z-index:2; text-align:center; margin-bottom:20px; }
+
+.pay-modal-icon{
+  width:56px; height:56px; margin:0 auto 12px; border-radius:16px;
+  background:var(--gradient-brand); color:#04213A; font-size:22px;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 10px 24px rgba(18,169,224,.32);
+}
+
+.pay-modal-head h3{ font-size:19px; margin-bottom:6px; }
+
+.pay-modal-head p{ font-size:13px; color:var(--ink-soft); line-height:1.55; max-width:320px; margin:0 auto; }
+
+.pay-modal-amount{
+  position:relative; z-index:2; text-align:center; margin-bottom:18px;
+  background:var(--foam); border:1px solid var(--line); border-radius:16px; padding:16px;
+}
+
+.pay-modal-amount span{ display:block; font-size:11.5px; font-family:var(--font-mono); color:var(--ink-soft); letter-spacing:.05em; margin-bottom:4px; }
+
+.pay-modal-amount b{ display:block; font-family:var(--font-display); font-size:28px; color:var(--teal-deep); }
+
+.pay-modal-amount small{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:4px; }
+
+.pay-modal .btc-account.pm-account{
+  background:linear-gradient(145deg, var(--navy-deep), var(--navy)); border:1px solid rgba(18,169,224,.25);
+}
+
+.pay-modal .btc-steps{ margin-left:18px; }
+.pay-modal .btc-steps li{ color:var(--ink-soft); }
+.pay-modal .btc-steps b{ color:var(--ink); }
+
+.pm-hint{ display:block; text-align:center; margin:10px 0; }
+
+.pm-attach-btn{ width:100%; justify-content:center; background:var(--foam); color:var(--aqua-deep); box-shadow:none; border:1.5px solid var(--border); }
+
+.pm-attach-btn:hover{ background:var(--gradient-brand); color:#04213A; border-color:transparent; }
+
+body.pay-modal-lock{ overflow:hidden; }
+
+@media (max-width:520px){
+  .pay-modal{ padding:26px 18px; }
+  .pay-modal-amount b{ font-size:24px; }
+  .pm-particle{ display:none; }
+}

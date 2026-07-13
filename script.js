@@ -484,6 +484,23 @@ document.addEventListener('DOMContentLoaded', () => {
   checkFormCompletion();
 
   /* =========================================================
+     13d. TAMPILKAN KARTU TRANSFER BANK HANYA SETELAH CHECKBOX
+     "Saya menyatakan data yang saya isi sudah benar" DICENTANG.
+     Kartu ditempatkan di HTML di bawah tombol "Kirim Pendaftaran"
+     (lihat index.html), dan disembunyikan secara default —
+     baru muncul begitu checkbox konfirmasi dicentang, dan
+     tersembunyi lagi kalau centangnya dilepas.
+  ========================================================= */
+  const konfirmasiCheckbox = document.getElementById('konfirmasi');
+  const bankTransferWrap = document.getElementById('bankTransferWrap');
+  function toggleBankTransferCard(){
+    if (!konfirmasiCheckbox || !bankTransferWrap) return;
+    bankTransferWrap.style.display = konfirmasiCheckbox.checked ? '' : 'none';
+  }
+  konfirmasiCheckbox?.addEventListener('change', toggleBankTransferCard);
+  toggleBankTransferCard();
+
+  /* =========================================================
      14. SUBMIT FORM: STRUK JPG (UNDUH OTOMATIS) -> WHATSAPP -> POPUP
      (Perbaikan bug: sebelumnya kode mencoba membaca field
      'nik', 'departemen', 'jabatan', 'noHp', 'alamat' yang
@@ -665,6 +682,29 @@ document.addEventListener('DOMContentLoaded', () => {
      sementara dilepas — Dasbor sekarang hanya menyediakan Edit &
      Hapus, karena jalur utama pendaftaran sudah otomatis.)
   ========================================================= */
+  // PERBAIKAN LOGIKA DANA TERKUMPUL: sebelumnya, saat admin menandai
+  // "DP Terbayar", jumlah yang dicatat sebagai totalDibayar mengambil
+  // begitu saja nilai pembayaran.dpMinimal yang tersimpan di data peserta.
+  // Kalau data peserta itu tersimpan dari versi form yang lebih lama
+  // (atau field dpMinimal-nya sempat salah/ tidak lengkap), angka yang
+  // sudah telanjur salah itu ikut terbawa terus dan Dana Terkumpul di
+  // dasbor jadi lebih kecil dari yang seharusnya — misalnya kemeja
+  // Lengan Pendek Rp155.000 dengan cicilan seharusnya DP = 50% x
+  // Rp155.000 + Rp5.000 admin = Rp82.500, tapi yang tercatat cuma
+  // Rp77.500 (biaya admin Rp5.000-nya hilang/tidak ikut terhitung).
+  // Fungsi ini SELALU menghitung ulang DP yang seharusnya langsung dari
+  // harga kemeja peserta saat itu juga, jadi hasilnya konsisten dan
+  // benar walau data lama peserta belum tentu akurat.
+  function hitungDPSeharusnya(p){
+    const subtotal = (typeof p.subtotal === 'number' && !isNaN(p.subtotal))
+      ? p.subtotal
+      : (p.harga || 0) * (p.jumlah || 1);
+    const isCicilan = p.pembayaran?.metode === 'cicilan';
+    const fee = isCicilan ? (p.pembayaran?.biayaAdmin || ADMIN_FEE_CICILAN) : 0;
+    const dpProduk = isCicilan ? Math.round(subtotal * 0.5) : subtotal;
+    return dpProduk + fee;
+  }
+
   function buildPembayaranAwal(subtotal, metodeBayar, biayaAdmin){
     const isCicilan = metodeBayar === 'cicilan';
     const fee = isCicilan ? (biayaAdmin || 0) : 0;
@@ -862,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dynamic canvas height based on content
     const HEADER_H = 210;
-    const baseHeight = 800 + (isCicilan ? 110 : 0);
+    const baseHeight = 800 + 126 + (isCicilan ? 110 : 0);
     const extraPerRow = 34;
     const catatanLines = Math.ceil((data.catatan || '-').length / 50) || 1;
     const neededHeight = baseHeight + totalRowCount * extraPerRow + sections.length * SECTION_HEAD_H + catatanLines * 18;
@@ -1100,6 +1140,43 @@ document.addEventListener('DOMContentLoaded', () => {
       y += dpBoxH + 30;
     }
 
+    /* ---------- Transfer Bank (rekening resmi panitia) ----------
+       Ditambahkan supaya peserta langsung tahu ke mana harus transfer
+       tanpa perlu bertanya ke panitia — konsisten dengan kartu di
+       formulir pendaftaran & modal "Bayar Sekarang" di website. */
+    const bankBoxH = 96;
+    ctx.save();
+    ctx.shadowColor = 'rgba(11,37,69,0.1)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
+    const bankGrad = ctx.createLinearGradient(cardX, 0, cardX + cardW, 0);
+    bankGrad.addColorStop(0, C.navyDeep);
+    bankGrad.addColorStop(1, C.navy);
+    ctx.fillStyle = bankGrad;
+    roundRect(ctx, cardX, y, cardW, bankBoxH, 16);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = C.teal;
+    roundRect(ctx, cardX, y, 5, bankBoxH, 3);
+    ctx.fill();
+
+    ctx.textAlign = 'left';
+    ctx.font = '700 11px "JetBrains Mono", monospace';
+    ctx.fillStyle = C.teal;
+    ctx.fillText('TRANSFER PEMBAYARAN KE REKENING', cardX + 26, y + 24);
+    ctx.font = '800 20px Outfit, sans-serif';
+    ctx.fillStyle = C.white;
+    ctx.fillText('BCA  0830142452', cardX + 26, y + 52);
+    ctx.font = '500 12.5px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText('a.n. KAMIL MUHAMAD NUR', cardX + 26, y + 74);
+    ctx.textAlign = 'right';
+    ctx.font = '400 11px Inter, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    wrapText(ctx, 'Kirim bukti transfer ke WhatsApp panitia', cardX + cardW - 26, y + 40, 150, 15);
+    ctx.textAlign = 'left';
+    y += bankBoxH + 30;
+
     /* ---------- Catatan ---------- */
     ctx.font = '700 12px "JetBrains Mono", monospace';
     ctx.fillStyle = C.aquaDeep;
@@ -1309,8 +1386,10 @@ Harga : ${formatRupiah(data.harga)}
 ${rincianBiaya}Total : ${formatRupiah(data.total)}
 Metode Bayar : ${isCicilan ? '2x Cicilan (DP 50% Kemeja + Rp5.000 Admin, lalu Pelunasan 50%)' : 'Tunai / Lunas Langsung (Tanpa Biaya Admin)'}
 Catatan : ${data.catatan}
+--------------------------------
+Transfer ke : BCA 0830142452 a.n. KAMIL MUHAMAD NUR
 ================================
-Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
+Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini. Terima kasih.`;
 
     const nomorTujuan = '6285697321423';
     const url = `https://wa.me/${nomorTujuan}?text=${encodeURIComponent(pesan)}`;
@@ -1678,6 +1757,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   const memberNameFull = document.getElementById('memberNameFull');
   const memberPhoneFull = document.getElementById('memberPhoneFull');
   const logoutBtn = document.getElementById('logoutBtn');
+  const openPayModalBtn = document.getElementById('openPayModalBtn');
 
   function getSession(){
     try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
@@ -1725,9 +1805,25 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       if (profileStatusLine){
         if (record){
           const info = STATUS_LABEL[record.pembayaran?.status || 'belum_dp'] || STATUS_LABEL.belum_dp;
-          profileStatusLine.innerHTML = `<i class="fa-solid ${info.icon}"></i> Status: <b>${info.label}</b> • Terbayar ${formatRupiah(record.pembayaran?.totalDibayar || 0)} / ${formatRupiah(record.total || 0)}`;
+          const tagihan = hitungTagihanSekarang(record);
+          const sisaInfo = tagihan.nominal > 0
+            ? ` • ${escapeHtml(tagihan.label)}: <b>${formatRupiah(tagihan.nominal)}</b>`
+            : '';
+          profileStatusLine.innerHTML = `<i class="fa-solid ${info.icon}"></i> Status: <b>${info.label}</b> • Terbayar ${formatRupiah(record.pembayaran?.totalDibayar || 0)} / ${formatRupiah(record.total || 0)}${sisaInfo}`;
         } else {
           profileStatusLine.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Menunggu admin memverifikasi pendaftaran Anda.`;
+        }
+      }
+
+      // Tombol "Bayar Sekarang" hanya tampil kalau peserta terverifikasi
+      // di dasbor DAN belum lunas — supaya tidak membingungkan peserta
+      // yang statusnya sudah selesai.
+      if (openPayModalBtn){
+        const status = record?.pembayaran?.status || 'belum_dp';
+        if (record && status !== 'lunas'){
+          openPayModalBtn.style.display = 'flex';
+        } else {
+          openPayModalBtn.style.display = 'none';
         }
       }
     } else {
@@ -1736,6 +1832,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
       profileAvatar.innerHTML = '<i class="fa-solid fa-user"></i>';
       profileGuestView.style.display = 'block';
       profileMemberView.style.display = 'none';
+      if (openPayModalBtn) openPayModalBtn.style.display = 'none';
     }
   }
   renderProfileWidget();
@@ -1778,6 +1875,186 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   logoutBtn?.addEventListener('click', () => {
     clearSession();
     showToast('Anda telah keluar dari akun peserta.', 'success');
+  });
+
+  /* =========================================================
+     18b. MODAL "BAYAR SEKARANG" — transfer bank + kirim bukti
+     Rekening panitia dipakai di 3 tempat sekaligus supaya selalu
+     konsisten: kartu formulir pendaftaran, modal ini, dan struk JPG.
+  ========================================================= */
+  const BANK_INFO = { bank: 'BCA', nomor: '0830142452', atasNama: 'KAMIL MUHAMAD NUR' };
+  const ADMIN_WA_NOMOR = '6285697321423';
+
+  async function copyToClipboard(text, btnEl){
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (err) {
+      // Fallback untuk browser lama / konteks tanpa izin Clipboard API
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (err2) {
+        ok = false;
+      }
+    }
+    if (ok){
+      showToast('Nomor rekening berhasil disalin!', 'success');
+      if (window.lokonFireConfetti) window.lokonFireConfetti();
+      if (btnEl){
+        const original = btnEl.innerHTML;
+        btnEl.classList.add('copied');
+        btnEl.innerHTML = '<i class="fa-solid fa-check"></i> <span>Tersalin!</span>';
+        setTimeout(() => {
+          btnEl.classList.remove('copied');
+          btnEl.innerHTML = original;
+        }, 2000);
+      }
+    } else {
+      showToast('Gagal menyalin otomatis. Silakan salin nomor rekening secara manual.', 'error');
+    }
+  }
+
+  document.querySelectorAll('.btc-copy-btn[data-copy-value]').forEach(btn => {
+    btn.addEventListener('click', () => copyToClipboard(btn.dataset.copyValue, btn));
+  });
+
+  const payModalOverlay = document.getElementById('payModalOverlay');
+  const payModalClose = document.getElementById('payModalClose');
+  const pmAmountDue = document.getElementById('pmAmountDue');
+  const pmAmountLabel = document.getElementById('pmAmountLabel');
+  const pmAmountNote = document.getElementById('pmAmountNote');
+  const pmProofFile = document.getElementById('pmProofFile');
+  const pmAttachBtn = document.getElementById('pmAttachBtn');
+  const pmProofFileName = document.getElementById('pmProofFileName');
+  const pmSendProofBtn = document.getElementById('pmSendProofBtn');
+
+  let pmCurrentRecord = null;
+  let pmSelectedFileName = '';
+
+  /* ---------- Hitung tagihan yang HARUS dibayar SEKARANG ----------
+     PERBAIKAN BUG: sebelumnya modal ini selalu menampilkan SISA dari
+     TOTAL (total - totalDibayar), padahal untuk peserta cicilan yang
+     belum bayar sama sekali (status belum_dp), yang harus dibayar
+     SEKARANG cuma DP (50% harga kemeja + Rp5.000 admin) — BUKAN total
+     penuh. Fungsi ini dipakai bersama oleh modal & pesan WhatsApp bukti
+     transfer supaya angkanya selalu konsisten dengan struk JPG &
+     kartu transfer bank di formulir. */
+  function hitungTagihanSekarang(record){
+    const total = record?.total || 0;
+    const metode = record?.pembayaran?.metode === 'cicilan' ? 'cicilan' : 'tunai';
+    const status = record?.pembayaran?.status || 'belum_dp';
+    const dpMinimal = record?.pembayaran?.dpMinimal || total;
+    const totalDibayar = record?.pembayaran?.totalDibayar || 0;
+
+    if (status === 'lunas'){
+      return { nominal: 0, label: 'Pesanan Sudah Lunas', note: 'Tidak ada tagihan lagi untuk pesanan ini. Terima kasih!' };
+    }
+    if (metode === 'cicilan'){
+      if (status === 'belum_dp'){
+        const sisaPelunasan = Math.max(total - dpMinimal, 0);
+        return {
+          nominal: dpMinimal,
+          label: 'Pembayaran Awal (DP) — Tahap 1/2',
+          note: `DP 50% harga kemeja + Rp5.000 biaya admin, dari total pesanan ${formatRupiah(total)}. Sisa pelunasan ${formatRupiah(sisaPelunasan)} dibayar belakangan saat kemeja siap diambil.`
+        };
+      }
+      // status === 'dp' -> tinggal pelunasan tahap ke-2
+      const sisa = Math.max(total - totalDibayar, 0);
+      return {
+        nominal: sisa,
+        label: 'Pelunasan — Tahap 2/2',
+        note: `DP Anda sebesar ${formatRupiah(totalDibayar)} sudah kami terima. Ini adalah sisa pelunasan dari total pesanan ${formatRupiah(total)}.`
+      };
+    }
+    // Tunai / Lunas langsung — hanya satu kali bayar penuh
+    const sisaTunai = Math.max(total - totalDibayar, 0);
+    return {
+      nominal: sisaTunai || total,
+      label: 'Pembayaran Lunas (Tunai)',
+      note: `Bayar sekaligus sesuai total pesanan ${formatRupiah(total)}, tanpa biaya tambahan apapun.`
+    };
+  }
+
+  function openPayModal(){
+    const session = getSession();
+    const record = pesertaData.find(p => p.id === session?.docId) ||
+                   pesertaData.find(p => (p.kodeUnik || '').toUpperCase() === (session?.kodeUnik || '').toUpperCase());
+    pmCurrentRecord = record || null;
+
+    const tagihan = hitungTagihanSekarang(record);
+    if (pmAmountLabel) pmAmountLabel.textContent = tagihan.label;
+    if (pmAmountDue) pmAmountDue.textContent = formatRupiah(tagihan.nominal);
+    if (pmAmountNote) pmAmountNote.textContent = tagihan.note;
+
+    pmSelectedFileName = '';
+    if (pmProofFile) pmProofFile.value = '';
+    if (pmProofFileName){
+      pmProofFileName.innerHTML = '<i class="fa-solid fa-circle-info"></i> Anda bisa memilih foto bukti transfer terlebih dahulu (opsional) agar tinggal dilampirkan di WhatsApp yang terbuka.';
+    }
+
+    payModalOverlay?.classList.add('active');
+    document.body.classList.add('pay-modal-lock');
+  }
+
+  function closePayModal(){
+    payModalOverlay?.classList.remove('active');
+    document.body.classList.remove('pay-modal-lock');
+  }
+
+  openPayModalBtn?.addEventListener('click', () => {
+    profileWidget?.classList.remove('open');
+    openPayModal();
+  });
+  payModalClose?.addEventListener('click', closePayModal);
+  payModalOverlay?.addEventListener('click', (e) => {
+    if (e.target === payModalOverlay) closePayModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePayModal();
+  });
+
+  pmAttachBtn?.addEventListener('click', () => pmProofFile?.click());
+  pmProofFile?.addEventListener('change', () => {
+    const file = pmProofFile.files?.[0];
+    pmSelectedFileName = file ? file.name : '';
+    if (pmProofFileName){
+      pmProofFileName.innerHTML = file
+        ? `<i class="fa-solid fa-circle-check" style="color:var(--teal-deep);"></i> Foto dipilih: <b>${escapeHtml(file.name)}</b> — lampirkan file ini secara manual di WhatsApp yang akan terbuka.`
+        : '<i class="fa-solid fa-circle-info"></i> Anda bisa memilih foto bukti transfer terlebih dahulu (opsional) agar tinggal dilampirkan di WhatsApp yang terbuka.';
+    }
+  });
+
+  pmSendProofBtn?.addEventListener('click', () => {
+    const session = getSession();
+    const record = pmCurrentRecord;
+    const tagihan = hitungTagihanSekarang(record);
+
+    const pesan =
+`================================
+KONFIRMASI BUKTI TRANSFER
+PENDAFTARAN KEMEJA KERJA
+================================
+Kode Unik : ${session?.kodeUnik || '-'}
+Nama : ${session?.nama || '-'}
+Tahap Pembayaran : ${tagihan.label}
+Nominal Ditransfer : ${formatRupiah(tagihan.nominal)}
+Rekening Tujuan : ${BANK_INFO.bank} ${BANK_INFO.nomor} a.n. ${BANK_INFO.atasNama}
+================================
+Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
+
+    const url = `https://wa.me/${ADMIN_WA_NOMOR}?text=${encodeURIComponent(pesan)}`;
+    window.open(url, '_blank');
+    showToast(pmSelectedFileName
+      ? `Jangan lupa lampirkan foto "${pmSelectedFileName}" di chat WhatsApp yang baru terbuka.`
+      : 'WhatsApp terbuka — lampirkan foto bukti transfer Anda di chat tersebut.', 'success');
   });
 
   /* =========================================================
@@ -2759,7 +3036,13 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
 
     if (action === 'dp'){
       pembayaran.dpDibayar = true;
-      pembayaran.totalDibayar = (pembayaran.totalDibayar || 0) + (pembayaran.dpMinimal || 0);
+      // Hitung ulang DP yang seharusnya (bukan sekadar memakai
+      // pembayaran.dpMinimal yang mungkin sudah usang) supaya Dana
+      // Terkumpul selalu akurat: 50% harga kemeja + Rp5.000 admin
+      // untuk cicilan, atau harga penuh untuk tunai/lunas.
+      const dpBenar = hitungDPSeharusnya(p);
+      pembayaran.dpMinimal = dpBenar;
+      pembayaran.totalDibayar = dpBenar;
       pembayaran.status = pembayaran.metode === 'cicilan' ? 'dp' : 'lunas';
       if (pembayaran.status === 'lunas') pembayaran.totalDibayar = p.total;
     } else if (action === 'cicilan'){
@@ -2857,12 +3140,27 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
     } else if (targetStatus === 'dp'){
       pembayaran.status = 'dp';
       pembayaran.dpDibayar = true;
-      if (cicilanArr[0]){
-        cicilanArr[0].dibayar = true;
-        if (!cicilanArr[0].tanggalBayar) cicilanArr[0].tanggalBayar = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
-      }
-      if (cicilanArr[1]){ cicilanArr[1].dibayar = false; delete cicilanArr[1].tanggalBayar; }
-      pembayaran.totalDibayar = cicilanArr[0]?.nominal || pembayaran.dpMinimal || 0;
+      // PERBAIKAN BUG: sebelumnya baris ini keliru memakai nominal
+      // cicilan ke-2 (sisa pelunasan, TANPA biaya admin) sebagai jumlah
+      // yang sudah terbayar untuk status DP — sehingga "Dana Terkumpul"
+      // di website tampil LEBIH KECIL dari yang sebenarnya sudah
+      // ditransfer peserta (mis. peserta transfer Rp82.500 tapi situs
+      // hanya mencatat Rp77.500). Yang benar: jumlah terbayar untuk
+      // status DP = pembayaran.dpMinimal (DP 50% harga kemeja + biaya
+      // admin cicilan, PERSIS sama dengan angka "BAYAR SEKARANG" di
+      // struk & kartu transfer bank).
+      // Cicilan ke-2 (pelunasan) juga TIDAK ditandai lunas di sini —
+      // sebelumnya ikut tertandai "dibayar" walau baru DP yang masuk,
+      // sehingga tombol "Tandai Pelunasan (2/2)" jadi ikut hilang.
+      cicilanArr.forEach(c => { c.dibayar = false; delete c.tanggalBayar; });
+      // Hitung ulang DP yang seharusnya (50% harga kemeja + Rp5.000
+      // admin untuk cicilan) alih-alih memakai pembayaran.dpMinimal
+      // yang tersimpan, supaya data peserta lama yang nilainya
+      // sempat salah/kurang tetap tercatat benar begitu status
+      // diubah ulang lewat "Ubah Status".
+      const dpBenar = hitungDPSeharusnya(p);
+      pembayaran.dpMinimal = dpBenar;
+      pembayaran.totalDibayar = dpBenar;
     } else if (targetStatus === 'lunas'){
       pembayaran.status = 'lunas';
       pembayaran.dpDibayar = true;

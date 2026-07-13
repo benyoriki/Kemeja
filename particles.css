@@ -549,3 +549,64 @@
   0%{ transform:translate(0,0) scale(0.4); opacity:1; }
   100%{ transform:translate(var(--sx,20px), var(--sy,-20px)) scale(0); opacity:0; }
 }
+
+/* =========================================================
+   TRANSFER BANK & MODAL "BAYAR SEKARANG" — efek dekoratif
+   (kartu transfer di formulir, tombol profil, modal bayar)
+   Struktur & warna komponen ada di style.css; di sini HANYA
+   partikel melayang + kilau, sesuai konvensi file ini.
+========================================================= */
+
+/* Sapuan kilau di kartu transfer bank */
+.btc-shimmer{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(100deg, transparent 30%, rgba(18,169,224,0.16) 48%, rgba(15,216,184,0.2) 52%, transparent 70%);
+  background-size:220% 100%;
+  animation:btcShimmerSweep 5.5s ease-in-out infinite;
+}
+@keyframes btcShimmerSweep{
+  0%{ background-position:140% 0; }
+  55%,100%{ background-position:-60% 0; }
+}
+
+/* Partikel koin/uang melayang pelan di kartu transfer & modal bayar */
+@keyframes btcFloat{
+  0%, 100%{ transform:translateY(0) rotate(0deg); opacity:.55; }
+  50%{ transform:translateY(-14px) rotate(8deg); opacity:1; }
+}
+
+.btc-particle{
+  position:absolute; z-index:1; pointer-events:none; color:rgba(15,216,184,0.28); font-size:22px;
+  animation:btcFloat 7s ease-in-out infinite;
+}
+.btc-p1{ top:10%;  left:6%;  font-size:26px; animation-delay:0s; }
+.btc-p2{ top:60%;  left:88%; font-size:20px; animation-delay:1.4s; color:rgba(18,169,224,0.3); }
+.btc-p3{ top:78%;  left:14%; font-size:18px; animation-delay:2.6s; }
+.btc-p4{ top:14%;  left:90%; font-size:24px; animation-delay:3.6s; color:rgba(18,169,224,0.26); }
+
+.pm-particle{
+  position:absolute; z-index:0; pointer-events:none; color:rgba(18,169,224,0.12); font-size:34px;
+  animation:btcFloat 7s ease-in-out infinite;
+}
+.pm-p1{ top:6%; left:-2%; animation-delay:0s; }
+.pm-p2{ bottom:8%; right:-4%; font-size:28px; animation-delay:1.6s; color:rgba(15,216,184,0.14); }
+.pm-p3{ top:44%; right:4%; font-size:20px; animation-delay:3s; }
+
+/* Denyut lembut pada tombol "Bayar Sekarang" supaya menarik perhatian
+   tanpa mengganggu (berhenti otomatis kalau reduced-motion aktif) */
+@keyframes payBtnPulse{
+  0%, 100%{ box-shadow:0 8px 22px rgba(18,169,224,.32); }
+  50%{ box-shadow:0 8px 26px rgba(15,216,184,.5); }
+}
+.profile-pay-btn{ animation:payBtnPulse 2.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce){
+  .btc-shimmer, .btc-particle, .profile-pay-btn, .pm-particle{ animation:none; }
+}
+
+@media (max-width:560px){
+  .btc-particle{ display:none; }
+}
+@media (max-width:520px){
+  .pm-particle{ display:none; }
+}
