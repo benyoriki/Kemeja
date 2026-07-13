@@ -1735,7 +1735,7 @@ body.peserta-modal-lock{ overflow:hidden; }
    PANEL ADMIN (MODAL)
 ========================================== */
 .admin-overlay{
-    position:fixed; inset:0; z-index:5000; background:rgba(4,10,20,.6);
+    position:fixed; inset:0; z-index:5000; background:rgba(4,10,20,.72);
     backdrop-filter:blur(6px);
     display:flex; align-items:center; justify-content:center; padding:20px;
     opacity:0; visibility:hidden; transition:var(--transition);
@@ -1754,48 +1754,120 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 [data-theme="dark"] .admin-box{ background:var(--foam); }
 
+/* ---------------------------------------------------------
+   TEMA "OPS CONTROL DECK" — panel Login & Dasbor Admin
+   Sengaja dibuat gelap + aksen menyala, beda dari tampilan
+   publik yang terang, supaya terasa seperti panel kontrol
+   internal (bukan halaman marketing). Modal "Edit Peserta"
+   (.addpeserta-box) TIDAK termasuk, tetap tema terang seperti
+   form lain di situs. Karena semua komponen di bawah (stat
+   card, search, chip, kartu peserta) memakai var(--foam) dsb,
+   cukup override variabelnya di sini — otomatis menular ke
+   semua elemen anak tanpa perlu menulis ulang tiap komponen.
+--------------------------------------------------------- */
+.admin-box:not(.addpeserta-box){
+    --foam:#0C1D33;
+    --white:#132C49;
+    --ink:#EAF3FB;
+    --ink-soft:#8FA6C0;
+    --line: rgba(255,255,255,.09);
+    --border: rgba(255,255,255,.16);
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(15,216,184,.16), transparent 55%),
+      radial-gradient(110% 130% at 0% 100%, rgba(18,169,224,.20), transparent 60%),
+      linear-gradient(160deg, #102944 0%, #071022 100%);
+    color:var(--ink);
+    border:1px solid rgba(255,255,255,.07);
+}
+
+.admin-box:not(.addpeserta-box)::before{
+    content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+    background-image:
+      linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size:28px 28px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 100% 0%, black, transparent 72%);
+    mask-image:radial-gradient(ellipse 80% 60% at 100% 0%, black, transparent 72%);
+}
+
+.admin-box:not(.addpeserta-box) > *{ position:relative; z-index:1; }
+
 .admin-overlay.admin-dash-mode{ padding:12px; align-items:flex-start; }
 
 .admin-overlay.admin-dash-mode .admin-box{
-    max-width:1080px; max-height:96vh; padding:26px 26px 34px; margin-top:2vh;
+    max-width:1160px; max-height:96vh; padding:26px 26px 34px; margin-top:2vh;
 }
 
 @media (max-width:640px){
-  .admin-overlay.admin-dash-mode .admin-box{ padding:20px 16px 28px; border-radius:22px; }
+  .admin-overlay.admin-dash-mode .admin-box{ padding:18px 14px 24px; border-radius:22px; }
 }
 
 .admin-close{
     position:absolute; top:18px; right:18px; width:38px; height:38px; border-radius:50%;
-    background:var(--line); display:flex; align-items:center; justify-content:center;
-    color:var(--ink-soft); transition:var(--transition);
+    background:rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); transition:var(--transition); z-index:2; border:1px solid var(--border);
 }
 
-.admin-close:hover{ background:var(--gradient-brand); color:#04213A; transform:rotate(90deg); }
+.admin-close:hover{ background:var(--gradient-brand); color:#04213A; transform:rotate(90deg); border-color:transparent; }
 
 .admin-login{ text-align:center; padding:20px 0 6px; }
 
-.admin-icon{
-    width:64px; height:64px; margin:0 auto 18px; border-radius:50%;
-    background:var(--gradient-brand); color:#04213A; font-size:26px;
-    display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-glow);
+.admin-login-eyebrow{
+    display:inline-flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:11px;
+    font-weight:700; letter-spacing:1.5px; color:var(--teal); background:rgba(15,216,184,.1);
+    border:1px solid rgba(15,216,184,.28); padding:6px 14px; border-radius:20px; margin-bottom:20px;
 }
 
-.admin-login h3{ font-size:20px; margin-bottom:8px; }
+.admin-login-eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--teal); box-shadow:0 0 8px var(--teal); animation:livePulse 1.6s ease-in-out infinite; }
 
-.admin-login p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:22px; }
+.admin-icon{
+    width:72px; height:72px; margin:0 auto 20px; border-radius:50%;
+    background:var(--gradient-brand); color:#04213A; font-size:28px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 1px rgba(18,169,224,.25), 0 0 0 8px rgba(18,169,224,.08), 0 16px 40px rgba(18,169,224,.35);
+    position:relative;
+}
+
+.admin-icon::after{
+    content:''; position:absolute; inset:-10px; border-radius:50%; border:1.5px solid rgba(15,216,184,.35);
+    animation:spinCw 10s linear infinite;
+}
+
+.admin-login h3{ font-size:21px; margin-bottom:9px; color:var(--ink); }
+
+.admin-login p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:26px; line-height:1.55; }
 
 .admin-field{ text-align:left; margin-bottom:16px; }
 
-.admin-field label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:7px; }
+.admin-field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:8px; letter-spacing:.3px; text-transform:uppercase; }
 
-.admin-field label span{ font-family:var(--font-mono); color:var(--aqua-deep); font-weight:700; }
+.admin-field label span{ font-family:var(--font-mono); color:var(--aqua); font-weight:700; }
+
+.admin-input-wrap{
+    position:relative; display:flex; align-items:center;
+    background:rgba(255,255,255,.05); border:1.5px solid var(--border); border-radius:16px;
+    transition:var(--transition);
+}
+
+.admin-input-wrap:focus-within{ border-color:var(--aqua); background:rgba(18,169,224,.08); box-shadow:0 0 0 4px rgba(18,169,224,.12); }
+
+.admin-input-wrap > i:first-child{ padding-left:16px; color:var(--ink-soft); font-size:14px; }
+
+.admin-input-wrap input{
+    flex:1; width:100%; padding:13px 14px; border:none; background:transparent; outline:none;
+    font-size:14px; font-family:var(--font-body); color:var(--ink);
+}
+
+.admin-input-wrap input::placeholder{ color:rgba(143,166,192,.55); }
+
+.admin-pass-toggle{ padding:0 14px; color:var(--ink-soft); transition:var(--transition); }
+
+.admin-pass-toggle:hover{ color:var(--aqua); }
 
 .admin-login input{
     width:100%; padding:13px 16px; border-radius:16px; border:1.5px solid var(--border);
-    background:var(--foam); font-size:14px; font-family:var(--font-body);
+    background:rgba(255,255,255,.05); font-size:14px; font-family:var(--font-body); color:var(--ink);
 }
-
-[data-theme="dark"] .admin-login input{ background:var(--white); }
 
 .admin-login input:focus{ outline:none; border-color:var(--aqua); }
 
@@ -1803,21 +1875,38 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .admin-captcha-row{ display:flex; gap:10px; align-items:center; }
 
-.admin-captcha-row input{ flex:1; text-align:left; font-family:var(--font-mono); letter-spacing:normal; }
+.admin-captcha-equation{
+    display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-weight:700; font-size:15px;
+    color:var(--ink); background:rgba(255,255,255,.05); border:1.5px solid var(--border); border-radius:16px;
+    padding:0 16px; height:48px; white-space:nowrap;
+}
+
+.admin-captcha-equation .eq-sign{ color:var(--ink-soft); }
+
+.admin-captcha-equation .eq-mark{ color:var(--aqua); }
+
+.admin-captcha-row input{ flex:1; min-width:0; text-align:center; font-family:var(--font-mono); letter-spacing:normal; }
 
 .admin-captcha-refresh{
-    width:46px; height:46px; min-width:46px; border-radius:14px;
-    background:rgba(18,169,224,.1); color:var(--aqua-deep);
+    width:48px; height:48px; min-width:48px; border-radius:14px;
+    background:rgba(18,169,224,.12); color:var(--aqua); border:1px solid var(--border);
     display:flex; align-items:center; justify-content:center; transition:var(--transition);
 }
 
-.admin-captcha-refresh:hover{ background:var(--gradient-brand); color:#04213A; transform:rotate(180deg); }
+.admin-captcha-refresh:hover{ background:var(--gradient-brand); color:#04213A; transform:rotate(180deg); border-color:transparent; }
 
-.admin-error{ display:block; color:#EF5A6F; font-size:12.5px; margin:2px 0 14px; min-height:16px; text-align:left; }
+.admin-error{ display:block; color:#FF8095; font-size:12.5px; margin:2px 0 14px; min-height:16px; text-align:left; }
 
 .admin-login-actions{ display:flex; gap:12px; }
 
 .admin-login-actions .btn{ flex:1; justify-content:center; padding:13px 20px; }
+
+.admin-login-trust{
+    display:flex; align-items:center; justify-content:center; gap:8px; margin-top:22px;
+    font-size:11.5px; color:var(--ink-soft); padding-top:18px; border-top:1px dashed var(--line);
+}
+
+.admin-login-trust i{ color:var(--teal); }
 
 .btn-outline-dark{
     background:transparent; color:var(--ink-soft); border:1.5px solid var(--border);
@@ -1833,25 +1922,37 @@ body.peserta-modal-lock{ overflow:hidden; }
 /* ---- Header dasbor: logo, jam, aksi ---- */
 .adash-header{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
-    flex-wrap:wrap; margin-bottom:22px; padding-bottom:20px; border-bottom:1px solid var(--line);
+    flex-wrap:wrap; margin:-26px -26px 22px; padding:20px 26px; border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.03); position:sticky; top:-26px; z-index:3;
+    backdrop-filter:blur(10px);
 }
+
+@media (max-width:640px){ .adash-header{ margin:-18px -14px 18px; padding:16px 14px; top:-18px; } }
 
 .adash-header-left{ display:flex; align-items:center; gap:14px; }
 
 .adash-logo-badge{
     width:50px; height:50px; min-width:50px; border-radius:16px; background:var(--gradient-brand);
     color:#04213A; font-size:20px; display:flex; align-items:center; justify-content:center;
-    box-shadow:var(--shadow-glow);
+    box-shadow:0 0 0 1px rgba(18,169,224,.2), 0 0 0 6px rgba(18,169,224,.08), var(--shadow-glow);
 }
 
-.adash-header-left h3{ font-size:18px; margin:0 0 3px; }
+.adash-header-left h3{ font-size:18px; margin:0 0 4px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; color:var(--ink); }
+
+.adash-live-pill{
+    display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:9.5px;
+    font-weight:700; letter-spacing:1px; color:var(--teal); background:rgba(15,216,184,.12);
+    border:1px solid rgba(15,216,184,.3); padding:3px 10px 3px 8px; border-radius:20px;
+}
+
+.adash-live-pill .dot{ width:5px; height:5px; border-radius:50%; background:var(--teal); box-shadow:0 0 6px var(--teal); animation:livePulse 1.6s ease-in-out infinite; }
 
 .adash-header-left p{ font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin:0; }
 
-.adash-header-right{ display:flex; align-items:center; gap:8px; }
+.adash-header-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 
 .adash-icon-btn{
-    width:42px; height:42px; border-radius:14px; background:var(--foam); border:1px solid var(--line);
+    width:42px; height:42px; min-width:42px; flex-shrink:0; border-radius:14px; background:var(--foam); border:1px solid var(--line);
     color:var(--ink-soft); display:flex; align-items:center; justify-content:center; transition:var(--transition);
 }
 
@@ -1859,24 +1960,41 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .adash-icon-btn:hover{ background:var(--gradient-brand); color:#04213A; transform:translateY(-2px) rotate(8deg); border-color:transparent; }
 
-.adash-logout-btn{
+/* ---- Reset Chat Grup & Keluar ----
+   PENTING: pakai white-space:nowrap + flex-shrink:0 supaya teks di
+   dalam tombol TIDAK PERNAH pecah baris sendiri (itu penyebab
+   tampilan tumpang-tindih sebelumnya). Kalau ruang di header tidak
+   cukup, seluruh TOMBOL (bukan tulisannya) yang pindah ke baris
+   baru — karena adash-header-right sudah flex-wrap:wrap.
+
+   Warna dibedakan biar maknanya jelas sekilas:
+   - "Reset Chat Grup" = MERAH (aksi merusak/menghapus data permanen)
+   - "Keluar"          = NETRAL abu-abu terang (bukan aksi merusak,
+                          cukup mengakhiri sesi login) */
+.adash-danger-btn, .adash-logout-btn{
     display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700;
-    padding:11px 18px; border-radius:14px; background:rgba(239,90,111,.12); color:#EF5A6F;
+    padding:0 18px; height:42px; border-radius:14px; white-space:nowrap; flex-shrink:0;
     transition:var(--transition);
 }
 
-.adash-logout-btn:hover{ background:#EF5A6F; color:#fff; transform:translateY(-2px); }
-
-/* ---- Tombol Hapus/Reset Chat Grup (Dasbor Admin) ---- */
 .adash-danger-btn{
-    display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:700;
-    padding:11px 16px; border-radius:14px; background:rgba(239,90,111,.1); color:#EF5A6F;
-    border:1px solid rgba(239,90,111,.28); transition:var(--transition);
+    background:rgba(239,90,111,.16); color:#FF8FA0; border:1px solid rgba(239,90,111,.35);
 }
 
-.adash-danger-btn:hover{ background:#EF5A6F; color:#fff; transform:translateY(-2px); box-shadow:0 10px 24px rgba(239,90,111,.32); }
+.adash-danger-btn:hover{ background:#EF5A6F; color:#fff; transform:translateY(-2px); box-shadow:0 10px 24px rgba(239,90,111,.32); border-color:transparent; }
 
 .adash-danger-btn i{ font-size:13px; }
+
+.adash-logout-btn{
+    background:rgba(255,255,255,.06); color:var(--ink-soft); border:1px solid var(--border);
+}
+
+.adash-logout-btn:hover{ background:rgba(255,255,255,.12); color:var(--ink); transform:translateY(-2px); border-color:rgba(255,255,255,.24); }
+
+@media (max-width:400px){
+  .adash-danger-btn, .adash-logout-btn{ padding:0 14px; font-size:12.5px; }
+}
+
 
 /* ---- Modal Konfirmasi Hapus Chat Grup ---- */
 .confirm-overlay{
@@ -1938,30 +2056,35 @@ body.peserta-modal-lock{ overflow:hidden; }
 }
 
 .adash-stat{
-    display:flex; align-items:center; gap:12px; background:var(--foam); border:1px solid var(--line);
-    border-radius:18px; padding:16px; transition:var(--transition);
+    display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.04); border:1px solid var(--line);
+    border-radius:18px; padding:16px; transition:var(--transition); position:relative; overflow:hidden;
 }
 
-[data-theme="dark"] .adash-stat{ background:var(--white); }
+.adash-stat::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:var(--gradient-brand); opacity:.7;
+}
 
-.adash-stat:hover{ transform:translateY(-4px); box-shadow:var(--shadow-strong); }
+[data-theme="dark"] .adash-stat{ background:rgba(255,255,255,.04); }
+
+.adash-stat:hover{ transform:translateY(-4px); box-shadow:0 16px 34px rgba(0,0,0,.35); border-color:rgba(18,169,224,.3); }
 
 .adash-stat-icon{
     width:44px; height:44px; min-width:44px; border-radius:13px; display:flex; align-items:center;
     justify-content:center; font-size:17px;
 }
 
-.adash-stat-icon.ic-blue{ background:rgba(18,169,224,.14); color:var(--aqua-deep); }
+.adash-stat-icon.ic-blue{ background:rgba(18,169,224,.16); color:var(--aqua); }
 
-.adash-stat-icon.ic-green{ background:rgba(15,216,184,.16); color:var(--teal-deep); }
+.adash-stat-icon.ic-green{ background:rgba(15,216,184,.18); color:var(--teal); }
 
-.adash-stat-icon.ic-amber{ background:rgba(240,180,41,.14); color:#C98A0E; }
+.adash-stat-icon.ic-amber{ background:rgba(240,180,41,.18); color:#F0B429; }
 
-.adash-stat-icon.ic-purple{ background:rgba(155,110,240,.14); color:#7C4DE0; }
+.adash-stat-icon.ic-purple{ background:rgba(155,110,240,.2); color:#B79BFF; }
 
-.adash-stat-icon.ic-teal{ background:rgba(15,216,184,.16); color:var(--teal-deep); }
+.adash-stat-icon.ic-teal{ background:rgba(15,216,184,.18); color:var(--teal); }
 
-.adash-stat-txt span{ font-family:var(--font-mono); font-size:18px; font-weight:700; color:var(--ink); display:block; line-height:1.2; }
+.adash-stat-txt span{ font-family:var(--font-mono); font-size:19px; font-weight:700; color:var(--ink); display:block; line-height:1.2; }
 
 .adash-stat-txt p{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
 
@@ -1969,56 +2092,71 @@ body.peserta-modal-lock{ overflow:hidden; }
 .adash-toolbar{ display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
 
 .adash-search{
-    display:flex; align-items:center; gap:10px; background:var(--foam); border:1.5px solid var(--border);
-    border-radius:16px; padding:12px 16px;
+    display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border:1.5px solid var(--border);
+    border-radius:16px; padding:12px 16px; transition:var(--transition);
 }
 
-[data-theme="dark"] .adash-search{ background:var(--white); }
+.adash-search:focus-within{ border-color:var(--aqua); box-shadow:0 0 0 4px rgba(18,169,224,.12); }
+
+[data-theme="dark"] .adash-search{ background:rgba(255,255,255,.04); }
 
 .adash-search i{ color:var(--ink-soft); }
 
 .adash-search input{ border:none; background:transparent; outline:none; font-size:13.5px; width:100%; font-family:var(--font-body); color:var(--ink); }
 
+.adash-search input::placeholder{ color:var(--ink-soft); opacity:.7; }
+
 .adash-filters{ display:flex; gap:8px; flex-wrap:wrap; }
 
 .adash-chip{
-    font-size:12px; font-weight:600; padding:9px 15px; border-radius:20px; background:var(--foam);
+    font-size:12px; font-weight:600; padding:9px 15px; border-radius:20px; background:rgba(255,255,255,.04);
     color:var(--ink-soft); border:1px solid var(--line); transition:var(--transition);
 }
 
-[data-theme="dark"] .adash-chip{ background:var(--white); }
+[data-theme="dark"] .adash-chip{ background:rgba(255,255,255,.04); }
 
-.adash-chip:hover{ border-color:var(--aqua); color:var(--aqua-deep); }
+.adash-chip:hover{ border-color:var(--aqua); color:var(--aqua); }
 
-.adash-chip.active{ background:var(--gradient-brand); color:#04213A; border-color:transparent; }
+.adash-chip.active{ background:var(--gradient-brand); color:#04213A; border-color:transparent; box-shadow:0 8px 20px rgba(18,169,224,.35); }
 
 /* ---- Empty state ---- */
 .adash-empty{ text-align:center; padding:50px 20px; color:var(--ink-soft); font-size:13.5px; }
 
 .adash-empty i{ font-size:30px; display:block; margin-bottom:12px; color:var(--aqua); }
 
-/* ---- Daftar kartu peserta (dasbor) ---- */
-.admin-list{ display:flex; flex-direction:column; gap:12px; max-height:52vh; overflow-y:auto; padding-right:4px; }
-
-.admin-row{
-    background:var(--foam); border:1px solid var(--line); border-radius:18px;
-    padding:16px 18px; transition:var(--transition);
+/* ---- Daftar kartu peserta (dasbor) ----
+   Di layar lebar (PC/tablet), kartu ditata 2 kolom grid supaya
+   memanfaatkan ruang & lebih cepat dipindai; di HP tetap 1 kolom. */
+.admin-list{
+    display:grid; grid-template-columns:1fr; gap:12px; max-height:58vh; overflow-y:auto; padding-right:4px;
 }
 
-[data-theme="dark"] .admin-row{ background:var(--white); }
+@media (min-width:860px){
+  .admin-list{ grid-template-columns:repeat(2, 1fr); align-items:start; }
+}
 
-.admin-row:hover{ border-color:rgba(18,169,224,.3); }
+.admin-row{
+    background:rgba(255,255,255,.035); border:1px solid var(--line); border-radius:18px;
+    padding:16px 18px; transition:var(--transition); position:relative;
+}
+
+[data-theme="dark"] .admin-row{ background:rgba(255,255,255,.035); }
+
+.admin-row:hover{ border-color:rgba(18,169,224,.35); background:rgba(18,169,224,.045); }
 
 .admin-row-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 
-.admin-row-id{ display:flex; align-items:center; gap:12px; }
+.admin-row-id{ display:flex; align-items:center; gap:12px; min-width:0; }
 
 .admin-row-avatar{
     width:42px; height:42px; min-width:42px; border-radius:12px; background:var(--gradient-brand);
     color:#04213A; font-weight:700; font-size:13.5px; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 3px rgba(18,169,224,.1);
 }
 
-.admin-row-head strong{ font-size:14.5px; display:block; }
+.admin-row-head{ min-width:0; }
+
+.admin-row-head strong{ font-size:14.5px; display:block; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .admin-row-head span{ font-size:11.5px; color:var(--ink-soft); }
 
@@ -2028,14 +2166,20 @@ body.peserta-modal-lock{ overflow:hidden; }
 }
 
 .admin-row-meta{
-    display:flex; flex-wrap:wrap; gap:6px 16px; margin:12px 0; font-size:12px; color:var(--ink-soft);
+    display:flex; flex-wrap:wrap; align-items:center; gap:7px 10px; margin:13px 0; font-size:12px; color:var(--ink-soft);
 }
 
-.admin-row-meta span{ display:inline-flex; align-items:center; gap:6px; }
+.admin-row-meta span:not(.admin-code-chip){ display:inline-flex; align-items:center; gap:6px; }
 
-.admin-row-meta i{ color:var(--aqua-deep); width:14px; text-align:center; }
+.admin-row-meta i{ color:var(--aqua); width:14px; text-align:center; }
 
-.admin-row-total{ font-family:var(--font-mono); font-weight:700; color:var(--ink); font-size:14px; }
+.admin-code-chip{
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:11px;
+    font-weight:700; color:var(--aqua); background:rgba(18,169,224,.1); border:1px solid rgba(18,169,224,.25);
+    padding:4px 10px; border-radius:8px; letter-spacing:.3px;
+}
+
+.admin-row-total{ font-family:var(--font-mono); font-weight:700; color:var(--ink); font-size:13px; margin-left:auto; }
 
 .admin-row-progress{ margin:10px 0 12px; }
 
@@ -2045,31 +2189,48 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .admin-row-progress span{ font-size:11px; color:var(--ink-soft); display:block; margin-top:5px; }
 
-.admin-row-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+/* ---- Baris aksi: tombol utama (teks) di kiri, ikon sekunder di kanan ---- */
+.admin-row-actions{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);
+}
+
+.admin-row-actions-primary{ display:flex; gap:8px; flex-wrap:wrap; }
+
+.admin-row-actions-icons{ display:flex; gap:7px; margin-left:auto; }
 
 .admin-action-btn{
     font-size:12px; font-weight:600; padding:9px 14px; border-radius:20px;
-    background:rgba(18,169,224,.1); color:var(--aqua-deep); display:inline-flex; align-items:center; gap:6px;
-    transition:var(--transition);
+    background:rgba(18,169,224,.14); color:var(--aqua); display:inline-flex; align-items:center; gap:6px;
+    transition:var(--transition); border:1px solid rgba(18,169,224,.2);
 }
 
-.admin-action-btn:hover{ background:var(--gradient-brand); color:#04213A; }
+.admin-action-btn:hover{ background:var(--gradient-brand); color:#04213A; border-color:transparent; transform:translateY(-1px); }
 
-.admin-action-lunas{ background:rgba(15,216,184,.14); color:var(--teal-deep); }
+.admin-action-lunas{ background:rgba(15,216,184,.16); color:var(--teal); border-color:rgba(15,216,184,.25); }
 
 .admin-action-lunas:hover{ background:var(--gradient-brand); color:#04213A; }
 
-.admin-action-wa{ background:rgba(37,211,102,.14); color:#1FA855; }
+.admin-done{ font-size:12px; color:var(--teal); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
 
-.admin-action-wa:hover{ background:#25D366; color:#fff; }
+/* ---- Aksi ikon bulat (Chat WA / Edit / Hapus) — ringkas, tidak
+   memenuhi layar di HP seperti tombol teks penuh sebelumnya. ---- */
+.admin-icon-action{
+    width:36px; height:36px; min-width:36px; border-radius:11px; display:inline-flex; align-items:center;
+    justify-content:center; font-size:13.5px; background:rgba(255,255,255,.05); color:var(--ink-soft);
+    border:1px solid var(--border); transition:var(--transition);
+}
 
-.admin-action-edit{ background:rgba(255,177,27,.14); color:#B8860B; }
+.admin-icon-action:hover{ transform:translateY(-2px); }
 
-.admin-action-edit:hover{ background:#FFB11B; color:#3A2900; }
+.admin-icon-action.wa{ color:#3DDC7A; }
+.admin-icon-action.wa:hover{ background:#25D366; color:#fff; border-color:transparent; }
 
-.admin-action-hapus{ background:rgba(239,68,68,.12); color:#DC2626; }
+.admin-icon-action.edit{ color:#F0B429; }
+.admin-icon-action.edit:hover{ background:#FFB11B; color:#3A2900; border-color:transparent; }
 
-.admin-action-hapus:hover{ background:#EF4444; color:#fff; }
+.admin-icon-action.hapus{ color:#FF6B6B; }
+.admin-icon-action.hapus:hover{ background:#EF4444; color:#fff; border-color:transparent; }
 
 .admin-done{ font-size:12px; color:var(--teal-deep); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
 

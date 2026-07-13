@@ -763,23 +763,34 @@
 
     <!-- Layar login -->
     <div class="admin-login" id="adminLogin">
-      <div class="admin-icon"><i class="fa-solid fa-user-shield"></i></div>
-      <h3>Masuk Panel Admin</h3>
-      <p>Khusus tim keuangan untuk memperbarui status pembayaran peserta.</p>
+      <span class="admin-login-eyebrow"><span class="dot"></span> AKSES TERBATAS</span>
+      <div class="admin-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <h3>Panel Kontrol Admin</h3>
+      <p>Khusus tim keuangan &amp; penanggung jawab program untuk mengelola data peserta dan pembayaran.</p>
 
       <div class="admin-field">
         <label for="adminUsername">Email Admin</label>
-        <input type="email" id="adminUsername" placeholder="Masukkan email admin" autocomplete="username">
+        <div class="admin-input-wrap">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" id="adminUsername" placeholder="nama@lokonprima.com" autocomplete="username">
+        </div>
       </div>
 
       <div class="admin-field">
         <label for="adminPasscode">Kata Sandi</label>
-        <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="current-password">
+        <div class="admin-input-wrap">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="current-password">
+          <button type="button" class="admin-pass-toggle" id="adminPassToggle" aria-label="Tampilkan/sembunyikan kata sandi" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+        </div>
       </div>
 
       <div class="admin-field admin-captcha">
-        <label for="adminCaptchaInput">Verifikasi: berapa hasil <span id="adminCaptchaQuestion">-</span>?</label>
+        <label for="adminCaptchaInput">Verifikasi keamanan</label>
         <div class="admin-captcha-row">
+          <div class="admin-captcha-equation">
+            <span id="adminCaptchaQuestion">-</span> <span class="eq-sign">=</span> <span class="eq-mark">?</span>
+          </div>
           <input type="text" id="adminCaptchaInput" placeholder="Jawaban" inputmode="numeric" autocomplete="off">
           <button type="button" class="admin-captcha-refresh" id="adminCaptchaRefresh" aria-label="Ganti soal"><i class="fa-solid fa-rotate"></i></button>
         </div>
@@ -789,8 +800,10 @@
 
       <div class="admin-login-actions">
         <button class="btn btn-outline-dark" id="adminCancelBtn" type="button">Batal</button>
-        <button class="btn btn-primary ripple" id="adminLoginBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+        <button class="btn btn-primary ripple" id="adminLoginBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
       </div>
+
+      <p class="admin-login-trust"><i class="fa-solid fa-fingerprint"></i> Diamankan dengan Firebase Authentication — enkripsi ujung-ke-ujung.</p>
     </div>
 
     <!-- Panel kelola peserta (DASBOR ADMIN) -->
@@ -800,15 +813,15 @@
         <div class="adash-header-left">
           <div class="adash-logo-badge"><i class="fa-solid fa-chart-pie"></i></div>
           <div>
-            <h3>Dasbor Admin</h3>
+            <h3>Dasbor Admin <span class="adash-live-pill"><span class="dot"></span> LIVE</span></h3>
             <p id="adashClock">Memuat waktu...</p>
           </div>
         </div>
         <div class="adash-header-right">
           <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
           <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
-          <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i> Reset Chat Grup</button>
-          <button class="adash-logout-btn" id="adminLogoutBtn" type="button"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+          <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
+          <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
         </div>
       </div>
 

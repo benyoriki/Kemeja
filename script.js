@@ -2148,6 +2148,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   const adminPanel = document.getElementById('adminPanel');
   const adminUsername = document.getElementById('adminUsername');
   const adminPasscode = document.getElementById('adminPasscode');
+  const adminPassToggle = document.getElementById('adminPassToggle');
   const adminLoginBtn = document.getElementById('adminLoginBtn');
   const adminCancelBtn = document.getElementById('adminCancelBtn');
   const adminLoginError = document.getElementById('adminLoginError');
@@ -2183,9 +2184,17 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
   }
   adminCaptchaRefresh?.addEventListener('click', newCaptcha);
 
+  // Tombol mata untuk lihat/sembunyikan kata sandi admin saat mengetik.
+  adminPassToggle?.addEventListener('click', () => {
+    const showing = adminPasscode.type === 'text';
+    adminPasscode.type = showing ? 'password' : 'text';
+    adminPassToggle.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+  });
+
   function resetAdminLoginForm(){
     if (adminUsername) adminUsername.value = '';
-    if (adminPasscode) adminPasscode.value = '';
+    if (adminPasscode) { adminPasscode.value = ''; adminPasscode.type = 'password'; }
+    if (adminPassToggle) adminPassToggle.innerHTML = '<i class="fa-solid fa-eye"></i>';
     if (adminLoginError) adminLoginError.textContent = '';
     newCaptcha();
   }
@@ -2507,12 +2516,13 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
             <div class="admin-row-avatar">${initialsOf(p.nama)}</div>
             <div class="admin-row-head">
               <strong>${escapeHtml(p.nama || '-')}</strong>
-              <span>${escapeHtml(p.departemen || '-')} • <code>${escapeHtml(p.kodeUnik || '-')}</code></span>
+              <span>${escapeHtml(p.departemen || '-')}</span>
             </div>
           </div>
           <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
         </div>
         <div class="admin-row-meta">
+          <span class="admin-code-chip"><i class="fa-solid fa-hashtag"></i>${escapeHtml(p.kodeUnik || '-')}</span>
           <span><i class="fa-solid fa-shirt"></i> ${escapeHtml(p.jenis || '-')} • ${escapeHtml(p.ukuranKemeja || '-')}</span>
           <span><i class="fa-solid fa-cubes"></i> ${p.jumlah || 1} pcs</span>
           <span><i class="fa-solid fa-wallet"></i> ${isCicilan ? '2x Cicilan' : 'Tunai'}</span>
@@ -2524,19 +2534,23 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Terima kasih.`;
             <span>${status==='belum_dp' ? 'Belum bayar sama sekali' : (cicilanTerbayar ? 'Lunas — 2/2 pembayaran selesai' : 'Pembayaran ke-1 (DP) selesai, menunggu ke-2')} • Terkumpul ${formatRupiah(p.pembayaran?.totalDibayar || 0)}</span>
           </div>` : ''}
         <div class="admin-row-actions">
-          ${status === 'belum_dp' ? `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai ${isCicilan ? 'DP (1/2)' : 'Lunas'} Terbayar</button>` : ''}
-          ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
-            `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
-          ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : `<span class="admin-done"><i class="fa-solid fa-check-double"></i> Lunas</span>`}
-          ${p.whatsapp ? `<a class="admin-action-btn admin-action-wa" href="https://wa.me/${encodeURIComponent(normalizeWhatsapp(p.whatsapp))}?text=${encodeURIComponent('Halo ' + p.nama + ', kode unik pendaftaran kemeja Anda: ' + p.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Chat</a>` : ''}
-          <button class="admin-action-btn admin-action-edit" data-action="edit" data-id="${p.id}"><i class="fa-solid fa-pen"></i> Edit</button>
-          <button class="admin-action-btn admin-action-hapus" data-action="hapus" data-id="${p.id}"><i class="fa-solid fa-trash"></i> Hapus</button>
+          <div class="admin-row-actions-primary">
+            ${status === 'belum_dp' ? `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai ${isCicilan ? 'DP (1/2)' : 'Lunas'} Terbayar</button>` : ''}
+            ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
+              `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
+            ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : `<span class="admin-done"><i class="fa-solid fa-check-double"></i> Lunas</span>`}
+          </div>
+          <div class="admin-row-actions-icons">
+            ${p.whatsapp ? `<a class="admin-icon-action wa" title="Chat WhatsApp" href="https://wa.me/${encodeURIComponent(normalizeWhatsapp(p.whatsapp))}?text=${encodeURIComponent('Halo ' + p.nama + ', kode unik pendaftaran kemeja Anda: ' + p.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+            <button class="admin-icon-action edit" title="Edit data peserta" data-action="edit" data-id="${p.id}"><i class="fa-solid fa-pen"></i></button>
+            <button class="admin-icon-action hapus" title="Hapus peserta" data-action="hapus" data-id="${p.id}"><i class="fa-solid fa-trash"></i></button>
+          </div>
         </div>
       `;
       adminList.appendChild(row);
     });
 
-    adminList.querySelectorAll('.admin-action-btn[data-action]').forEach(btn => {
+    adminList.querySelectorAll('[data-action]').forEach(btn => {
       const action = btn.dataset.action;
       const id = btn.dataset.id;
       if (action === 'edit'){
