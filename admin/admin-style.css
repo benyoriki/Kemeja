@@ -1,0 +1,71 @@
+/* =========================================================
+   admin-style.css — LOKON PRIMA Dasbor Admin (halaman terpisah)
+   -------------------------------------------------
+   File ini TIDAK mengulang komponen admin-*/adash-* (sudah
+   lengkap didefinisikan di ../style.css dan dipakai bersama).
+   Isinya HANYA penyesuaian supaya komponen yang sama itu tampil
+   sebagai HALAMAN PENUH yang selalu terlihat, bukan modal kotak
+   yang muncul di atas konten lain seperti di situs publik.
+========================================================= */
+
+html, body{ min-height:100vh; }
+
+body{
+  background:
+    radial-gradient(1100px 620px at 8% -10%, rgba(15,216,184,.16), transparent 60%),
+    radial-gradient(900px 560px at 100% 0%, rgba(18,169,224,.20), transparent 55%),
+    linear-gradient(180deg, #071224 0%, #0A1B32 100%);
+}
+
+[data-theme="dark"] body, body{ color-scheme:dark; }
+
+/* Overlay yang di situs publik berfungsi sebagai modal (fixed,
+   disembunyikan by default, dibuka lewat 5x tap logo) — di sini
+   dipaksa selalu tampil sebagai layout halaman biasa. */
+.admin-overlay{
+  position:static !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  backdrop-filter:none !important;
+  background:transparent !important;
+  min-height:100vh;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:28px 16px 48px;
+}
+
+/* Modal konfirmasi & riwayat TETAP berupa overlay sungguhan di
+   halaman ini (harus ditutup dulu untuk lanjut) — hanya overlay
+   #adminOverlay utama yang dijadikan halaman penuh. */
+#addPesertaOverlay, #adminHistoryOverlay{
+  position:fixed !important;
+  opacity:0; visibility:hidden; pointer-events:none;
+  backdrop-filter:blur(6px) !important;
+  background:rgba(4,10,20,.72) !important;
+  transition:var(--transition);
+}
+#addPesertaOverlay.active, #adminHistoryOverlay.active{
+  opacity:1; visibility:visible; pointer-events:auto;
+}
+
+.admin-box{ margin:0 auto; width:100%; }
+
+/* Tombol X di pojok kanan atas sekarang jadi tautan "kembali ke
+   situs publik" (bukan penutup modal) — beri sedikit penekanan
+   visual supaya jelas fungsinya beda dari sebelumnya. */
+.admin-login .admin-close, #adminOverlay > .admin-box > .admin-close{
+  text-decoration:none;
+}
+
+/* Sedikit ruang napas ekstra di layar sangat lebar (monitor PC),
+   supaya dasbor tidak terasa "mengambang kecil" di tengah layar
+   besar — konsisten dengan pembaruan tata letak 3 kolom sebelumnya. */
+@media (min-width:1300px){
+  .admin-overlay{ padding-top:40px; }
+}
+
+@media (max-width:640px){
+  .admin-overlay{ padding:14px 10px 32px; }
+}
