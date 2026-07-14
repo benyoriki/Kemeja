@@ -2756,28 +2756,13 @@ body.peserta-modal-lock{ overflow:hidden; }
   perspective:700px; /* biar tilt 3D saat hover kelihatan ada kedalaman */
 }
 
-/* Link utuh (label + bola) supaya area tap lebih besar & label
-   ikut bisa diklik, bukan cuma dekorasi di sampingnya. */
+/* Link utuh (bola ikon) — dibuat inline-flex supaya gampang dipindah/
+   diberi efek tanpa mengganggu elemen lain. */
 .chess-fab{
   position:relative;
-  display:inline-flex; align-items:center; gap:10px;
+  display:inline-flex; align-items:center;
   text-decoration:none;
 }
-
-/* Label teks permanen — ini yang bikin fungsi ikon "ketebak"
-   sejak pandangan pertama, tanpa nunggu bubble/hover. Ikut
-   melayang pelan mengikuti ritme bola di sebelahnya. */
-.chess-fab-label{
-  display:flex; align-items:center; gap:6px; white-space:nowrap;
-  background:rgba(10,15,30,.86); color:#fff; font-weight:700; font-size:12.5px;
-  letter-spacing:.01em; padding:8px 14px 8px 15px; border-radius:999px;
-  box-shadow:0 6px 20px rgba(10,15,30,.35), inset 0 0 0 1px rgba(255,255,255,.09);
-  animation: fabFloat 3.6s ease-in-out infinite .3s;
-  transition:var(--transition-spring);
-}
-.chess-fab-label i{ color:#F2C14E; font-size:11px; }
-[data-theme="dark"] .chess-fab-label{ background:rgba(255,255,255,.94); color:#0A0F1E; }
-[data-theme="dark"] .chess-fab-label i{ color:#9B5CFF; }
 
 /* Bola ikon — gradasi mengalir + highlight kaca di sudut kiri-atas
    supaya terasa "3D" beneran, bukan lingkaran flat. */
@@ -2802,8 +2787,7 @@ body.peserta-modal-lock{ overflow:hidden; }
   pointer-events:none;
 }
 
-/* Hover: seluruh FAB (label + bola) bereaksi — bola naik+besar+tilt
-   ala "kartu dibalik", label ikut mekar dikit; animasi ambang
+/* Hover: bola naik+besar+tilt ala "kartu dibalik"; animasi ambang
    dijeda dulu selagi hover supaya tidak rebutan gerakan. */
 .chess-fab:hover .chess-fab-circle{
   animation: gradFlow 8s ease infinite;
@@ -2811,7 +2795,6 @@ body.peserta-modal-lock{ overflow:hidden; }
   box-shadow:0 0 32px rgba(155,92,255,.65), 0 0 0 9px rgba(155,92,255,.18),
              inset -4px -6px 10px rgba(0,0,0,.22), inset 4px 5px 8px rgba(255,255,255,.55);
 }
-.chess-fab:hover .chess-fab-label{ transform:translateY(-3px) scale(1.03); }
 
 .chess-fab-ping{
   position:absolute; inset:0; border-radius:50%; background:#9B5CFF;
@@ -2880,20 +2863,12 @@ body.peserta-modal-lock{ overflow:hidden; }
 @media (max-width:640px){
   .chess-fab-wrap{ right:16px; bottom:80px; }
   .chess-fab-circle{ width:54px; height:54px; font-size:21px; }
-  .chess-fab-label{ font-size:11px; padding:6.5px 12px; }
   .chess-fab-badge{ min-width:21px; height:19px; font-size:9px; }
   .chess-fab-callout{ font-size:12px; max-width:150px; }
 }
 
-@media (max-width:400px){
-  /* Layar sangat sempit: sembunyikan label permanen supaya tidak
-     mepet ke tepi/menutupi konten lain, badge tetap jadi penanda. */
-  .chess-fab-label{ display:none; }
-}
-
 @media (prefers-reduced-motion: reduce){
   .chess-fab-circle{ animation:none; }
-  .chess-fab-label{ animation:none; }
   .chess-fab-badge{ animation:none; }
   .chess-fab-callout.show{ animation:none; opacity:1; visibility:visible; transform:none; }
 }
