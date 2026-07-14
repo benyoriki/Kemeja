@@ -1409,6 +1409,9 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
   const pesertaScrollHint = document.getElementById('pesertaScrollHint');
   const pesertaSearch = document.getElementById('pesertaSearch');
   const pesertaFilters = document.getElementById('pesertaFilters');
+  const lunasShowcase = document.getElementById('lunasShowcase');
+  const lunasShowcaseTrack = document.getElementById('lunasShowcaseTrack');
+  const lunasShowcaseHint = document.getElementById('lunasShowcaseHint');
   const statTotal = document.getElementById('statTotal');
   const statMenunggu = document.getElementById('statMenunggu');
   const statCicilan = document.getElementById('statCicilan');
@@ -1455,21 +1458,6 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
       list = list.filter(p => (p.nama || '').toLowerCase().includes(q) || (p.departemen || '').toLowerCase().includes(q));
     }
 
-    // TAMPILAN SPESIAL PESERTA LUNAS: peserta yang sudah Lunas otomatis
-    // "naik" ke paling atas daftar (di atas peserta lain), supaya mereka
-    // lebih menonjol. Memakai .sort() bawaan JS yang stabil (urutan asli
-    // antar peserta dengan status sama tetap terjaga), jadi ini murni
-    // memindahkan grup "lunas" ke depan tanpa mengacak urutan lainnya.
-    list = list
-      .map((p, idx) => ({ p, idx }))
-      .sort((a, b) => {
-        const aLunas = a.p.pembayaran?.status === 'lunas' ? 0 : 1;
-        const bLunas = b.p.pembayaran?.status === 'lunas' ? 0 : 1;
-        if (aLunas !== bLunas) return aLunas - bLunas;
-        return a.idx - b.idx;
-      })
-      .map(x => x.p);
-
     // Statistik dihitung dari SELURUH data (bukan hasil filter)
     const total = pesertaData.length;
     const menunggu = pesertaData.filter(p => (p.pembayaran?.status || 'belum_dp') === 'belum_dp').length;
@@ -1480,18 +1468,35 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
     animateStatNumber(statCicilan, cicilanJalan);
     animateStatNumber(statLunas, lunas);
 
-    pesertaGrid.innerHTML = '';
-    pesertaEmpty.style.display = list.length === 0 ? 'block' : 'none';
-    if (pesertaScrollHint) pesertaScrollHint.style.display = list.length > 8 ? 'flex' : 'none';
+    // PISAHKAN peserta "Sudah Lunas" ke showcase khususnya sendiri (kotak
+    // terpisah total, scroll horizontal sendiri — lihat renderLunasShowcase).
+    // Dulu keduanya berbagi SATU kotak scroll vertikal yang sama, jadi kalau
+    // peserta Lunas sedang banyak, "Peserta Lainnya" jadi harus digeser jauh
+    // ke bawah dulu untuk kelihatan — sekarang dua-duanya selalu langsung
+    // terlihat, tidak saling menutupi berapa pun jumlah masing-masing.
+    const lunasList = list.filter(p => p.pembayaran?.status === 'lunas');
+    // Kalau tab yang aktif memang "Lunas", semuanya sudah tampil di showcase,
+    // jadi kotak daftar biasa di bawah tidak perlu menduplikasi menampilkannya.
+    const othersList = currentFilter === 'lunas' ? [] : list.filter(p => p.pembayaran?.status !== 'lunas');
 
-    // Label pemisah grup "Sudah Lunas" vs "Peserta Lainnya" — hanya
-    // ditampilkan di tab "Semua" dan cuma kalau memang ada campuran
-    // (supaya jelas kenapa nama-nama lunas melompat ke atas).
-    const showGroupHeaders = currentFilter === 'semua'
-      && list.some(p => p.pembayaran?.status === 'lunas')
-      && list.some(p => p.pembayaran?.status !== 'lunas');
-    let lunasHeaderShown = false;
-    let othersHeaderShown = false;
+    renderLunasShowcase(lunasList);
+
+    pesertaGrid.innerHTML = '';
+    if (othersList.length === 0){
+      if (currentFilter === 'lunas'){
+        pesertaEmpty.innerHTML = lunasList.length > 0
+          ? '<i class="fa-solid fa-trophy"></i> Semua peserta Lunas tampil di showcase spesial di atas ⬆️'
+          : '<i class="fa-solid fa-inbox"></i> Belum ada peserta pada kategori ini.';
+      } else if (currentFilter === 'semua' && lunasList.length > 0){
+        pesertaEmpty.innerHTML = '<i class="fa-solid fa-trophy"></i> Semua peserta yang terdaftar sudah Lunas! Lihat showcase di atas 🎉';
+      } else {
+        pesertaEmpty.innerHTML = '<i class="fa-solid fa-inbox"></i> Belum ada peserta pada kategori ini.';
+      }
+      pesertaEmpty.style.display = 'block';
+    } else {
+      pesertaEmpty.style.display = 'none';
+    }
+    if (pesertaScrollHint) pesertaScrollHint.style.display = othersList.length > 8 ? 'flex' : 'none';
 
     // PERBAIKAN TAMPILAN: dulu tiap peserta jadi kartu besar penuh detail —
     // begitu peserta banyak, halaman jadi panjang & berantakan. Sekarang
@@ -1501,48 +1506,23 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
     // dan digeser (scroll) di dalam kotaknya sendiri, supaya halaman tidak
     // ikut memanjang ke bawah walau peserta yang mendaftar makin banyak.
     const rows = [];
-    list.forEach((p, i) => {
+    othersList.forEach((p, i) => {
       const status = p.pembayaran?.status || 'belum_dp';
       const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
       const isBaru = p._ms && (Date.now() - p._ms) < (1000 * 60 * 60 * 24); // < 24 jam sejak daftar
-      const isLunas = status === 'lunas';
       // "Diperbarui Admin": muncul 24 jam sejak TERAKHIR admin ubah data
       // peserta ini (edit/ubah status), lalu otomatis hilang sendiri.
       // Tidak ditampilkan bareng label "Baru" supaya tidak dobel/berisik.
       const isEdited = !isBaru && p._editedMs && (Date.now() - p._editedMs) < (1000 * 60 * 60 * 24);
 
-      if (showGroupHeaders){
-        if (isLunas && !lunasHeaderShown){
-          const header = document.createElement('div');
-          header.className = 'peserta-group-header peserta-group-header-lunas';
-          header.innerHTML = '<i class="fa-solid fa-trophy"></i> Sudah Lunas';
-          pesertaGrid.appendChild(header);
-          lunasHeaderShown = true;
-        } else if (!isLunas && !othersHeaderShown && lunasHeaderShown){
-          const header = document.createElement('div');
-          header.className = 'peserta-group-header';
-          header.innerHTML = 'Peserta Lainnya';
-          pesertaGrid.appendChild(header);
-          othersHeaderShown = true;
-        }
-      }
-
       const row = document.createElement('button');
       row.type = 'button';
-      row.className = 'peserta-row peserta-row-enter' + (isLunas ? ' peserta-row-lunas' : '');
+      row.className = 'peserta-row peserta-row-enter';
       row.style.transitionDelay = Math.min(i * 35, 300) + 'ms';
 
       row.innerHTML = `
-        ${isLunas ? '<span class="lunas-shine" aria-hidden="true"></span>' : ''}
-        ${isLunas ? `
-          <span class="lunas-sparkle ls1" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
-          <span class="lunas-sparkle ls2" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
-          <span class="lunas-sparkle ls3" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
-          <span class="lunas-sparkle ls4" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
-        ` : ''}
         <span class="peserta-row-avatar-wrap">
           <span class="peserta-row-avatar">${initialsOf(p.nama)}</span>
-          ${isLunas ? `<span class="peserta-crown" title="Sudah lunas!"><i class="fa-solid fa-crown"></i></span>` : ''}
         </span>
         <span class="peserta-row-info">
           <span class="peserta-row-name">${escapeHtml(p.nama || '-')}${isBaru ? '<span class="peserta-row-new">Baru</span>' : ''}${isEdited ? '<span class="peserta-row-edited"><i class="fa-solid fa-pen"></i> Diperbarui</span>' : ''}</span>
@@ -1563,6 +1543,60 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         rows.forEach(r => r.classList.add('show'));
+      });
+    });
+  }
+
+  /* =========================================================
+     18b. SHOWCASE KHUSUS "SUDAH LUNAS" — kartu premium, scroll
+     horizontal sendiri, tampilan berbeda & lebih mewah dibanding
+     baris peserta biasa. Sepenuhnya terpisah dari .peserta-grid,
+     jadi jumlah peserta Lunas tidak pernah "menutupi" atau mendesak
+     daftar peserta lain keluar dari pandangan.
+  ========================================================= */
+  function renderLunasShowcase(lunasList){
+    if (!lunasShowcase || !lunasShowcaseTrack) return;
+    if (!lunasList || lunasList.length === 0){
+      lunasShowcase.style.display = 'none';
+      lunasShowcaseTrack.innerHTML = '';
+      return;
+    }
+    lunasShowcase.style.display = 'block';
+    lunasShowcaseTrack.innerHTML = '';
+
+    const cards = [];
+    lunasList.forEach((p, i) => {
+      const isBaru = p._ms && (Date.now() - p._ms) < (1000 * 60 * 60 * 24);
+      const isEdited = !isBaru && p._editedMs && (Date.now() - p._editedMs) < (1000 * 60 * 60 * 24);
+
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'lunas-card lunas-card-enter';
+      card.style.transitionDelay = Math.min(i * 70, 420) + 'ms';
+      card.innerHTML = `
+        <span class="lunas-card-shine" aria-hidden="true"></span>
+        <span class="lunas-card-sparkle lcs1" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+        <span class="lunas-card-sparkle lcs2" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+        <span class="lunas-card-sparkle lcs3" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+        ${isBaru ? '<span class="lunas-card-flag lunas-card-flag-new">Baru</span>' : (isEdited ? '<span class="lunas-card-flag lunas-card-flag-edit"><i class="fa-solid fa-pen"></i></span>' : '')}
+        <span class="lunas-card-avatar-wrap">
+          <span class="lunas-card-avatar">${initialsOf(p.nama)}</span>
+          <span class="lunas-card-crown"><i class="fa-solid fa-crown"></i></span>
+        </span>
+        <span class="lunas-card-name">${escapeHtml(p.nama || '-')}</span>
+        <span class="lunas-card-dept">${escapeHtml(p.departemen || '-')}</span>
+        <span class="lunas-card-tag"><i class="fa-solid fa-circle-check"></i> Lunas</span>
+      `;
+      card.addEventListener('click', () => openPesertaDetail(p));
+      lunasShowcaseTrack.appendChild(card);
+      cards.push(card);
+    });
+
+    if (lunasShowcaseHint) lunasShowcaseHint.style.display = lunasList.length > 2 ? 'flex' : 'none';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        cards.forEach(c => c.classList.add('show'));
       });
     });
   }
@@ -1697,6 +1731,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
       if (msgEl) msgEl.innerHTML = reason || 'Firebase belum dikonfigurasi. Lengkapi <code>firebase-config.js</code> agar daftar peserta live tampil di sini.';
     }
     pesertaGrid.innerHTML = '';
+    if (lunasShowcase) lunasShowcase.style.display = 'none';
     if (progressBarLabel) progressBarLabel.textContent = 'Data belum bisa dimuat — cek koneksi internet.';
   }
 

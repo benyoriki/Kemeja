@@ -711,10 +711,37 @@
       </div>
     </div>
 
-    <!-- List ringkas peserta — tetap rapi walau jumlah peserta banyak.
-         Dibungkus kotak dengan tinggi terbatas (~8 baris terlihat) supaya
-         halaman TIDAK ikut memanjang ke bawah walau peserta terus bertambah —
-         sisanya tinggal digeser (scroll) di dalam kotak ini saja. -->
+    <!-- =====================================================
+         SHOWCASE KHUSUS "SUDAH LUNAS" — kotak & gaya TERPISAH total
+         dari daftar peserta biasa di bawahnya (scroll horizontal
+         sendiri, geser ke samping). Sengaja dipisah supaya SEBANYAK
+         APAPUN peserta yang sudah Lunas, daftar "Peserta Lainnya" di
+         bawah tetap penuh terlihat & tidak ikut tertutup/tenggelam.
+         ===================================================== -->
+    <div class="lunas-showcase" id="lunasShowcase" style="display:none;">
+      <span class="lunas-showcase-blob b1" aria-hidden="true"></span>
+      <span class="lunas-showcase-blob b2" aria-hidden="true"></span>
+      <span class="lunas-showcase-float f1" aria-hidden="true"><i class="fa-solid fa-crown"></i></span>
+      <span class="lunas-showcase-float f2" aria-hidden="true"><i class="fa-solid fa-star"></i></span>
+      <span class="lunas-showcase-float f3" aria-hidden="true"><i class="fa-solid fa-coins"></i></span>
+      <div class="lunas-showcase-head">
+        <span class="lunas-showcase-badge"><i class="fa-solid fa-trophy"></i></span>
+        <div class="lunas-showcase-head-text">
+          <h4>Sudah Lunas <span class="lunas-showcase-emoji">🎉</span></h4>
+          <p>Peserta yang telah menyelesaikan pembayaran penuh</p>
+        </div>
+      </div>
+      <div class="lunas-showcase-track" id="lunasShowcaseTrack"></div>
+      <p class="lunas-showcase-hint" id="lunasShowcaseHint" style="display:none;"><i class="fa-solid fa-arrow-left-long"></i> Geser untuk lihat semua</p>
+    </div>
+
+    <!-- List ringkas peserta LAINNYA (belum Lunas) — tetap rapi walau
+         jumlah peserta banyak. Dibungkus kotak dengan tinggi terbatas
+         (~8 baris terlihat) supaya halaman TIDAK ikut memanjang ke
+         bawah walau peserta terus bertambah — sisanya tinggal digeser
+         (scroll) di dalam kotak ini saja. Peserta yang sudah Lunas
+         TIDAK lagi muncul di sini — semuanya ada di showcase khusus
+         di atas, supaya kedua kelompok benar-benar terpisah rapi. -->
     <div class="peserta-list-wrap" id="pesertaListWrap">
       <div class="peserta-grid" id="pesertaGrid">
         <!-- Skeleton loaders tampil sebelum data Firestore masuk -->

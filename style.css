@@ -1610,82 +1610,184 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 
 /* =========================================================
-   TAMPILAN SPESIAL — PESERTA SUDAH LUNAS
-   Peserta lunas otomatis "naik" ke atas daftar (lihat sort di
-   script.js) dan diberi beberapa lapis efek visual supaya jelas
-   menonjol dari peserta lain: kartu emas berkilau + garis sinar
-   yang menyapu + bintang berkelip di sudut-sudut + entrance yang
-   sedikit "memantul" (bukan sekadar fade biasa). Semua efek pakai
-   transform/opacity saja (bukan properti yang memicu reflow) biar
-   tetap ringan & mulus di HP maupun desktop.
+   SHOWCASE KHUSUS "SUDAH LUNAS"
+   Kotak terpisah TOTAL dari .peserta-list-wrap di bawahnya —
+   scroll horizontal sendiri (geser ke samping), tema emas/gold
+   yang mewah & beda dari daftar peserta biasa, lengkap dengan
+   blob dekoratif, ikon melayang, kartu berkilau, dan bintang
+   berkelip. Dipisah sengaja supaya SEBANYAK APAPUN peserta yang
+   sudah Lunas, kotak "Peserta Lainnya" di bawah tetap penuh
+   kelihatan — dua kelompok tidak pernah saling menutupi lagi.
 ========================================================= */
-.peserta-row-lunas{
-    border-color:rgba(240,180,41,.5);
-    background:linear-gradient(120deg, rgba(240,180,41,.07), var(--white) 45%);
-    animation: lunasRowShine 3s ease-in-out infinite;
+.lunas-showcase{
+    position:relative; overflow:hidden; border-radius:24px; padding:20px 0 18px;
+    margin-bottom:18px;
+    background:linear-gradient(135deg, #FFF7E3 0%, #FFEFC7 45%, #FFF7E3 100%);
+    border:1.5px solid rgba(240,180,41,.4);
+    box-shadow:0 14px 34px rgba(201,138,12,.16), 0 0 0 1px rgba(255,255,255,.4) inset;
+    animation: lunasShowcaseGlow 4s ease-in-out infinite;
 }
-[data-theme="dark"] .peserta-row-lunas{ background:linear-gradient(120deg, rgba(240,180,41,.1), var(--foam) 45%); }
-@keyframes lunasRowShine{
-    0%, 100%{ box-shadow:0 0 0 rgba(240,180,41,0); }
-    50%{ box-shadow:0 6px 22px rgba(240,180,41,.28), 0 0 0 1px rgba(240,180,41,.18) inset; }
+[data-theme="dark"] .lunas-showcase{
+    background:linear-gradient(135deg, #2A2107 0%, #3A2C08 45%, #2A2107 100%);
+    border-color:rgba(240,180,41,.3);
+    box-shadow:0 14px 34px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04) inset;
 }
-@media (prefers-reduced-motion: reduce){ .peserta-row-lunas{ animation:none; } }
+@keyframes lunasShowcaseGlow{
+    0%, 100%{ box-shadow:0 14px 34px rgba(201,138,12,.16), 0 0 0 1px rgba(255,255,255,.4) inset; }
+    50%{ box-shadow:0 16px 40px rgba(201,138,12,.26), 0 0 0 1px rgba(255,255,255,.4) inset; }
+}
+@media (prefers-reduced-motion: reduce){ .lunas-showcase{ animation:none; } }
 
-/* Entrance khusus lunas: sedikit overshoot/"memantul" biar terasa lebih
-   istimewa dibanding baris biasa yang cuma fade+slide datar. */
-.peserta-row-enter.show.peserta-row-lunas{
-    transition:opacity .6s cubic-bezier(.34,1.56,.64,1), transform .6s cubic-bezier(.34,1.56,.64,1),
-      box-shadow .35s ease, border-color .35s ease;
+/* Blob cahaya dekoratif di latar showcase — murni hiasan, tidak
+   mengganggu isi karena z-index rendah & pointer-events none. */
+.lunas-showcase-blob{
+    position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+    background:radial-gradient(circle, rgba(255,214,90,.55), transparent 70%);
+    filter:blur(2px);
 }
-@media (prefers-reduced-motion: reduce){ .peserta-row-enter.show.peserta-row-lunas{ transition:none; } }
+.lunas-showcase-blob.b1{ width:160px; height:160px; top:-60px; right:-40px; animation:lunasBlobFloat 7s ease-in-out infinite; }
+.lunas-showcase-blob.b2{ width:120px; height:120px; bottom:-50px; left:-30px; animation:lunasBlobFloat 8s ease-in-out infinite reverse; }
+@keyframes lunasBlobFloat{ 0%,100%{ transform:translate(0,0) scale(1); } 50%{ transform:translate(-10px,10px) scale(1.12); } }
+@media (prefers-reduced-motion: reduce){ .lunas-showcase-blob{ animation:none; } }
 
-/* Garis sinar yang menyapu dari kiri ke kanan secara berkala — dibungkus
-   di span terpisah (bukan langsung di .peserta-row) supaya overflow:hidden
-   hanya memotong sinarnya saja, TIDAK ikut memotong mahkota/bintang yang
-   sedikit "keluar" dari tepi kartu. */
-.lunas-shine{
-    position:absolute; inset:0; border-radius:16px; overflow:hidden; pointer-events:none; z-index:0;
+/* Ikon-ikon kecil melayang santai di latar (mahkota/bintang/koin) */
+.lunas-showcase-float{
+    position:absolute; color:rgba(201,138,12,.28); pointer-events:none; z-index:0;
+    animation: lunasFloatDrift 6s ease-in-out infinite;
 }
-.lunas-shine::after{
-    content:''; position:absolute; top:0; left:0; width:45%; height:100%;
-    background:linear-gradient(120deg, transparent, rgba(255,255,255,.65), transparent);
-    transform:translateX(-180%) skewX(-20deg);
-    animation: lunasShineSweep 3.4s ease-in-out infinite;
+[data-theme="dark"] .lunas-showcase-float{ color:rgba(240,180,41,.22); }
+.lunas-showcase-float.f1{ font-size:22px; top:14px; right:18%; animation-delay:0s; }
+.lunas-showcase-float.f2{ font-size:14px; top:70%; right:8%; animation-delay:1.4s; }
+.lunas-showcase-float.f3{ font-size:16px; top:40%; left:6%; animation-delay:.7s; }
+@keyframes lunasFloatDrift{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-8px) rotate(8deg); } }
+@media (max-width:560px){ .lunas-showcase-float.f2{ display:none; } }
+@media (prefers-reduced-motion: reduce){ .lunas-showcase-float{ animation:none; } }
+
+.lunas-showcase-head{
+    position:relative; z-index:1; display:flex; align-items:center; gap:12px;
+    padding:0 20px 16px;
+}
+.lunas-showcase-badge{
+    flex-shrink:0; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, #FFE9A8, #F0B429); color:#7A4E00; font-size:19px;
+    box-shadow:0 6px 16px rgba(201,138,12,.35);
+    animation: lunasBadgeBounce 2.4s ease-in-out infinite;
+}
+@keyframes lunasBadgeBounce{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-3px) rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce){ .lunas-showcase-badge{ animation:none; } }
+.lunas-showcase-head-text h4{
+    font-family:var(--font-body); font-size:17px; font-weight:800; color:#8A5A00; margin:0 0 2px; display:flex; align-items:center; gap:6px;
+}
+[data-theme="dark"] .lunas-showcase-head-text h4{ color:#F0C24A; }
+.lunas-showcase-emoji{ display:inline-block; animation: lunasEmojiWiggle 1.8s ease-in-out infinite; }
+@keyframes lunasEmojiWiggle{ 0%,100%{ transform:rotate(0deg) scale(1); } 50%{ transform:rotate(14deg) scale(1.15); } }
+@media (prefers-reduced-motion: reduce){ .lunas-showcase-emoji{ animation:none; } }
+.lunas-showcase-head-text p{ font-size:12.5px; color:#9A7418; margin:0; }
+[data-theme="dark"] .lunas-showcase-head-text p{ color:#C9A050; }
+
+.lunas-showcase-track{
+    position:relative; z-index:1; display:flex; gap:14px; overflow-x:auto; overflow-y:hidden;
+    padding:2px 20px 8px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;
+}
+.lunas-showcase-track::-webkit-scrollbar{ height:5px; }
+.lunas-showcase-track::-webkit-scrollbar-track{ background:transparent; }
+.lunas-showcase-track::-webkit-scrollbar-thumb{ background:rgba(201,138,12,.4); border-radius:10px; }
+
+.lunas-showcase-hint{
+    position:relative; z-index:1; text-align:center; font-size:11.5px; font-weight:600; color:#9A7418;
+    margin:6px 0 0; display:flex; align-items:center; justify-content:center; gap:6px;
+}
+[data-theme="dark"] .lunas-showcase-hint{ color:#C9A050; }
+.lunas-showcase-hint i{ animation: lunasHintNudge 1.6s ease-in-out infinite; }
+@keyframes lunasHintNudge{ 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(-4px); } }
+@media (prefers-reduced-motion: reduce){ .lunas-showcase-hint i{ animation:none; } }
+
+/* ---- Kartu individu di dalam showcase ---- */
+.lunas-card{
+    position:relative; flex:0 0 148px; scroll-snap-align:start; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    background:linear-gradient(160deg, #FFFDF6, #FFF3D2 85%);
+    border:1.5px solid rgba(240,180,41,.55); border-radius:20px;
+    padding:18px 12px 14px; cursor:pointer; font-family:var(--font-body);
+    box-shadow:0 6px 18px rgba(201,138,12,.18);
+    transition:transform .25s ease, box-shadow .25s ease;
+}
+[data-theme="dark"] .lunas-card{ background:linear-gradient(160deg, #362A0B, #2A2107 85%); border-color:rgba(240,180,41,.4); }
+.lunas-card:hover{ transform:translateY(-4px) scale(1.03); box-shadow:0 12px 26px rgba(201,138,12,.3); }
+.lunas-card:active{ transform:translateY(-1px) scale(1.01); }
+
+.lunas-card-enter{ opacity:0; transform:translateY(16px) scale(.85); }
+.lunas-card-enter.show{
+    opacity:1; transform:translateY(0) scale(1);
+    transition:opacity .6s cubic-bezier(.34,1.56,.64,1), transform .6s cubic-bezier(.34,1.56,.64,1);
+}
+@media (prefers-reduced-motion: reduce){ .lunas-card-enter{ opacity:1; transform:none; transition:none; } }
+
+.lunas-card-shine{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; border-radius:20px; }
+.lunas-card-shine::after{
+    content:''; position:absolute; top:0; left:0; width:55%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,.75), transparent);
+    transform:translateX(-200%) skewX(-20deg);
+    animation: lunasShineSweep 3.6s ease-in-out infinite;
 }
 @keyframes lunasShineSweep{
-    0%{ transform:translateX(-180%) skewX(-20deg); }
-    55%, 100%{ transform:translateX(280%) skewX(-20deg); }
+    0%{ transform:translateX(-200%) skewX(-20deg); }
+    55%, 100%{ transform:translateX(300%) skewX(-20deg); }
 }
-@media (prefers-reduced-motion: reduce){ .lunas-shine::after{ animation:none; display:none; } }
+@media (prefers-reduced-motion: reduce){ .lunas-card-shine::after{ animation:none; display:none; } }
 
-/* Bintang kecil berkelip di sudut-sudut kartu — 2 di HP, 4 di layar lebar */
-.lunas-sparkle{
-    position:absolute; color:#FFD65A; font-size:9px; pointer-events:none; z-index:1;
-    animation: lunasTwinkle 2.6s ease-in-out infinite;
-    filter:drop-shadow(0 0 3px rgba(240,180,41,.85));
+.lunas-card-sparkle{
+    position:absolute; color:#F0B429; font-size:8px; pointer-events:none; z-index:1;
+    animation: lunasTwinkle 2.4s ease-in-out infinite; filter:drop-shadow(0 0 3px rgba(240,180,41,.85));
 }
-.lunas-sparkle.ls1{ top:5px; left:7px; animation-delay:0s; }
-.lunas-sparkle.ls2{ bottom:5px; left:7px; animation-delay:.9s; font-size:7px; }
-.lunas-sparkle.ls3{ top:5px; right:7px; animation-delay:1.7s; }
-.lunas-sparkle.ls4{ bottom:5px; right:7px; animation-delay:.5s; font-size:7px; }
+.lunas-card-sparkle.lcs1{ top:8px; left:10px; animation-delay:0s; }
+.lunas-card-sparkle.lcs2{ top:14px; right:10px; font-size:6px; animation-delay:.8s; }
+.lunas-card-sparkle.lcs3{ bottom:34px; right:14px; animation-delay:1.5s; }
 @keyframes lunasTwinkle{
     0%, 100%{ opacity:0; transform:scale(.3) rotate(0deg); }
     50%{ opacity:1; transform:scale(1) rotate(25deg); }
 }
-@media (max-width:560px){
-    .lunas-sparkle.ls2, .lunas-sparkle.ls4{ display:none; }
-}
-@media (prefers-reduced-motion: reduce){ .lunas-sparkle{ animation:none; display:none; } }
+@media (prefers-reduced-motion: reduce){ .lunas-card-sparkle{ animation:none; display:none; } }
 
-/* Label pemisah grup "Sudah Lunas" / "Peserta Lainnya" di tab Semua */
-.peserta-group-header{
-    font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
-    color:var(--ink-soft); padding:6px 4px 2px; display:flex; align-items:center; gap:6px;
+.lunas-card-flag{
+    position:absolute; top:8px; left:8px; z-index:2; font-size:9px; font-weight:800; letter-spacing:.04em;
+    text-transform:uppercase; padding:3px 7px; border-radius:999px; color:#fff;
 }
-.peserta-group-header-lunas{ color:#C98A0E; }
-.peserta-group-header-lunas i{ animation: lunasHeaderWiggle 2s ease-in-out infinite; }
-@keyframes lunasHeaderWiggle{ 0%,100%{ transform:rotate(0deg); } 50%{ transform:rotate(-10deg); } }
-@media (prefers-reduced-motion: reduce){ .peserta-group-header-lunas i{ animation:none; } }
+.lunas-card-flag-new{ background:#EF5A6F; }
+.lunas-card-flag-edit{ background:#6C63FF; }
+
+.lunas-card-avatar-wrap{ position:relative; z-index:1; margin-bottom:10px; }
+.lunas-card-avatar{
+    width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--gradient-brand); color:#04213A; font-weight:800; font-size:17px; font-family:var(--font-mono);
+    box-shadow:0 4px 10px rgba(0,0,0,.12);
+}
+.lunas-card-crown{
+    position:absolute; top:-9px; right:-7px; width:24px; height:24px; border-radius:50%;
+    background:linear-gradient(135deg, #FFE9A8, #F0B429); color:#7A4E00; font-size:11px;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(201,138,12,.4);
+    animation: lunasCrownBounce 2s ease-in-out infinite;
+}
+@keyframes lunasCrownBounce{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-2px) rotate(-10deg); } }
+@media (prefers-reduced-motion: reduce){ .lunas-card-crown{ animation:none; } }
+
+.lunas-card-name{
+    position:relative; z-index:1; font-weight:800; font-size:13.5px; color:var(--ink); line-height:1.25;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:2px;
+}
+.lunas-card-dept{ position:relative; z-index:1; font-size:11px; color:#9A7418; margin-bottom:10px; }
+[data-theme="dark"] .lunas-card-dept{ color:#C9A050; }
+.lunas-card-tag{
+    position:relative; z-index:1; display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800;
+    color:#fff; background:linear-gradient(120deg, #F0B429, #E0961F); padding:5px 11px; border-radius:999px;
+    box-shadow:0 3px 8px rgba(201,138,12,.3);
+}
+@media (max-width:400px){
+    .lunas-showcase-head{ padding:0 14px 12px; gap:10px; }
+    .lunas-showcase-track{ padding:2px 14px 8px; gap:10px; }
+    .lunas-card{ flex-basis:132px; padding:15px 10px 12px; }
+    .lunas-card-avatar{ width:48px; height:48px; font-size:15px; }
+}
 
 .peserta-row-avatar-wrap{ position:relative; flex-shrink:0; }
 
