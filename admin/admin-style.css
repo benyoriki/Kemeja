@@ -1,11 +1,31 @@
 /* =========================================================
    admin-style.css — LOKON PRIMA Dasbor Admin (halaman terpisah)
    -------------------------------------------------
-   File ini TIDAK mengulang komponen admin-*/adash-* (sudah
-   lengkap didefinisikan di ../style.css dan dipakai bersama).
-   Isinya HANYA penyesuaian supaya komponen yang sama itu tampil
-   sebagai HALAMAN PENUH yang selalu terlihat, bukan modal kotak
-   yang muncul di atas konten lain seperti di situs publik.
+   v2 — Perbaikan bug + desain ulang total.
+
+   BUG YANG DIPERBAIKI (penyebab modal "Riwayat Aktivitas Admin"
+   nongol sendiri, full-screen, blur, walau belum diklik):
+   #addPesertaOverlay dan #adminHistoryOverlay sama-sama memakai
+   class "admin-overlay". Versi lama kasih `!important` ke
+   opacity/visibility/pointer-events di SELECTOR CLASS (.admin-overlay)
+   untuk memaksa overlay utama selalu tampil sebagai halaman.
+   Karena !important vs !important menang berdasarkan SPESIFISITAS,
+   dan selector ID (#adminHistoryOverlay) kalah lawan class kalau
+   sama-sama !important tapi urutan properti beda... intinya dua
+   modal itu ikut ketimpa jadi "selalu terlihat" walau harusnya
+   tersembunyi. Perbaikannya: modal-modal itu sekarang diberi
+   selector gabungan class+ID (.admin-overlay#adminHistoryOverlay)
+   dengan !important penuh di kondisi tersembunyi MAUPUN kondisi
+   .active, jadi menang telak dan bisa dipastikan urutannya benar.
+
+   BUG KECIL LAIN: file ini tidak pernah memuat particles.css,
+   padahal beberapa elemen (titik LIVE berkedip, cincin ikon shield
+   berputar) memakai animation-name dari sana (livePulse, spinCw).
+   Tanpa particles.css, animasi itu diam total. Sekarang kedua
+   keyframes itu didefinisikan ulang secara ringan di file ini saja,
+   supaya halaman admin TIDAK perlu memuat efek dekoratif berat
+   situs publik (confetti, orb mengambang, dsb) hanya demi dua
+   animasi kecil ini.
 ========================================================= */
 
 html, body{ min-height:100vh; }
@@ -19,9 +39,19 @@ body{
 
 [data-theme="dark"] body, body{ color-scheme:dark; }
 
-/* Overlay yang di situs publik berfungsi sebagai modal (fixed,
-   disembunyikan by default, dibuka lewat 5x tap logo) — di sini
-   dipaksa selalu tampil sebagai layout halaman biasa. */
+/* Keyframes ringan milik halaman admin sendiri (lihat catatan bug di atas) */
+@keyframes livePulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+@keyframes spinCw{ to{ transform:rotate(360deg); } }
+@keyframes adashFadeUp{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+@keyframes adashRowIn{ from{ opacity:0; transform:translateY(8px) scale(.99); } to{ opacity:1; transform:translateY(0) scale(1); } }
+@keyframes adashBeacon{ 0%,100%{ box-shadow:0 0 0 0 rgba(15,216,184,.35); } 50%{ box-shadow:0 0 0 8px rgba(15,216,184,0); } }
+@keyframes adashShimmer{ 0%{ background-position:0% 50%; } 100%{ background-position:200% 50%; } }
+@keyframes adashSpring{ 0%{ opacity:0; transform:translateY(14px) scale(.96); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
+
+/* =========================================================
+   1. OVERLAY UTAMA (#adminOverlay) — tetap dipaksa jadi HALAMAN
+   PENUH (bukan modal), sama seperti sebelumnya.
+========================================================= */
 .admin-overlay{
   position:static !important;
   opacity:1 !important;
@@ -36,36 +66,306 @@ body{
   padding:28px 16px 48px;
 }
 
-/* Modal konfirmasi & riwayat TETAP berupa overlay sungguhan di
-   halaman ini (harus ditutup dulu untuk lanjut) — hanya overlay
-   #adminOverlay utama yang dijadikan halaman penuh. */
-#addPesertaOverlay, #adminHistoryOverlay{
-  position:fixed !important;
-  opacity:0; visibility:hidden; pointer-events:none;
-  backdrop-filter:blur(6px) !important;
-  background:rgba(4,10,20,.72) !important;
-  transition:var(--transition);
-}
-#addPesertaOverlay.active, #adminHistoryOverlay.active{
-  opacity:1; visibility:visible; pointer-events:auto;
-}
-
 .admin-box{ margin:0 auto; width:100%; }
 
-/* Tombol X di pojok kanan atas sekarang jadi tautan "kembali ke
-   situs publik" (bukan penutup modal) — beri sedikit penekanan
-   visual supaya jelas fungsinya beda dari sebelumnya. */
+/* =========================================================
+   2. MODAL SUNGGUHAN (Tambah Peserta & Riwayat Aktivitas)
+   — DIPERBAIKI: selector class+ID supaya menang telak atas
+   aturan .admin-overlay di atas, di kedua kondisi (tersembunyi
+   & .active). Ini yang tadinya bikin history/overlay nongol
+   sendiri, blur, tanpa diklik.
+========================================================= */
+.admin-overlay#addPesertaOverlay,
+.admin-overlay#adminHistoryOverlay{
+  position:fixed !important;
+  inset:0 !important;
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+  backdrop-filter:blur(6px) !important;
+  background:rgba(4,10,20,.72) !important;
+  transition:opacity .3s ease, visibility .3s ease !important;
+  padding:20px !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+.admin-overlay#addPesertaOverlay.active,
+.admin-overlay#adminHistoryOverlay.active{
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+}
+
+/* Kotak modalnya sendiri: entrance animasi halus (spring), bukan cuma muncul mendadak */
+#addPesertaOverlay .admin-box,
+#adminHistoryOverlay .admin-box{
+  transform:translateY(14px) scale(.97);
+  opacity:0;
+  transition:transform .38s cubic-bezier(.2,.8,.3,1), opacity .3s ease;
+  max-height:88vh;
+  overflow-y:auto;
+}
+
+#addPesertaOverlay.active .admin-box,
+#adminHistoryOverlay.active .admin-box{
+  transform:translateY(0) scale(1);
+  opacity:1;
+}
+
+@media (prefers-reduced-motion: reduce){
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
+}
+
+/* Tombol X di pojok kanan atas = tautan "kembali ke situs publik" */
 .admin-login .admin-close, #adminOverlay > .admin-box > .admin-close{
   text-decoration:none;
 }
 
-/* Sedikit ruang napas ekstra di layar sangat lebar (monitor PC),
-   supaya dasbor tidak terasa "mengambang kecil" di tengah layar
-   besar — konsisten dengan pembaruan tata letak 3 kolom sebelumnya. */
 @media (min-width:1300px){
   .admin-overlay{ padding-top:40px; }
 }
 
 @media (max-width:640px){
   .admin-overlay{ padding:14px 10px 32px; }
+}
+
+/* =========================================================
+   3. ATMOSFER LATAR — grid halus + aurora sangat lambat,
+   supaya dasbor terasa seperti "ruang kontrol", bukan cuma
+   kartu gelap polos. Sangat ringan (opacity rendah, animasi
+   super lambat) supaya tidak mengganggu keterbacaan data.
+========================================================= */
+.admin-box:not(.addpeserta-box):not(.history-box)::after{
+  content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit; z-index:0;
+  background:
+    radial-gradient(60% 40% at 85% -10%, rgba(15,216,184,.10), transparent 60%),
+    radial-gradient(50% 35% at -10% 20%, rgba(18,169,224,.10), transparent 60%);
+  animation:adashAuroraDrift 22s ease-in-out infinite alternate;
+}
+
+@keyframes adashAuroraDrift{
+  0%{ opacity:.7; }
+  100%{ opacity:1; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .admin-box:not(.addpeserta-box):not(.history-box)::after{ animation:none; }
+}
+
+/* =========================================================
+   4. HEADER — jam & pill LIVE lebih hidup, tombol dikelompokkan
+   lebih rapi dengan micro-interaction yang enteng.
+========================================================= */
+.adash-header-left h3{ letter-spacing:-.01em; }
+
+.adash-live-pill{ position:relative; }
+.adash-live-pill .dot{ animation:livePulse 1.6s ease-in-out infinite; }
+
+#adashClock{
+  font-variant-numeric:tabular-nums;
+  position:relative; padding-left:14px;
+}
+#adashClock::before{
+  content:''; position:absolute; left:0; top:50%; width:6px; height:6px; border-radius:50%;
+  background:var(--aqua); transform:translateY(-50%); box-shadow:0 0 6px var(--aqua);
+}
+
+.adash-logo-badge{ position:relative; overflow:visible; }
+.adash-logo-badge::after{
+  content:''; position:absolute; inset:-6px; border-radius:18px;
+  border:1.5px solid rgba(15,216,184,.35); opacity:0;
+  transition:opacity .3s ease;
+}
+.adash-header:hover .adash-logo-badge::after{ opacity:1; animation:spinCw 8s linear infinite; }
+
+.adash-icon-btn, .adash-danger-btn, .adash-logout-btn, .adash-add-btn{
+  will-change:transform;
+}
+
+/* Tap target lebih besar & nyaman di layar sentuh */
+@media (pointer:coarse){
+  .adash-icon-btn{ width:44px; height:44px; }
+}
+
+/* =========================================================
+   5. KARTU STATISTIK — panel instrumen dengan aksen sesuai
+   makna angkanya + kartu "Dana Terkumpul" dijadikan hero (angka
+   yang paling penting bagi bendahara), sisanya tetap ringkas.
+========================================================= */
+.adash-stats{
+  animation:adashFadeUp .5s ease both;
+}
+
+.adash-stat{
+  overflow:hidden;
+}
+
+.adash-stat::before{ z-index:1; }
+
+/* Stagger halus saat render pertama kali */
+.adash-stat:nth-child(1){ animation:adashRowIn .45s .02s cubic-bezier(.2,.8,.3,1) both; }
+.adash-stat:nth-child(2){ animation:adashRowIn .45s .07s cubic-bezier(.2,.8,.3,1) both; }
+.adash-stat:nth-child(3){ animation:adashRowIn .45s .12s cubic-bezier(.2,.8,.3,1) both; }
+.adash-stat:nth-child(4){ animation:adashRowIn .45s .17s cubic-bezier(.2,.8,.3,1) both; }
+.adash-stat:nth-child(5){ animation:adashRowIn .45s .22s cubic-bezier(.2,.8,.3,1) both; }
+
+/* Kartu ke-2 = "Dana Terkumpul": diberi penekanan visual sebagai
+   metrik utama dasbor — border gradien berdenyut pelan + angka
+   sedikit lebih besar. Tidak butuh ubah HTML/JS sama sekali. */
+@media (min-width:640px){
+  .adash-stat:nth-child(2){
+    grid-column:span 2;
+    background:linear-gradient(120deg, rgba(15,216,184,.09), rgba(18,169,224,.07));
+    border-color:rgba(15,216,184,.28);
+  }
+  .adash-stat:nth-child(2) .adash-stat-txt span{ font-size:24px; }
+  .adash-stat:nth-child(2) .adash-stat-icon{
+    width:50px; height:50px; font-size:19px;
+    animation:adashBeacon 2.6s ease-in-out infinite;
+  }
+}
+
+@media (min-width:1300px){
+  .adash-stat:nth-child(2){ grid-column:span 1; }
+}
+
+.adash-stat-icon{ transition:transform .3s cubic-bezier(.2,.8,.3,1); }
+.adash-stat:hover .adash-stat-icon{ transform:scale(1.08) rotate(-4deg); }
+
+@media (prefers-reduced-motion: reduce){
+  .adash-stat, .adash-stats, .adash-stat-icon{ animation:none !important; transition:none !important; }
+}
+
+/* =========================================================
+   6. TOOLBAR — di HP, chip filter jadi scroll horizontal
+   dengan snap (bukan tumpuk ke bawah memenuhi layar).
+========================================================= */
+@media (max-width:640px){
+  .adash-filters{
+    flex-wrap:nowrap; overflow-x:auto; scroll-snap-type:x proximity;
+    padding-bottom:2px; margin:0 -2px; -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .adash-filters::-webkit-scrollbar{ display:none; }
+  .adash-chip{ scroll-snap-align:start; flex-shrink:0; }
+}
+
+.adash-chip{ position:relative; }
+.adash-chip.active{ animation:adashFadeUp .25s ease both; }
+
+/* =========================================================
+   7. DAFTAR PESERTA — kartu diberi garis aksen kiri sesuai
+   status pembayarannya (langsung kelihatan sekilas tanpa perlu
+   baca teks), pakai :has() jadi tidak perlu ubah admin-script.js.
+========================================================= */
+.admin-list{ scroll-behavior:smooth; }
+
+.admin-row{
+  border-left:3px solid transparent;
+  padding-left:16px;
+}
+
+.admin-row:has(.badge-warn){ border-left-color:#F0B429; }
+.admin-row:has(.badge-info){ border-left-color:var(--aqua); }
+.admin-row:has(.badge-success){ border-left-color:var(--teal); }
+
+/* Stagger masuk untuk 12 kartu pertama yang terlihat */
+.admin-row{ animation:adashRowIn .4s cubic-bezier(.2,.8,.3,1) both; }
+.admin-row:nth-child(1){ animation-delay:.02s; }
+.admin-row:nth-child(2){ animation-delay:.05s; }
+.admin-row:nth-child(3){ animation-delay:.08s; }
+.admin-row:nth-child(4){ animation-delay:.11s; }
+.admin-row:nth-child(5){ animation-delay:.14s; }
+.admin-row:nth-child(6){ animation-delay:.17s; }
+.admin-row:nth-child(n+7){ animation-delay:.2s; }
+
+.admin-row-avatar{ transition:transform .25s cubic-bezier(.2,.8,.3,1); }
+.admin-row:hover .admin-row-avatar{ transform:scale(1.06); }
+
+.admin-row-progress-fill{
+  background-image:linear-gradient(90deg, var(--aqua), var(--teal), var(--aqua));
+  background-size:200% 100%;
+  animation:adashShimmer 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .admin-row, .admin-row-avatar, .admin-row-progress-fill{ animation:none !important; transition:none !important; }
+}
+
+/* Scrollbar custom untuk daftar peserta (tetap tipis & tidak norak) */
+.admin-list::-webkit-scrollbar{ width:7px; }
+.admin-list::-webkit-scrollbar-track{ background:transparent; }
+.admin-list::-webkit-scrollbar-thumb{ background:rgba(18,169,224,.3); border-radius:10px; }
+.admin-list::-webkit-scrollbar-thumb:hover{ background:rgba(18,169,224,.5); }
+.admin-list{ scrollbar-width:thin; scrollbar-color:rgba(18,169,224,.35) transparent; }
+
+/* =========================================================
+   8. RIWAYAT AKTIVITAS — daftar riwayat & search box lebih rapi
+========================================================= */
+.history-box::-webkit-scrollbar{ width:7px; }
+.history-box::-webkit-scrollbar-thumb{ background:rgba(18,169,224,.3); border-radius:10px; }
+
+.admin-history-item{
+  transition:background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.admin-history-item:hover{ background:rgba(18,169,224,.06); border-color:rgba(18,169,224,.28); transform:translateX(2px); }
+
+#adminHistorySearch, .admin-history-search input{
+  transition:var(--transition);
+}
+
+/* =========================================================
+   9. MODAL KONFIRMASI GENERIK & TAMBAH PESERTA — entrance spring
+========================================================= */
+.confirm-overlay .confirm-box{
+  animation:none; /* dipakai transisi transform bawaan style.css, cukup */
+}
+
+.addpeserta-box{
+  animation:none;
+}
+
+/* =========================================================
+   10. LOGIN SCREEN — sedikit penyegaran supaya konsisten
+   dengan nuansa "ruang kontrol" dasbor di baliknya.
+========================================================= */
+.admin-icon::after{ animation:spinCw 10s linear infinite; }
+
+@media (prefers-reduced-motion: reduce){
+  .admin-icon::after{ animation:none; }
+}
+
+.admin-login{ animation:adashSpring .5s cubic-bezier(.2,.8,.3,1) both; }
+
+@media (prefers-reduced-motion: reduce){
+  .admin-login{ animation:none; }
+}
+
+/* =========================================================
+   11. RESPONSIVE — ruang napas ekstra di layar sangat lebar,
+   dan kepadatan pas di HP.
+========================================================= */
+@media (min-width:1300px){
+  .admin-overlay{ padding-top:40px; }
+}
+
+@media (min-width:1600px){
+  .admin-overlay.admin-dash-mode .admin-box{ max-width:1560px; }
+  .admin-list{ grid-template-columns:repeat(3, 1fr); }
+}
+
+@media (max-width:640px){
+  .admin-overlay{ padding:14px 10px 32px; }
+  .admin-row{ padding-left:14px; }
+  .admin-row-actions-primary .admin-action-btn{ flex:1 1 auto; justify-content:center; }
+}
+
+@media (max-width:400px){
+  .adash-stat{ padding:13px; gap:9px; }
+  .adash-stat-icon{ width:38px; height:38px; min-width:38px; font-size:15px; }
+}
+
+/* Fokus keyboard tetap jelas di seluruh dasbor (aksesibilitas) */
+.admin-overlay :focus-visible{
+  outline:2.5px solid var(--aqua); outline-offset:2px; border-radius:8px;
 }
