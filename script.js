@@ -2542,4 +2542,23 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     }
   });
 
+  /* =========================================================
+     BUBBLE AJAKAN IKON CATUR 3D — tampil SEKALI saja per
+     pengunjung (ditandai lewat localStorage), muncul singkat
+     ~2 detik setelah halaman dimuat, lalu memudar sendiri
+     lewat animasi CSS (.chess-fab-callout.show).
+  ========================================================= */
+  (function initChessCallout(){
+    const callout = document.getElementById('chessFabCallout');
+    if (!callout) return;
+    const KEY = 'lokonChessCalloutSeen';
+    try {
+      if (sessionStorage.getItem(KEY)) return;
+    } catch { /* sessionStorage diblokir browser — anggap saja belum pernah lihat */ }
+    setTimeout(() => {
+      callout.classList.add('show');
+      try { sessionStorage.setItem(KEY, '1'); } catch {}
+    }, 2200);
+  })();
+
 });
