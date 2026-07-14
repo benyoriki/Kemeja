@@ -2853,34 +2853,15 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
   //   login ulang tiap buka halaman.
   // - Kalau sesi berakhir/di-logout dari perangkat lain, dasbor otomatis
   //   ikut tertutup di sini juga.
-  // Buka dasbor admin (halaman terpisah admin/index.html) di TAB BARU.
-  // `preOpenedWin` (kalau ada) adalah tab kosong yang sudah dibuka LEBIH
-  // DULU secara sinkron saat tombol diklik (supaya tidak diblokir oleh
-  // popup blocker browser, karena window.open harus terjadi langsung
-  // dalam event klik, bukan setelah proses login async selesai).
-  function openAdminDashboardTab(preOpenedWin){
-    const url = 'admin/index.html';
-    let win = preOpenedWin;
-    if (win && !win.closed){
-      win.location.href = url;
-    } else {
-      win = window.open(url, '_blank', 'noopener');
-    }
-    if (!win){
-      // Popup diblokir browser — tampilkan tautan manual sebagai cadangan.
-      adminLoginError.innerHTML = 'Popup diblokir browser. <a href="' + url + '" target="_blank" rel="noopener" style="text-decoration:underline;font-weight:600;">Ketuk di sini untuk buka Dasbor Admin</a>.';
-    }
-    return win;
-  }
-
   function watchAdminAuthState(fb){
     fb.onAuthStateChanged(fb.auth, (user) => {
       if (user && adminOverlay.classList.contains('active') && !adminUnlocked){
-        // Sesi Firebase Auth admin masih tersimpan (login sebelumnya) —
-        // langsung buka dasbor admin (halaman terpisah) di tab baru,
-        // lalu tutup modal login di situs publik.
-        openAdminDashboardTab();
-        closeAdminModal();
+        adminUnlocked = true;
+        adminLogin.style.display = 'none';
+        adminPanel.style.display = 'block';
+        adminOverlay.classList.add('admin-dash-mode');
+        startAdminClock();
+        renderAdminList();
       } else if (!user && adminUnlocked){
         adminUnlocked = false;
         adminOverlay.classList.remove('admin-dash-mode');
@@ -2924,17 +2905,10 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
 
     adminLoginBtn.disabled = true;
     adminLoginError.textContent = '';
-
-    // PENTING: buka tab kosong SEKARANG (langsung di dalam event klik),
-    // supaya browser tidak menganggapnya popup liar. Nanti diarahkan ke
-    // admin/index.html setelah login Firebase berhasil.
-    const preOpenedWin = window.open('', '_blank');
-
     const fb = await waitForFirebase(8000);
     if (!fb || !fb.auth){
       adminLoginError.textContent = 'Tidak bisa terhubung ke server login. Cek koneksi internet lalu coba lagi.';
       adminLoginBtn.disabled = false;
-      preOpenedWin?.close();
       return;
     }
 
@@ -2943,16 +2917,14 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       // dicocokkan manual di JavaScript. Akun admin dibuat lewat
       // Firebase Console > Authentication > Users.
       await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+      adminUnlocked = true;
+      adminLogin.style.display = 'none';
+      adminPanel.style.display = 'block';
+      adminOverlay.classList.add('admin-dash-mode');
+      startAdminClock();
+      renderAdminList();
       logAdminAction('login', 'Admin berhasil masuk ke dasbor.', email);
-      // Dasbor admin sekarang halaman terpisah (admin/index.html) dengan
-      // kode & tampilannya sendiri. Setelah login sukses di sini, langsung
-      // buka dasbor tsb di TAB BARU, lalu tutup modal login di situs publik.
-      openAdminDashboardTab(preOpenedWin);
-      adminLoginBtn.disabled = false;
-      closeAdminModal();
-      return;
     } catch (err){
-      preOpenedWin?.close();
       console.warn('Login admin gagal:', err.code, err.message);
       const map = {
         'auth/invalid-email': 'Format email tidak valid.',
