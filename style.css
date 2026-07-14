@@ -2125,6 +2125,10 @@ body.peserta-modal-lock{ overflow:hidden; }
     max-width:1160px; max-height:96vh; padding:26px 26px 34px; margin-top:2vh;
 }
 
+@media (min-width:1300px){
+  .admin-overlay.admin-dash-mode .admin-box{ max-width:1420px; }
+}
+
 @media (max-width:640px){
   .admin-overlay.admin-dash-mode .admin-box{ padding:18px 14px 24px; border-radius:22px; }
 }
@@ -2246,15 +2250,21 @@ body.peserta-modal-lock{ overflow:hidden; }
 ========================================== */
 .admin-panel{ display:none; }
 
-/* ---- Header dasbor: logo, jam, aksi ---- */
+/* ---- Header dasbor: logo, jam, aksi ----
+   PENTING: header ini sticky (nempel di atas saat area dasbor digeser),
+   jadi wajib SOLID/opaque — sebelumnya cuma 3% opacity + blur, akibatnya
+   warna ikon statistik (amber/ungu dsb) di baris bawahnya "tembus"
+   kelihatan blur di belakang header saat discroll, jadi terlihat kotor/
+   tidak rapi. Sekarang dibuat solid gelap + shadow tegas di bawahnya
+   supaya jadi lapisan yang benar-benar terpisah dari konten di bawah. */
 .adash-header{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
-    flex-wrap:wrap; margin:-26px -26px 22px; padding:20px 26px; border-bottom:1px solid var(--line);
-    background:rgba(255,255,255,.03); position:sticky; top:-26px; z-index:3;
-    backdrop-filter:blur(10px);
+    flex-wrap:wrap; margin:-26px -26px 22px; padding:18px 26px; border-bottom:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, #0E2440 0%, #0B1D35 100%); position:sticky; top:-26px; z-index:20;
+    backdrop-filter:blur(16px); box-shadow:0 14px 26px -10px rgba(2,8,18,.55);
 }
 
-@media (max-width:640px){ .adash-header{ margin:-18px -14px 18px; padding:16px 14px; top:-18px; } }
+@media (max-width:640px){ .adash-header{ margin:-18px -14px 16px; padding:14px 14px; top:-18px; } }
 
 .adash-header-left{ display:flex; align-items:center; gap:14px; }
 
@@ -2276,7 +2286,14 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .adash-header-left p{ font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin:0; }
 
-.adash-header-right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.adash-header-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+
+/* Kelompok tombol dipisah pembatas vertikal tipis supaya "aksi netral"
+   (refresh/export/riwayat) terlihat jelas beda kelompok dari "aksi
+   penting" (reset chat/keluar) — bukan cuma tumpukan tombol acak. */
+.adash-btn-group{ display:flex; align-items:center; gap:8px; }
+.adash-btn-divider{ width:1px; align-self:stretch; min-height:26px; background:rgba(255,255,255,.12); margin:0 2px; }
+@media (max-width:560px){ .adash-btn-divider{ display:none; } .adash-header-right{ gap:8px; } }
 
 .adash-icon-btn{
     width:42px; height:42px; min-width:42px; flex-shrink:0; border-radius:14px; background:var(--foam); border:1px solid var(--line);
@@ -2461,8 +2478,18 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .adash-stat-txt p{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
 
-/* ---- Toolbar: pencarian & filter chip ---- */
-.adash-toolbar{ display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+/* ---- Toolbar: pencarian & filter chip ----
+   Di PC/tablet lebar, pencarian & filter ditata SEJAJAR (bukan
+   ditumpuk ke bawah) supaya semuanya kelihatan & bisa diakses dalam
+   satu pandangan tanpa scroll — pencarian melebar secukupnya, filter
+   chip rapat di sebelah kanannya. Di HP tetap ditumpuk seperti semula. */
+.adash-toolbar{ display:flex; flex-direction:column; gap:12px; margin-bottom:20px; position:sticky; top:78px; z-index:10; background:var(--foam); padding:10px 0; margin-top:-2px; }
+
+@media (min-width:860px){
+  .adash-toolbar{ flex-direction:row; align-items:center; top:86px; }
+  .adash-search{ flex:0 0 300px; }
+  .adash-filters{ flex:1; justify-content:flex-end; }
+}
 
 .adash-search{
     display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border:1.5px solid var(--border);
@@ -2506,6 +2533,10 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 @media (min-width:860px){
   .admin-list{ grid-template-columns:repeat(2, 1fr); align-items:start; }
+}
+
+@media (min-width:1300px){
+  .admin-list{ grid-template-columns:repeat(3, 1fr); }
 }
 
 .admin-row{
@@ -2598,8 +2629,6 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .admin-action-ubahstatus{ background:rgba(155,120,255,.14); color:#8A5CF6; border-color:rgba(155,120,255,.25); }
 .admin-action-ubahstatus:hover{ background:#8A5CF6; color:#fff; border-color:transparent; }
-
-.admin-done{ font-size:12px; color:var(--teal); font-weight:600; display:inline-flex; align-items:center; gap:6px; }
 
 /* ---- Aksi ikon bulat (Chat WA / Edit / Hapus) — ringkas, tidak
    memenuhi layar di HP seperti tombol teks penuh sebelumnya. ---- */
