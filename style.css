@@ -1619,6 +1619,82 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
    sudah Lunas, kotak "Peserta Lainnya" di bawah tetap penuh
    kelihatan — dua kelompok tidak pernah saling menutupi lagi.
 ========================================================= */
+/* =========================================================
+   RUNNING TEXT "SUDAH LUNAS" — teks berjalan ringan berisi nama
+   peserta yang sudah Lunas, ditempatkan di bawah progress bar untuk
+   memotivasi peserta yang belum bayar. Animasi HANYA mengubah
+   `transform` (translateX) lewat CSS keyframes murni — tidak ada
+   loop JS per-frame — supaya tetap mulus & ringan di HP maupun PC.
+   Konten digandakan 2x oleh JS supaya loop terlihat menyambung
+   tanpa "patah" saat kembali ke awal.
+========================================================= */
+.lunas-marquee-wrap{
+    position:relative; display:flex; align-items:center; gap:12px;
+    margin-bottom:18px; padding:9px 9px 9px 4px; border-radius:999px;
+    background:linear-gradient(90deg, #FFF7E3 0%, #FFEFC7 55%, #FFF7E3 100%);
+    border:1.5px solid rgba(240,180,41,.4);
+    box-shadow:0 8px 22px rgba(201,138,12,.14);
+}
+[data-theme="dark"] .lunas-marquee-wrap{
+    background:linear-gradient(90deg, #2A2107 0%, #3A2C08 55%, #2A2107 100%);
+    border-color:rgba(240,180,41,.3);
+    box-shadow:0 8px 22px rgba(0,0,0,.3);
+}
+.lunas-marquee-tag{
+    flex:0 0 auto; display:flex; align-items:center; gap:6px;
+    font-size:12.5px; font-weight:800; color:#8A6410; white-space:nowrap;
+    background:#fff; border:1px solid rgba(240,180,41,.55); border-radius:999px;
+    padding:7px 13px; box-shadow:0 2px 8px rgba(201,138,12,.16); z-index:1;
+}
+[data-theme="dark"] .lunas-marquee-tag{ color:#F0C24A; background:#241C06; border-color:rgba(240,180,41,.4); }
+.lunas-marquee-tag i{ color:#F0C24A; }
+
+.lunas-marquee-mask{
+    flex:1 1 auto; min-width:0; overflow:hidden;
+    /* Fade halus di kedua ujung supaya teks yang masuk/keluar terasa
+       mulus, bukan terpotong tegas. */
+    -webkit-mask-image:linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+            mask-image:linear-gradient(90deg, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+.lunas-marquee-track{
+    display:flex; align-items:center; gap:26px; width:max-content;
+    animation:lunasMarqueeScroll linear infinite;
+    animation-duration:var(--lunas-marquee-duration, 22s);
+}
+/* Jeda saat disentuh/hover — nyaman dibaca tanpa menghentikan
+   selamanya (lepas tetap lanjut jalan). */
+.lunas-marquee-wrap:hover .lunas-marquee-track{ animation-play-state:paused; }
+
+@keyframes lunasMarqueeScroll{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-50%); }
+}
+
+.lunas-marquee-item{
+    flex:0 0 auto; display:flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:700; color:#7A5B10; white-space:nowrap;
+}
+[data-theme="dark"] .lunas-marquee-item{ color:#E8C978; }
+.lunas-marquee-item .lmi-avatar{
+    flex:0 0 auto; width:22px; height:22px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-size:9.5px; font-weight:800;
+    color:#fff; background:linear-gradient(135deg, #F0C24A, #C98A0C);
+}
+.lunas-marquee-item .lmi-dept{ font-weight:500; color:#9A7418; opacity:.85; }
+[data-theme="dark"] .lunas-marquee-item .lmi-dept{ color:#C9A050; }
+.lunas-marquee-item i{ color:#2FAE66; font-size:12px; }
+.lunas-marquee-dot{ flex:0 0 auto; width:4px; height:4px; border-radius:50%; background:rgba(201,138,12,.4); }
+
+@media (max-width:640px){
+    .lunas-marquee-wrap{ padding:7px 7px 7px 4px; gap:8px; }
+    .lunas-marquee-tag{ font-size:11px; padding:6px 10px; }
+    .lunas-marquee-item{ font-size:12px; gap:6px; }
+}
+@media (prefers-reduced-motion: reduce){
+    .lunas-marquee-track{ animation:none; }
+    .lunas-marquee-mask{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+}
+
 .lunas-showcase{
     position:relative; overflow:hidden; border-radius:24px; padding:20px 0 18px;
     margin-bottom:18px;

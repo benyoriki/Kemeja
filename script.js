@@ -1412,6 +1412,8 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
   const lunasShowcase = document.getElementById('lunasShowcase');
   const lunasShowcaseTrack = document.getElementById('lunasShowcaseTrack');
   const lunasShowcaseHint = document.getElementById('lunasShowcaseHint');
+  const lunasMarqueeWrap = document.getElementById('lunasMarqueeWrap');
+  const lunasMarqueeTrack = document.getElementById('lunasMarqueeTrack');
   const statTotal = document.getElementById('statTotal');
   const statMenunggu = document.getElementById('statMenunggu');
   const statCicilan = document.getElementById('statCicilan');
@@ -1480,6 +1482,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
     const othersList = currentFilter === 'lunas' ? [] : list.filter(p => p.pembayaran?.status !== 'lunas');
 
     renderLunasShowcase(lunasList);
+    renderLunasMarquee(lunasList);
 
     pesertaGrid.innerHTML = '';
     if (othersList.length === 0){
@@ -1599,6 +1602,56 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
         cards.forEach(c => c.classList.add('show'));
       });
     });
+  }
+
+  /* =========================================================
+     18b-2. RUNNING TEXT "SUDAH LUNAS" (marquee)
+     Teks berjalan ringan berisi nama peserta Lunas, ditempatkan di
+     bawah progress bar (lihat index.html, section #progress) supaya
+     jadi bukti sosial yang memotivasi peserta yang belum bayar.
+
+     Catatan performa: listener Firestore bisa memicu render ulang
+     cukup sering. Supaya animasi marquee tidak "loncat"/reset tiap
+     kali data disegarkan padahal daftar Lunas-nya sama saja, DOM
+     track HANYA dibangun ulang kalau kombinasi id peserta Lunas
+     benar-benar berubah (dicek lewat signature sederhana).
+  ========================================================= */
+  let lunasMarqueeSignature = '';
+  function renderLunasMarquee(lunasList){
+    if (!lunasMarqueeWrap || !lunasMarqueeTrack) return;
+
+    if (!lunasList || lunasList.length === 0){
+      lunasMarqueeWrap.style.display = 'none';
+      lunasMarqueeTrack.innerHTML = '';
+      lunasMarqueeSignature = '';
+      return;
+    }
+
+    const signature = lunasList.map(p => p.id).join(',');
+    lunasMarqueeWrap.style.display = 'flex';
+    if (signature === lunasMarqueeSignature) return; // datanya sama, tidak perlu render ulang
+    lunasMarqueeSignature = signature;
+
+    const buatChip = (p) => `
+      <span class="lunas-marquee-item">
+        <span class="lmi-avatar">${initialsOf(p.nama)}</span>
+        <i class="fa-solid fa-circle-check"></i>
+        <span>${escapeHtml(p.nama || '-')}</span>
+        <span class="lmi-dept">${escapeHtml(p.departemen || '-')}</span>
+      </span>
+      <span class="lunas-marquee-dot" aria-hidden="true"></span>
+    `;
+
+    // Konten digandakan 2x berturut-turut supaya animasi translateX(-50%)
+    // terlihat menyambung mulus tanpa jeda/patah saat mengulang dari awal.
+    const chipsHtml = lunasList.map(buatChip).join('');
+    lunasMarqueeTrack.innerHTML = chipsHtml + chipsHtml;
+
+    // Kecepatan disesuaikan dengan jumlah peserta supaya jarak antar nama
+    // terasa konsisten (kira-kira ~3.4 detik per peserta), dibatasi supaya
+    // tidak terlalu cepat (peserta sedikit) atau terlalu lambat (banyak).
+    const durasi = Math.min(48, Math.max(10, lunasList.length * 3.4));
+    lunasMarqueeTrack.style.setProperty('--lunas-marquee-duration', durasi + 's');
   }
 
   /* =========================================================
@@ -2316,6 +2369,17 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
   }
   renderChatPermission();
 
+  // PERBAIKAN: sebelumnya listener chat baru mulai jalan SAAT panel chat
+  // dibuka pertama kali (lihat startChatListener() di dalam openChatPanel()).
+  // Akibatnya, badge notifikasi "pesan belum dibaca" di ikon chat TIDAK
+  // PERNAH muncul untuk pengunjung yang belum pernah membuka panel chat-nya
+  // sama sekali — padahal justru merekalah yang paling butuh diberitahu ada
+  // pesan baru. Sekarang listener langsung dimulai begitu halaman dimuat
+  // (fungsinya sendiri sudah aman dipanggil lebih awal — ia menunggu
+  // Firebase siap dulu lewat waitForFirebase()), supaya badge unread &
+  // suara notifikasi langsung aktif sejak awal, bukan cuma setelah dibuka.
+  startChatListener();
+
   // Membuat 1 elemen bubble pesan. animate=false dipakai saat rebuild
   // penuh (login/logout/reset) supaya tidak semua bubble ikut memutar
   // ulang animasi "masuk" sekaligus — cukup berat kalau pesannya banyak.
@@ -2416,6 +2480,12 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
         if (!chatFirstLoad && !mine){
           playChatSound();
           notifyNewChatMessage(msg);
+          // Getaran singkat di HP kalau tab sedang tidak aktif dilihat —
+          // pelengkap ringan untuk notifikasi suara, tidak dipanggil
+          // sama sekali kalau device tidak mendukung getaran (aman di semua browser).
+          if (chatSoundOn && document.hidden && navigator.vibrate){
+            try { navigator.vibrate([70, 40, 70]); } catch (err) { /* diabaikan */ }
+          }
         }
       }
     });
@@ -3401,16 +3471,42 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
 
   let editingPesertaId = null;
 
+  const apMetodeRadios = document.querySelectorAll('input[name="apMetode"]');
+  const apMetodeNoteEl = document.getElementById('apMetodeNote');
+
+  function getMetodeBayarAdmin(){
+    return document.querySelector('input[name="apMetode"]:checked')?.value || 'tunai';
+  }
+
+  // PERBAIKAN: sebelumnya fungsi ini tidak pernah membaca pilihan Metode
+  // Pembayaran (apMetode) sama sekali, jadi Total Harga di modal Edit
+  // selalu hanya harga x jumlah — biaya admin cicilan tidak pernah ikut
+  // dihitung ulang di sini walau radio-nya kelihatan bisa dipilih.
+  // Sekarang subtotal, biaya admin, dan total dihitung persis sama
+  // seperti di formulir pendaftaran publik (lihat hitungTotal()), supaya
+  // kalau admin memperbaiki metode bayar yang salah dipilih peserta,
+  // angkanya konsisten dari sini sampai ke Firestore.
   function hitungTotalAdmin(){
     const checked = document.querySelector('input[name="apJenis"]:checked');
     const harga = checked ? parseInt(checked.dataset.harga, 10) : 0;
     const jumlah = parseInt(apJumlahInput?.value, 10) || 0;
-    const total = harga * jumlah;
+    const subtotal = harga * jumlah;
+    const metode = getMetodeBayarAdmin();
+    const isCicilan = metode === 'cicilan';
+    const biayaAdmin = isCicilan ? ADMIN_FEE_CICILAN : 0;
+    const total = subtotal + biayaAdmin;
+
     if (apTotalHargaEl) apTotalHargaEl.textContent = formatRupiah(total);
-    return { harga, total };
+    if (apMetodeNoteEl){
+      apMetodeNoteEl.innerHTML = isCicilan
+        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
+    }
+    return { harga, jumlah, subtotal, metode, biayaAdmin, total };
   }
   apJenisRadios.forEach(r => r.addEventListener('change', hitungTotalAdmin));
   apJumlahInput?.addEventListener('input', hitungTotalAdmin);
+  apMetodeRadios.forEach(r => r.addEventListener('change', hitungTotalAdmin));
 
   function openEditPesertaModal(id){
     const p = pesertaData.find(x => x.id === id);
@@ -3453,10 +3549,14 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
 
   /* ============ SIMPAN PERUBAHAN (UPDATE) KE FIRESTORE ============
      Catatan: status pembayaran (pembayaran.status, dpDibayar, dsb)
-     SENGAJA tidak disentuh di sini supaya mengedit data biodata/ukuran
-     tidak pernah tidak sengaja mereset status DP/Lunas yang sudah
-     tercatat. Ubah status pembayaran lewat tombol "Tandai DP/Lunas"
-     di kartu peserta seperti biasa. */
+     TIDAK disentuh di sini KECUALI admin memang sengaja mengubah
+     Metode Pembayaran (mis. peserta salah pilih "Tunai/Lunas Langsung"
+     padahal maksudnya "2x Cicilan"). Kalau metode-nya tidak diubah,
+     mengedit data biodata/ukuran tetap tidak akan pernah tidak sengaja
+     mereset status DP/Lunas yang sudah tercatat — persis seperti
+     sebelumnya. Ubah status pembayaran (tanpa ganti metode) tetap lewat
+     tombol "Tandai DP/Lunas" / "Ubah Status" di kartu peserta seperti
+     biasa. */
   async function updatePesertaAdmin(id, data){
     const fb = await waitForFirebase(10000);
     if (!fb){
@@ -3473,10 +3573,17 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       jenis: data.jenis,
       jumlah: data.jumlah,
       harga: data.harga,
+      subtotal: data.subtotal,
+      biayaAdmin: data.biayaAdmin,
       total: data.total,
       catatan: data.catatan || '-',
       adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date()
     };
+    // Hanya disertakan kalau metode pembayaran benar-benar diubah admin
+    // (lihat pembangunan `dataBaru.pembayaranBaru` di submit handler).
+    if (data.pembayaranBaru){
+      patch.pembayaran = data.pembayaranBaru;
+    }
     try {
       await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), patch);
       showToast(`Data "${data.nama}" berhasil diperbarui.`, 'success');
@@ -3563,21 +3670,38 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     const jenisChecked = document.querySelector('input[name="apJenis"]:checked');
     const jenis = jenisChecked?.value === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
     const catatan = document.getElementById('apCatatan').value.trim();
-    const { harga, total } = hitungTotalAdmin();
+    const { harga, subtotal, metode, biayaAdmin, total } = hitungTotalAdmin();
 
     if (!nama || !ukuranKemeja){
       addPesertaError.textContent = 'Nama dan Ukuran wajib diisi.';
       return;
     }
 
+    const pLama = pesertaData.find(x => x.id === editingPesertaId) || {};
+    const metodeLama = pLama.pembayaran?.metode === 'cicilan' ? 'cicilan' : 'tunai';
+    const metodeBerubah = metodeLama !== metode;
+    const labelMetode = m => m === 'cicilan' ? '2x Cicilan' : 'Tunai / Lunas';
+
+    // ---- FITUR BARU: perbaikan Metode Pembayaran yang salah dipilih peserta ----
+    // Kalau admin mengubah Metode Pembayaran lewat modal Edit ini (mis. peserta
+    // tadinya salah pilih "Tunai/Lunas Langsung" padahal maksudnya "2x Cicilan"),
+    // status pembayaran & biaya admin ikut dihitung ulang dari awal untuk metode
+    // yang baru — memakai fungsi buildPembayaranAwal yang sama persis dipakai
+    // saat peserta pertama kali mendaftar, supaya konsisten dengan sisa kode
+    // (label status, Dana Terkumpul, struk, dsb).
+    let pembayaranBaru = null;
+    if (metodeBerubah){
+      pembayaranBaru = buildPembayaranAwal(subtotal, metode, biayaAdmin);
+    }
+
     const dataBaru = {
       nama, namaBordir,
       whatsapp: whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '',
-      departemen, gender, ukuranKemeja, jenis, jumlah, harga, total, catatan
+      departemen, gender, ukuranKemeja, jenis, jumlah, harga, subtotal, biayaAdmin, total, catatan,
+      pembayaranBaru
     };
 
     // ---- Bangun daftar perubahan (diff) untuk ditampilkan di popup konfirmasi ----
-    const pLama = pesertaData.find(x => x.id === editingPesertaId) || {};
     const bandingan = [
       ['Nama', pLama.nama || '-', dataBaru.nama || '-'],
       ['Nama Bordir', pLama.namaBordir || '-', dataBaru.namaBordir || '-'],
@@ -3586,6 +3710,8 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       ['Ukuran', pLama.ukuranKemeja || '-', dataBaru.ukuranKemeja || '-'],
       ['Jenis Kemeja', pLama.jenis || '-', dataBaru.jenis || '-'],
       ['Jumlah', String(pLama.jumlah || 0), String(dataBaru.jumlah || 0)],
+      ['Metode Bayar', labelMetode(metodeLama), labelMetode(metode)],
+      ['Biaya Admin', formatRupiah(pLama.biayaAdmin || pLama.pembayaran?.biayaAdmin || 0), formatRupiah(dataBaru.biayaAdmin || 0)],
       ['Total', formatRupiah(pLama.total || 0), formatRupiah(dataBaru.total || 0)],
       ['Catatan', pLama.catatan || '-', dataBaru.catatan || '-']
     ].filter(([, lama, baru]) => String(lama) !== String(baru));
@@ -3599,10 +3725,24 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       `<div class="agc-diff-row"><span class="agc-diff-label">${escapeHtml(label)}</span><span>${escapeHtml(lama)} <span class="agc-arrow">→</span> ${escapeHtml(baru)}</span></div>`
     ).join('');
 
+    // Kalau metode berubah DAN peserta ini sebelumnya sudah punya progres
+    // pembayaran (bukan 'belum_dp'), beri peringatan tegas — status & jumlah
+    // yang sudah tercatat akan direset ke "Menunggu DP" mengikuti metode baru,
+    // supaya admin tidak kaget dan bisa cek ulang manual ke peserta dulu kalau perlu.
+    let peringatanMetodeHtml = '';
+    if (metodeBerubah){
+      const statusLamaLabel = STATUS_LABEL[pLama.pembayaran?.status || 'belum_dp']?.label || 'Menunggu DP';
+      const sudahAdaProgres = (pLama.pembayaran?.status || 'belum_dp') !== 'belum_dp';
+      peringatanMetodeHtml = sudahAdaProgres
+        ? `<p style="margin-top:12px;color:#b45309;"><i class="fa-solid fa-triangle-exclamation"></i> Peserta ini sebelumnya berstatus <b>"${escapeHtml(statusLamaLabel)}"</b> dengan total terbayar <b>${formatRupiah(pLama.pembayaran?.totalDibayar || 0)}</b>. Mengubah Metode Pembayaran akan <b>mereset status ke "Menunggu DP"</b> mengikuti metode baru (${escapeHtml(labelMetode(metode))}). Pastikan sudah dicek ulang ke peserta sebelum disimpan.</p>`
+        : `<p style="margin-top:12px;">Metode Pembayaran akan disesuaikan menjadi <b>${escapeHtml(labelMetode(metode))}</b>, dan status pembayaran akan diatur ke "Menunggu DP" sesuai metode baru.</p>`;
+    }
+
     const confirmed = await showAdminConfirm({
       title: 'Simpan Perubahan Data Peserta?',
-      messageHtml: `<p style="margin-bottom:10px;">Data <b>${escapeHtml(pLama.nama || nama)}</b> (${escapeHtml(pLama.kodeUnik || '-')}) akan diubah sebagai berikut:</p>${diffHtml}`,
-      confirmLabel: 'Ya, Simpan Perubahan'
+      messageHtml: `<p style="margin-bottom:10px;">Data <b>${escapeHtml(pLama.nama || nama)}</b> (${escapeHtml(pLama.kodeUnik || '-')}) akan diubah sebagai berikut:</p>${diffHtml}${peringatanMetodeHtml}`,
+      confirmLabel: 'Ya, Simpan Perubahan',
+      danger: metodeBerubah && (pLama.pembayaran?.status || 'belum_dp') !== 'belum_dp'
     });
     if (!confirmed) return;
 
