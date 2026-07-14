@@ -2201,6 +2201,19 @@ body.peserta-modal-lock{ overflow:hidden; }
 }
 [data-theme="dark"] .agc-status-select{ background:var(--foam); color:var(--ink); }
 
+/* ---- Input nominal DP manual (dasbor admin) ---- */
+.agc-dp-input-wrap{ margin-top:12px; }
+.agc-dp-input-wrap label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+.agc-dp-input{
+  width:100%; padding:12px 14px; border-radius:12px; border:1.5px solid rgba(120,120,120,.3);
+  font-size:16px; font-weight:700; background:var(--white); color:var(--ink);
+  font-family:var(--font-body); transition:border-color .2s ease, box-shadow .2s ease;
+}
+.agc-dp-input:focus{ outline:none; border-color:var(--blue-1, #12A9E0); box-shadow:0 0 0 3px rgba(18,169,224,.15); }
+[data-theme="dark"] .agc-dp-input{ background:var(--foam); color:var(--ink); }
+.agc-dp-hint{ display:block; margin-top:8px; font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+.agc-dp-hint b{ color:#C98A0E; }
+
 /* ---- Riwayat Aktivitas Admin ---- */
 .history-box{ max-width:640px; width:100%; text-align:left; max-height:88vh; overflow-y:auto; }
 .admin-history-list{ display:flex; flex-direction:column; gap:10px; }
@@ -2370,6 +2383,18 @@ body.peserta-modal-lock{ overflow:hidden; }
 .admin-row-progress-fill{ height:100%; background:var(--gradient-brand); border-radius:6px; transition:width .4s ease; }
 
 .admin-row-progress span{ font-size:11px; color:var(--ink-soft); display:block; margin-top:5px; }
+
+/* ---- Chip "Sisa pembayaran ke-2" — dibuat menonjol (amber) supaya admin
+   langsung lihat berapa yang masih perlu ditagih ke peserta cicilan ---- */
+.admin-row-sisa{
+    display:inline-flex !important; align-items:center; gap:6px;
+    background:rgba(240,180,41,.14); color:#B9790C; border:1px solid rgba(240,180,41,.4);
+    border-radius:999px; padding:5px 12px; font-size:12px !important; font-weight:600;
+    margin-top:8px !important;
+}
+.admin-row-sisa i{ font-size:11px; }
+.admin-row-sisa b{ font-family:var(--font-mono); font-weight:800; }
+[data-theme="dark"] .admin-row-sisa{ background:rgba(240,180,41,.16); color:#F0C24A; border-color:rgba(240,180,41,.35); }
 
 /* ---- Baris aksi: tombol utama (teks) di kiri, ikon sekunder di kanan ---- */
 .admin-row-actions{

@@ -3015,6 +3015,14 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       const cicilanArr = p.pembayaran?.cicilan || [];
       const cicilanTerbayar = cicilanArr.filter(c => c.dibayar).length;
       const isCicilan = p.pembayaran?.metode === 'cicilan';
+      // Sisa pembayaran ke-2 (pelunasan) yang masih perlu ditagih ke peserta.
+      // Diambil dari rencana cicilan tersimpan (paling akurat — ini juga yang
+      // dipakai tombol "Tandai Pelunasan"); kalau entah kenapa tidak ada,
+      // fallback dihitung dari Total Pesanan − yang sudah terbayar.
+      const cicilanBelumLunas = cicilanArr.find(c => !c.dibayar);
+      const sisaCicilan = status === 'dp'
+        ? (cicilanBelumLunas ? (cicilanBelumLunas.nominal || 0) : Math.max((p.total || 0) - (p.pembayaran?.totalDibayar || 0), 0))
+        : 0;
 
       const row = document.createElement('div');
       row.className = 'admin-row';
@@ -3040,12 +3048,16 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
           <div class="admin-row-progress">
             <div class="admin-row-progress-bar"><div class="admin-row-progress-fill" style="width:${status==='lunas' ? 100 : status==='belum_dp' ? 0 : 50}%"></div></div>
             <span>${status==='belum_dp' ? 'Belum bayar sama sekali' : status==='lunas' ? 'Lunas — 2/2 pembayaran selesai' : 'Pembayaran ke-1 (DP) selesai, menunggu ke-2'} • Terkumpul ${formatRupiah(p.pembayaran?.totalDibayar || 0)}</span>
+            ${status === 'dp' ? `<span class="admin-row-sisa"><i class="fa-solid fa-circle-exclamation"></i> Sisa pembayaran ke-2 yang perlu ditagih: <b>${formatRupiah(sisaCicilan)}</b></span>` : ''}
           </div>` : ''}
         <div class="admin-row-actions">
           <div class="admin-row-actions-primary">
-            ${status === 'belum_dp' ? `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai ${isCicilan ? 'DP (1/2)' : 'Lunas'} Terbayar</button>` : ''}
+            ${status === 'belum_dp' ? (isCicilan
+              ? `<button class="admin-action-btn" data-action="inputdp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Input Nominal DP (1/2)</button>`
+              : `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai Lunas Terbayar</button>`
+            ) : ''}
             ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
-              `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2)</button>` : ''}
+              `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2) — ${formatRupiah(sisaCicilan)}</button>` : ''}
             ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : ''}
             <button class="admin-action-btn admin-action-ubahstatus" data-action="ubahstatus" data-id="${p.id}" title="Perbaiki status kalau salah pencet — status bisa diubah lagi kapan saja"><i class="fa-solid fa-rotate-left"></i> Ubah Status</button>
           </div>
@@ -3069,10 +3081,109 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
         btn.addEventListener('click', () => hapusPesertaAdmin(id, p?.nama || 'peserta ini', p?.kodeUnik));
       } else if (action === 'ubahstatus'){
         btn.addEventListener('click', () => openUbahStatusConfirm(id));
+      } else if (action === 'inputdp'){
+        btn.addEventListener('click', () => openInputDPModal(id));
       } else {
         btn.addEventListener('click', () => handleAdminAction(id, action));
       }
     });
+  }
+
+  /* =========================================================
+     FITUR BARU: INPUT NOMINAL DP PERTAMA SECARA MANUAL
+     Sebelumnya DP pertama SELALU dipaksa memakai rumus baku
+     (50% harga kemeja + Rp5.000 admin). Di dunia nyata, peserta
+     kadang transfer lebih besar/kecil dari saran itu. Fitur ini
+     membiarkan admin mengetik sendiri nominal DP yang BENAR-BENAR
+     diterima, lalu sistem OTOMATIS menghitung sisa pelunasan
+     (cicilan ke-2) = Total Pesanan − Nominal DP tsb. Sisa ini
+     langsung dipakai juga oleh tombol "Tandai Pelunasan (2/2)"
+     yang sudah ada, jadi tidak perlu ubah logika lain.
+  ========================================================= */
+  async function openInputDPModal(id){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const total = p.total || 0;
+    const saran = hitungDPSeharusnya(p);
+
+    // showAdminConfirm() memasang HTML ke dalam modal SECARA SINKRON
+    // sebelum mengembalikan Promise-nya, jadi input di bawah ini sudah
+    // ada di DOM begitu baris berikutnya dijalankan.
+    const confirmPromise = showAdminConfirm({
+      title: 'Input Nominal DP Pertama',
+      messageHtml: `
+        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${escapeHtml(p.nama || '-')} (${escapeHtml(p.kodeUnik || '-')})</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Total Pesanan</span><span>${formatRupiah(total)}</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Saran DP (50% + admin)</span><span>${formatRupiah(saran)}</span></div>
+        <div class="agc-dp-input-wrap">
+          <label for="agcDpNominalInput">Nominal DP yang benar-benar dibayar peserta</label>
+          <input type="number" id="agcDpNominalInput" class="agc-dp-input" inputmode="numeric" min="1" max="${total}" step="1000" value="${saran}">
+          <small class="agc-dp-hint" id="agcDpNominalHint"></small>
+        </div>
+      `,
+      confirmLabel: 'Simpan Nominal DP'
+    });
+
+    const nominalInput = document.getElementById('agcDpNominalInput');
+    const hintEl = document.getElementById('agcDpNominalHint');
+    const updateHint = () => {
+      let v = parseInt(nominalInput?.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      const sisa = Math.max(total - v, 0);
+      if (hintEl){
+        hintEl.innerHTML = v >= total
+          ? 'Nominal ini menutup seluruh total pesanan — status langsung menjadi <b>Lunas</b>, tanpa sisa cicilan ke-2.'
+          : `Sisa pelunasan (cicilan ke-2) otomatis: <b>${formatRupiah(sisa)}</b>`;
+      }
+    };
+    nominalInput?.addEventListener('input', updateHint);
+    updateHint();
+    nominalInput?.focus();
+    nominalInput?.select();
+
+    const confirmed = await confirmPromise;
+    if (!confirmed) return;
+
+    let dpNominal = parseInt(nominalInput?.value, 10);
+    if (isNaN(dpNominal) || dpNominal <= 0){
+      showToast('Nominal DP tidak valid, perubahan dibatalkan.', 'error');
+      return;
+    }
+    if (dpNominal > total) dpNominal = total; // tidak mungkin DP melebihi total pesanan
+
+    const statusLama = STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-';
+    const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
+    const sisa = Math.max(total - dpNominal, 0);
+    pembayaran.dpDibayar = true;
+    pembayaran.dpMinimal = dpNominal;
+    pembayaran.totalDibayar = dpNominal;
+    if (sisa > 0){
+      // Sisa pelunasan (cicilan ke-2) dihitung ulang dari nominal DP manual
+      // ini, menggantikan rencana cicilan lama — inilah "hitung otomatis"
+      // yang diminta: Total Pesanan − DP yang diinput admin.
+      pembayaran.cicilan = [{ ke: 1, nominal: sisa, dibayar: false, tanggalBayar: null }];
+      pembayaran.status = 'dp';
+    } else {
+      const tgl = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+      pembayaran.cicilan = (pembayaran.cicilan || []).map(c => ({ ...c, dibayar: true, tanggalBayar: c.tanggalBayar || tgl }));
+      pembayaran.status = 'lunas';
+      pembayaran.totalDibayar = total;
+    }
+    const statusBaru = STATUS_LABEL[pembayaran.status]?.label || '-';
+
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran, adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date() });
+      showToast(`DP tersimpan: ${formatRupiah(dpNominal)}${sisa > 0 ? `, sisa pelunasan ${formatRupiah(sisa)}` : ' (langsung Lunas)'}.`, 'success');
+      await logAdminAction('status', `DP diinput manual sebesar ${formatRupiah(dpNominal)} dari total ${formatRupiah(total)} (status "${statusLama}" → "${statusBaru}", sisa pelunasan ${formatRupiah(sisa)}).`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
+    } catch (err){
+      console.warn('Gagal menyimpan nominal DP manual:', err.code, err.message);
+      showToast(`Gagal menyimpan nominal DP (${err.code || 'error'}). Coba lagi.`, 'error');
+    }
   }
 
   async function handleAdminAction(id, action){
