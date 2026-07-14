@@ -61,6 +61,64 @@ service cloud.firestore {
    otomatis terbuka lagi tanpa login ulang (sesi tersimpan aman oleh Firebase).
 4. Tombol **Keluar** di dasbor akan benar-benar logout dari Firebase Auth.
 
+## 5. Perubahan terbaru: 2 akun admin tetap, riwayat aktivitas, status bisa diubah lagi
+
+### 5.1 Sisakan hanya 2 akun admin (hapus `admin@gmail.com`)
+File kode **tidak menyimpan password apa pun** — semua akun admin dikelola
+manual di Firebase Console > Authentication > Users. Jadi langkah ini
+dilakukan di Console, bukan dengan upload file:
+
+1. Buka **Firebase Console → Authentication → Users**.
+2. Pastikan sudah ada:
+   - `kamil@lokon.com` — kata sandi `8756209`
+   - `daud@lokon.com` — kata sandi `654321`
+3. Kalau kedua akun itu SUDAH ada tapi kamu tidak yakin passwordnya sudah
+   sesuai (Firebase **tidak bisa menampilkan/mengedit password lama**),
+   cara paling pasti:
+   - Klik titik tiga di baris akun tsb → **Delete account**.
+   - Klik **Add user** → isi ulang email yang sama + password yang
+     diinginkan (`8756209` untuk Kamil, `654321` untuk Daud).
+4. Cari baris `admin@gmail.com` → klik titik tiga di ujung kanan →
+   **Delete account**. Akun ini setelah dihapus **tidak bisa lagi
+   dipakai login** ke dasbor sama sekali.
+
+### 5.2 Riwayat Aktivitas Admin (siapa mengubah apa, kapan)
+Setiap perubahan status bayar, edit data peserta, hapus peserta, dan reset
+chat sekarang otomatis dicatat ke koleksi Firestore baru **`admin_log`**
+(admin yang login, tanggal & jam, jenis aksi, detail perubahan). Lihat
+lewat ikon jam ⏱ di pojok kanan atas dasbor admin ("Riwayat Aktivitas Admin").
+
+Tambahkan rules berikut supaya log ini hanya bisa ditulis/dibaca oleh
+admin yang sudah login, dan **tidak bisa diubah/dihapus siapa pun**
+(supaya jejak audit tidak bisa direkayasa):
+
+```
+match /admin_log/{logId} {
+  allow read: if request.auth != null;
+  allow create: if request.auth != null;
+  allow update, delete: if false; // riwayat bersifat permanen, tidak bisa diedit/dihapus
+}
+```
+
+### 5.3 Status pembayaran sekarang bisa diubah lagi (anti salah-pencet)
+Sebelumnya begitu status jadi "Lunas", tidak ada cara mengembalikannya
+kalau admin salah pencet. Sekarang setiap kartu peserta punya tombol
+**"Ubah Status"** yang selalu muncul (bahkan setelah Lunas) — admin bisa
+memilih ulang status yang benar (Belum Bayar / DP / Lunas) kapan saja.
+
+### 5.4 Popup konfirmasi di setiap perubahan
+Semua aksi yang mengubah data (ubah status, edit data peserta, hapus
+peserta) sekarang menampilkan popup "yakin ingin disimpan?" terlebih
+dahulu, lengkap dengan rincian apa yang berubah (nilai lama → nilai baru),
+sebelum benar-benar tersimpan ke Firestore.
+
+1. Upload ulang `index.html` dan `script.js` yang sudah diperbarui.
+2. Buka website → ketuk logo "LOKON PRIMA" 5x → isi **email & kata sandi**
+   admin yang baru dibuat di langkah 2 → Login.
+3. Kalau berhasil, dasbor admin terbuka. Coba refresh halaman — dasbor akan
+   otomatis terbuka lagi tanpa login ulang (sesi tersimpan aman oleh Firebase).
+4. Tombol **Keluar** di dasbor akan benar-benar logout dari Firebase Auth.
+
 ## Yang berubah di kode
 - `index.html`: field "Username" diganti jadi "Email Admin"; SDK
   `firebase-auth.js` dimuat berdampingan dengan Firestore.
