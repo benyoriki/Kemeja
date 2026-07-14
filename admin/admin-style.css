@@ -193,15 +193,42 @@ body{
    makna angkanya + kartu "Dana Terkumpul" dijadikan hero (angka
    yang paling penting bagi bendahara), sisanya tetap ringkas.
 ========================================================= */
+/* PERBAIKAN BUG: "Rp662.500" kepotong di HP.
+   Sebelumnya kartu "Dana Terkumpul" cuma dilebarkan (grid-column:span 2)
+   MULAI dari layar ≥640px — di HP (jauh di bawah itu) kartunya tetap
+   sempit hasil 2-kolom auto-fit, sementara font angkanya tidak diberi
+   batas menyusut (flex item default min-width:auto), jadi angka
+   dana yang panjang mendorong keluar kartu dan bahkan keluar layar.
+
+   Perbaikan permanen: kartu Dana Terkumpul dipaksa FULL-WIDTH sebagai
+   "hero" paling atas di SEMUA ukuran layar (bukan cuma desktop) —
+   otomatis dapat ruang paling lega untuk angka sepanjang apa pun.
+   Kartu sisanya (Total/Menunggu/Cicilan/Lunas) rapi 2 kolom di
+   bawahnya tanpa lubang kosong, karena Dana Terkumpul ditarik ke
+   depan urutan visualnya lewat `order`. Ditambah pengaman min-width:0
+   + overflow-wrap di SEMUA kartu supaya angka besapa pun tidak akan
+   pernah lagi terpotong keluar kartu. */
 .adash-stats{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
   animation:adashFadeUp .5s ease both;
+}
+
+@media (min-width:860px){
+  .adash-stats{ grid-template-columns:repeat(4, 1fr); }
 }
 
 .adash-stat{
   overflow:hidden;
+  min-width:0; /* item grid jangan pernah dipaksa selebar kontennya */
 }
 
 .adash-stat::before{ z-index:1; }
+
+.adash-stat-txt{ min-width:0; flex:1; }
+.adash-stat-txt span{
+  overflow-wrap:anywhere; word-break:break-word; line-height:1.15;
+}
 
 /* Stagger halus saat render pertama kali */
 .adash-stat:nth-child(1){ animation:adashRowIn .45s .02s cubic-bezier(.2,.8,.3,1) both; }
@@ -210,24 +237,23 @@ body{
 .adash-stat:nth-child(4){ animation:adashRowIn .45s .17s cubic-bezier(.2,.8,.3,1) both; }
 .adash-stat:nth-child(5){ animation:adashRowIn .45s .22s cubic-bezier(.2,.8,.3,1) both; }
 
-/* Kartu ke-2 = "Dana Terkumpul": diberi penekanan visual sebagai
-   metrik utama dasbor — border gradien berdenyut pelan + angka
-   sedikit lebih besar. Tidak butuh ubah HTML/JS sama sekali. */
-@media (min-width:640px){
-  .adash-stat:nth-child(2){
-    grid-column:span 2;
-    background:linear-gradient(120deg, rgba(15,216,184,.09), rgba(18,169,224,.07));
-    border-color:rgba(15,216,184,.28);
-  }
-  .adash-stat:nth-child(2) .adash-stat-txt span{ font-size:24px; }
-  .adash-stat:nth-child(2) .adash-stat-icon{
-    width:50px; height:50px; font-size:19px;
-    animation:adashBeacon 2.6s ease-in-out infinite;
-  }
+/* Kartu ke-2 = "Dana Terkumpul": hero banner penuh di ATAS, di semua
+   ukuran layar — bukan cuma penekanan visual di desktop seperti versi
+   sebelumnya yang jadi penyebab bug. */
+.adash-stat:nth-child(2){
+  order:-1;
+  grid-column:1 / -1;
+  background:linear-gradient(120deg, rgba(15,216,184,.09), rgba(18,169,224,.07));
+  border-color:rgba(15,216,184,.28);
+  padding:18px 20px;
 }
-
-@media (min-width:1300px){
-  .adash-stat:nth-child(2){ grid-column:span 1; }
+.adash-stat:nth-child(2) .adash-stat-txt span{
+  font-size:clamp(21px, 6vw, 26px);
+  white-space:normal;
+}
+.adash-stat:nth-child(2) .adash-stat-icon{
+  width:50px; height:50px; min-width:50px; font-size:19px;
+  animation:adashBeacon 2.6s ease-in-out infinite;
 }
 
 .adash-stat-icon{ transition:transform .3s cubic-bezier(.2,.8,.3,1); }
