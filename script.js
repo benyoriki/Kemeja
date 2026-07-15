@@ -2147,14 +2147,43 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
   const chatOffline = document.getElementById('chatOffline');
   const chatForm = document.getElementById('chatForm');
   const chatInput = document.getElementById('chatInput');
+  const chatSendBtn = document.getElementById('chatSendBtn');
   const chatLocked = document.getElementById('chatLocked');
   const chatMemberCount = document.getElementById('chatMemberCount');
   const chatSoundToggle = document.getElementById('chatSoundToggle');
+  const chatLoadOlderBtn = document.getElementById('chatLoadOlderBtn');
+  const chatScrollBottomBtn = document.getElementById('chatScrollBottomBtn');
+  const chatScrollBottomBadge = document.getElementById('chatScrollBottomBadge');
+  const chatReactionPicker = document.getElementById('chatReactionPicker');
+  const chatTypingIndicator = document.getElementById('chatTypingIndicator');
+  const chatTypingText = document.getElementById('chatTypingText');
+  const chatComposerContext = document.getElementById('chatComposerContext');
+  const chatContextIcon = document.getElementById('chatContextIcon');
+  const chatContextLabel = document.getElementById('chatContextLabel');
+  const chatContextText = document.getElementById('chatContextText');
+  const chatContextClose = document.getElementById('chatContextClose');
+  const chatMentionList = document.getElementById('chatMentionList');
+  const chatPinnedBanner = document.getElementById('chatPinnedBanner');
+  const chatPinnedText = document.getElementById('chatPinnedText');
+  const chatPinnedGoto = document.getElementById('chatPinnedGoto');
 
   let chatMessages = [];
   let unreadCount = 0;
   let chatIsOpen = false;
   let chatListenerStarted = false;
+  const CHAT_EMOJI_SET = ['👍','❤️','😂','😮','😢','🙏'];
+  let replyTarget = null;      // { id, nama, pesan } pesan yang sedang dibalas
+  let editingMessage = null;   // { id, pesan } pesan milik sendiri yang sedang diedit
+  let oldestLoadedDoc = null;  // cursor Firestore untuk "muat pesan lebih lama"
+  let hasMoreOlderMsgs = true;
+  let loadingOlderMsgs = false;
+  let mentionActiveIndex = -1;
+  let mentionCandidates = [];
+  let typingOthers = new Map();  // kodeUnik -> { nama, ms }
+  let typingPruneInterval = null;
+  let isTypingNow = false;
+  let typingStopTimer = null;
+  const CHAT_TYPING_COLLECTION = 'chat_typing';
 
   // PERBAIKAN PERFORMA: dulu setiap ada 1 pesan baru masuk, SEMUA pesan
   // (bisa sampai 200) dihapus & dibuat ulang dari nol — termasuk animasi
@@ -2176,6 +2205,64 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     let hash = 0;
     for (let i = 0; i < str.length; i++){ hash = str.charCodeAt(i) + ((hash << 5) - hash); }
     return CHAT_NAME_PALETTE[Math.abs(hash) % CHAT_NAME_PALETTE.length];
+  }
+
+  /* ---------------------------------------------------------
+     18c-0. TEKS PESAN: LINK OTOMATIS + HIGHLIGHT @MENTION
+     - escapeHtml() dulu (wajib, cegah XSS), baru sesudahnya teks
+       hasil escape "dihias" jadi tautan / tag mention — jadi tetap
+       aman walau pesan berisi karakter HTML.
+  --------------------------------------------------------- */
+  function myFirstName(){
+    const session = getSession();
+    return session ? (session.nama || '').trim().split(' ')[0] : '';
+  }
+
+  function renderChatText(rawText){
+    let out = escapeHtml(rawText || '');
+
+    // 1) Highlight @Nama (hanya kalau memang cocok dengan nama peserta
+    //    yang terdaftar — supaya "@" biasa/emoticon tidak ikut ditandai).
+    const myName = myFirstName().toLowerCase();
+    out = out.replace(/@([A-Za-z0-9_]{2,20})/g, (match, nameToken) => {
+      const found = pesertaData.find(p => (p.nama || '').trim().split(' ')[0].toLowerCase() === nameToken.toLowerCase());
+      if (!found) return match;
+      const isMe = myName && nameToken.toLowerCase() === myName;
+      return `<span class="chat-mention-tag${isMe ? ' mention-me' : ''}">@${escapeHtml(found.nama.trim().split(' ')[0])}</span>`;
+    });
+
+    // 2) Ubah URL polos jadi tautan yang bisa diklik (buka tab baru).
+    out = out.replace(/((https?:\/\/|www\.)[^\s<]+)/gi, (match) => {
+      let trail = '';
+      const trailMatch = match.match(/[),.!?;:]+$/);
+      let core = match;
+      if (trailMatch){ trail = trailMatch[0]; core = match.slice(0, match.length - trail.length); }
+      const href = /^https?:\/\//i.test(core) ? core : `https://${core}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer nofollow">${core}</a>${trail}`;
+    });
+
+    return out;
+  }
+
+  /* ---------------------------------------------------------
+     18c-0b. SEPARATOR TANGGAL DINAMIS (ganti "Hari ini" statis)
+  --------------------------------------------------------- */
+  function chatDayLabel(ms){
+    if (!ms) return '';
+    const d = new Date(ms);
+    const now = new Date();
+    const startOf = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+    const diffDays = Math.round((startOf(now) - startOf(d)) / 86400000);
+    if (diffDays === 0) return 'Hari ini';
+    if (diffDays === 1) return 'Kemarin';
+    return d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  }
+  function buildDaySep(ms){
+    const sep = document.createElement('div');
+    sep.className = 'chat-day-sep';
+    sep.dataset.daykey = new Date(ms).toDateString();
+    sep.innerHTML = `<span>${chatDayLabel(ms)}</span>`;
+    return sep;
   }
 
   /* ---------------------------------------------------------
@@ -2271,9 +2358,11 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     chatFab.classList.add('hide');
     document.body.classList.add('chat-open-lock');
     unreadCount = 0;
+    newSinceScrolledUp = 0;
     updateChatBadge();
     startChatListener();
-    setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 80);
+    startTypingListener();
+    setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; updateScrollBottomUI(); }, 80);
   }
   function closeChatPanel(){
     chatIsOpen = false;
@@ -2281,6 +2370,10 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     chatPanel.classList.remove('active');
     chatFab.classList.remove('hide');
     document.body.classList.remove('chat-open-lock');
+    closeReactionPicker();
+    closeMentionList();
+    stopTypingSignal();
+    if (chatTypingIndicator) chatTypingIndicator.style.display = 'none';
   }
   chatFab?.addEventListener('click', openChatPanel);
   chatClose?.addEventListener('click', closeChatPanel);
@@ -2328,19 +2421,77 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     if (!animate) el.style.animation = 'none';
     const time = msg._ms ? new Date(msg._ms).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '';
     const senderName = (msg.nama || 'Peserta').split(' ')[0];
+
+    const quoteHtml = msg.replyTo ? `
+      <div class="chat-msg-quote" data-goto="${escapeHtml(msg.replyTo.id)}">
+        <div class="chat-msg-quote-body">
+          <span class="chat-msg-quote-name">${escapeHtml((msg.replyTo.nama || 'Peserta').split(' ')[0])}</span>
+          <span class="chat-msg-quote-text">${escapeHtml(msg.replyTo.pesan || '')}</span>
+        </div>
+      </div>` : '';
+
+    const editedHtml = msg.editedAt ? `<span class="chat-msg-edited">diedit</span>` : '';
+    const tickHtml = mine ? `<i class="fa-solid fa-check chat-msg-tick"></i>` : '';
+
     el.innerHTML = `
       ${mine ? '' : `<span class="chat-msg-name" style="color:${chatNameColor(msg.nama)}">${escapeHtml(senderName)}</span>`}
-      <span class="chat-msg-text">${escapeHtml(msg.pesan || '')}</span>
-      <span class="chat-msg-time">${time}</span>
-      ${mine ? `<button type="button" class="chat-msg-del" aria-label="Hapus pesan ini" title="Hapus pesan ini"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+      ${quoteHtml}
+      <span class="chat-msg-text">${renderChatText(msg.pesan || '')}</span>
+      <span class="chat-msg-time">${editedHtml}${time}${tickHtml}</span>
+      <div class="chat-msg-reactions"></div>
+      <div class="chat-msg-actions">
+        <button type="button" class="chat-msg-action-btn chat-act-react" title="Beri reaksi" aria-label="Beri reaksi"><i class="fa-regular fa-face-smile"></i></button>
+        <button type="button" class="chat-msg-action-btn chat-act-reply" title="Balas pesan" aria-label="Balas pesan"><i class="fa-solid fa-reply"></i></button>
+        ${mine ? `<button type="button" class="chat-msg-action-btn chat-act-edit" title="Edit pesan" aria-label="Edit pesan"><i class="fa-solid fa-pen"></i></button>` : ''}
+        ${mine ? `<button type="button" class="chat-msg-action-btn chat-act-del" title="Hapus pesan ini" aria-label="Hapus pesan ini"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+      </div>
     `;
-    if (mine){
-      el.querySelector('.chat-msg-del')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteOwnChatMessage(msg.id);
-      });
-    }
+
+    renderMsgReactions(el, msg);
+
+    el.querySelector('.chat-act-del')?.addEventListener('click', (e) => { e.stopPropagation(); deleteOwnChatMessage(msg.id); });
+    el.querySelector('.chat-act-edit')?.addEventListener('click', (e) => { e.stopPropagation(); startEditMessage(msg); });
+    el.querySelector('.chat-act-reply')?.addEventListener('click', (e) => { e.stopPropagation(); startReplyMessage(msg); });
+    el.querySelector('.chat-act-react')?.addEventListener('click', (e) => { e.stopPropagation(); openReactionPicker(e.currentTarget, msg); });
+    el.querySelector('.chat-msg-quote')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      gotoChatMessage(e.currentTarget.dataset.goto);
+    });
+
     return el;
+  }
+
+  /* ---- Render chip reaksi emoji di bawah bubble ---- */
+  function renderMsgReactions(el, msg){
+    const wrap = el.querySelector('.chat-msg-reactions');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const reactions = msg.reactions || {};
+    const session = getSession();
+    const myKode = session ? session.kodeUnik.toUpperCase() : null;
+    let any = false;
+    Object.keys(reactions).forEach(emoji => {
+      const users = reactions[emoji] || [];
+      if (!users.length) return;
+      any = true;
+      const mineReacted = !!(myKode && users.includes(myKode));
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chat-reaction-chip' + (mineReacted ? ' mine-reacted' : '');
+      chip.title = users.length + ' orang bereaksi';
+      chip.innerHTML = `<span>${emoji}</span><span>${users.length}</span>`;
+      chip.addEventListener('click', (e) => { e.stopPropagation(); toggleReaction(msg, emoji); });
+      wrap.appendChild(chip);
+    });
+    wrap.style.display = any ? 'flex' : 'none';
+  }
+
+  function gotoChatMessage(id){
+    const target = chatMsgElements.get(id);
+    if (!target){ showToast('Pesan itu ada di riwayat lebih lama — tekan "Muat pesan lebih lama" dulu.', 'info'); return; }
+    target.scrollIntoView({ behavior:'smooth', block:'center' });
+    target.classList.add('pinned-highlight');
+    setTimeout(() => target.classList.remove('pinned-highlight'), 1400);
   }
 
   async function deleteOwnChatMessage(id){
@@ -2355,12 +2506,147 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     }
   }
 
+  /* ---- Reaksi emoji: toggle 👍❤️😂😮😢🙏 ---- */
+  async function toggleReaction(msg, emoji){
+    const session = getSession();
+    if (!session){ openGuestChatLock(); return; }
+    const fb = await waitForFirebase(6000);
+    if (!fb){ showToast('Koneksi bermasalah, coba lagi.', 'error'); return; }
+    const myKode = session.kodeUnik.toUpperCase();
+    const users = (msg.reactions && msg.reactions[emoji]) || [];
+    const already = users.includes(myKode);
+    try {
+      const field = `reactions.${emoji}`;
+      await fb.updateDoc(fb.doc(fb.db, fb.CHAT_COLLECTION, msg.id), {
+        [field]: already ? fb.arrayRemove(myKode) : fb.arrayUnion(myKode)
+      });
+      closeReactionPicker();
+    } catch (err){
+      console.warn('Gagal memberi reaksi:', err);
+      showToast('Gagal memberi reaksi, coba lagi.', 'error');
+    }
+  }
+
+  function openReactionPicker(anchorBtn, msg){
+    const session = getSession();
+    if (!session){ openGuestChatLock(); return; }
+    if (!chatReactionPicker) return;
+    chatReactionPicker.innerHTML = CHAT_EMOJI_SET.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('');
+    const rect = anchorBtn.getBoundingClientRect();
+    chatReactionPicker.style.display = 'flex';
+    const pickerWidth = CHAT_EMOJI_SET.length * 34 + 16;
+    let left = rect.left + rect.width / 2 - pickerWidth / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pickerWidth - 8));
+    chatReactionPicker.style.left = `${left}px`;
+    chatReactionPicker.style.top = `${Math.max(8, rect.top - 46)}px`;
+    chatReactionPicker.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => toggleReaction(msg, btn.dataset.emoji));
+    });
+  }
+  function closeReactionPicker(){
+    if (chatReactionPicker) chatReactionPicker.style.display = 'none';
+  }
+  document.addEventListener('click', (e) => {
+    if (chatReactionPicker && chatReactionPicker.style.display !== 'none' && !chatReactionPicker.contains(e.target)){
+      closeReactionPicker();
+    }
+  });
+
+  function openGuestChatLock(){
+    showToast('Hanya peserta terdaftar yang bisa berinteraksi di chat. Silakan daftar dulu.', 'error');
+  }
+
+  /* ---- Balas pesan (reply) ---- */
+  function startReplyMessage(msg){
+    const session = getSession();
+    if (!session){ openGuestChatLock(); return; }
+    editingMessage = null;
+    replyTarget = { id: msg.id, nama: msg.nama, pesan: (msg.pesan || '').slice(0, 140) };
+    showComposerContext();
+    chatInput?.focus();
+  }
+
+  /* ---- Edit pesan sendiri ---- */
+  function startEditMessage(msg){
+    replyTarget = null;
+    editingMessage = { id: msg.id, pesan: msg.pesan || '' };
+    showComposerContext();
+    if (chatInput){ chatInput.value = msg.pesan || ''; chatInput.focus(); }
+  }
+
+  function showComposerContext(){
+    if (!chatComposerContext) return;
+    if (editingMessage){
+      chatComposerContext.classList.add('editing');
+      chatComposerContext.style.display = 'flex';
+      if (chatContextIcon) chatContextIcon.className = 'chat-context-icon fa-solid fa-pen';
+      if (chatContextLabel) chatContextLabel.textContent = 'Mengedit pesan';
+      if (chatContextText) chatContextText.textContent = editingMessage.pesan;
+    } else if (replyTarget){
+      chatComposerContext.classList.remove('editing');
+      chatComposerContext.style.display = 'flex';
+      if (chatContextIcon) chatContextIcon.className = 'chat-context-icon fa-solid fa-reply';
+      if (chatContextLabel) chatContextLabel.textContent = `Membalas ${(replyTarget.nama || 'Peserta').split(' ')[0]}`;
+      if (chatContextText) chatContextText.textContent = replyTarget.pesan;
+    } else {
+      chatComposerContext.style.display = 'none';
+    }
+  }
+
+  function cancelComposerContext(){
+    const wasEditing = !!editingMessage;
+    replyTarget = null;
+    editingMessage = null;
+    showComposerContext();
+    if (wasEditing && chatInput) chatInput.value = '';
+  }
+  chatContextClose?.addEventListener('click', cancelComposerContext);
+
+  // Hapus & susun ulang seluruh separator tanggal berdasarkan urutan
+  // chatMessages (ascending) saat ini — dipanggil setiap struktur pesan
+  // berubah (render awal, pesan lama dimuat, pesan baru masuk).
+  function rebuildDaySeparators(){
+    chatBody.querySelectorAll('.chat-day-sep').forEach(n => n.remove());
+    let lastKey = null;
+    chatMessages.forEach(msg => {
+      const el = chatMsgElements.get(msg.id);
+      if (!el || !msg._ms) return;
+      const key = new Date(msg._ms).toDateString();
+      if (key !== lastKey){
+        chatBody.insertBefore(buildDaySep(msg._ms), el);
+        lastKey = key;
+      }
+    });
+  }
+
+  function isChatNearBottom(){
+    return (chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight) < 160;
+  }
+
+  let newSinceScrolledUp = 0;
+  function updateScrollBottomUI(){
+    if (!chatScrollBottomBtn) return;
+    const nearBottom = isChatNearBottom();
+    chatScrollBottomBtn.style.display = (chatIsOpen && !nearBottom) ? 'flex' : 'none';
+    if (nearBottom) newSinceScrolledUp = 0;
+    if (chatScrollBottomBadge){
+      chatScrollBottomBadge.style.display = newSinceScrolledUp > 0 ? 'flex' : 'none';
+      chatScrollBottomBadge.textContent = newSinceScrolledUp > 9 ? '9+' : String(newSinceScrolledUp);
+    }
+  }
+  chatBody?.addEventListener('scroll', updateScrollBottomUI);
+  chatScrollBottomBtn?.addEventListener('click', () => {
+    chatBody.scrollTop = chatBody.scrollHeight;
+    newSinceScrolledUp = 0;
+    updateScrollBottomUI();
+  });
+
   // Rebuild PENUH — dipakai untuk kasus yang jarang terjadi saja
   // (login/logout, atau setelah admin reset seluruh chat), karena hanya
   // saat itu sisi bubble (kiri/kanan) semua pesan perlu dihitung ulang.
   function renderChatMessages(){
     const session = getSession();
-    chatBody.querySelectorAll('.chat-msg').forEach(el => el.remove());
+    chatBody.querySelectorAll('.chat-msg, .chat-day-sep').forEach(el => el.remove());
     chatMsgElements.clear();
     chatEmpty.style.display = chatMessages.length === 0 ? 'block' : 'none';
     chatMessages.forEach(msg => {
@@ -2369,15 +2655,18 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       chatBody.appendChild(el);
       chatMsgElements.set(msg.id, el);
     });
+    rebuildDaySeparators();
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
   // Patch INKREMENTAL — jalur utama yang dipakai tiap kali listener
-  // Firestore melaporkan perubahan (pesan baru masuk/dihapus). Jauh lebih
-  // ringan karena cuma menyentuh DOM untuk pesan yang benar-benar berubah.
+  // Firestore melaporkan perubahan (pesan baru masuk/dihapus/diedit/direaksi).
+  // Jauh lebih ringan karena cuma menyentuh DOM untuk pesan yang benar-benar berubah.
   function applyChatChanges(changes, session){
     let addedWhileClosed = 0;
+    let addedWhileScrolledUp = 0;
     let hasChange = false;
+    let structuralChange = false; // pesan baru/hilang -> perlu rebuild separator tanggal
 
     changes.forEach(change => {
       const docData = change.doc.data();
@@ -2388,7 +2677,7 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
         chatMsgElements.get(msg.id)?.remove();
         chatMsgElements.delete(msg.id);
         chatMessages = chatMessages.filter(m => m.id !== msg.id);
-        hasChange = true;
+        hasChange = true; structuralChange = true;
         return;
       }
 
@@ -2410,8 +2699,9 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
         chatBody.appendChild(el);
         chatMsgElements.set(msg.id, el);
         chatMessages.push(msg);
-        hasChange = true;
+        hasChange = true; structuralChange = true;
         if (!chatFirstLoad && !chatIsOpen) addedWhileClosed++;
+        if (!chatFirstLoad && chatIsOpen && !isChatNearBottom()) addedWhileScrolledUp++;
 
         // Bunyi + notifikasi HANYA untuk pesan baru beneran (bukan saat
         // memuat riwayat pertama kali) dan bukan pesan dari diri sendiri.
@@ -2429,15 +2719,94 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     });
 
     if (!hasChange) return;
+    chatMessages.sort((a, b) => (a._ms || 0) - (b._ms || 0));
+    if (structuralChange) rebuildDaySeparators();
     chatEmpty.style.display = chatMessages.length === 0 ? 'block' : 'none';
     if (addedWhileClosed > 0){
       unreadCount += addedWhileClosed;
       updateChatBadge();
     }
     if (chatIsOpen){
-      const nearBottom = (chatBody.scrollHeight - chatBody.scrollTop - chatBody.clientHeight) < 160;
+      const nearBottom = isChatNearBottom();
       if (nearBottom) requestAnimationFrame(() => { chatBody.scrollTop = chatBody.scrollHeight; });
+      else if (addedWhileScrolledUp > 0){ newSinceScrolledUp += addedWhileScrolledUp; updateScrollBottomUI(); }
     }
+  }
+
+  /* ---------------------------------------------------------
+     18c-0c. PAGINATION: MUAT PESAN LEBIH LAMA
+     Listener realtime hanya menjaga jendela pesan TERBARU (lihat
+     startChatListener). Untuk riwayat yang lebih lama, diambil
+     lewat fetch sekali-jalan (bukan realtime) memakai cursor
+     Firestore (startAfter) — ringan & tidak membebani kuota baca.
+  --------------------------------------------------------- */
+  async function loadOlderMessages(){
+    if (loadingOlderMsgs || !hasMoreOlderMsgs || !oldestLoadedDoc) return;
+    loadingOlderMsgs = true;
+    chatLoadOlderBtn?.classList.add('loading');
+    const fb = await waitForFirebase(6000);
+    if (!fb){ loadingOlderMsgs = false; chatLoadOlderBtn?.classList.remove('loading'); showToast('Koneksi bermasalah, coba lagi.', 'error'); return; }
+    try {
+      const q = fb.query(
+        fb.collection(fb.db, fb.CHAT_COLLECTION),
+        fb.orderBy('timestamp', 'desc'),
+        fb.startAfter(oldestLoadedDoc),
+        fb.limit(40)
+      );
+      const snap = await fb.getDocs(q);
+      if (snap.empty){
+        hasMoreOlderMsgs = false;
+        if (chatLoadOlderBtn) chatLoadOlderBtn.style.display = 'none';
+        return;
+      }
+      const session = getSession();
+      const prevScrollHeight = chatBody.scrollHeight;
+      const olderAsc = snap.docs.slice().reverse(); // hasil query desc -> balik ke ascending
+      // PENTING: anchor (titik sisip) diambil SEKALI saja sebelum loop.
+      // Kalau dievaluasi ulang tiap iterasi (chatLoadOlderBtn.nextSibling),
+      // tiap pesan baru akan menyisip PERSIS setelah tombol dan mendorong
+      // pesan yang baru saja disisipkan sebelumnya — hasil akhirnya
+      // urutan pesan lama jadi TERBALIK (baru ke lama, bukan lama ke baru).
+      const insertAnchor = chatLoadOlderBtn.nextSibling;
+      const newlyLoaded = []; // dikumpulkan dulu (ascending), baru digabung SEKALI ke chatMessages di akhir
+      olderAsc.forEach(d => {
+        const docData = d.data();
+        const ms = docData.timestamp?.toMillis ? docData.timestamp.toMillis() : 0;
+        const msg = { id: d.id, ...docData, _ms: ms };
+        if (chatMsgElements.has(msg.id)) return; // sudah ada (jendela live tumpang tindih)
+        const mine = !!(session && msg.kodeUnik && session.kodeUnik && msg.kodeUnik === session.kodeUnik);
+        const el = buildChatMsgEl(msg, mine, false);
+        chatBody.insertBefore(el, insertAnchor);
+        chatMsgElements.set(msg.id, el);
+        newlyLoaded.push(msg);
+      });
+      chatMessages = [...newlyLoaded, ...chatMessages];
+      oldestLoadedDoc = snap.docs[snap.docs.length - 1];
+      if (snap.docs.length < 40) { hasMoreOlderMsgs = false; if (chatLoadOlderBtn) chatLoadOlderBtn.style.display = 'none'; }
+      rebuildDaySeparators();
+      // Pertahankan posisi scroll (supaya tidak "meloncat") setelah konten baru disisipkan di atas.
+      chatBody.scrollTop = chatBody.scrollHeight - prevScrollHeight;
+    } catch (err){
+      console.warn('Gagal memuat pesan lama:', err);
+      showToast('Gagal memuat pesan lebih lama, coba lagi.', 'error');
+    } finally {
+      loadingOlderMsgs = false;
+      chatLoadOlderBtn?.classList.remove('loading');
+    }
+  }
+  chatLoadOlderBtn?.addEventListener('click', loadOlderMessages);
+
+  // Ambil daftar kodeUnik yang di-@mention dari teks pesan (dipakai untuk
+  // sorot visual "mention-me" di sisi penerima — bukan push notification
+  // per-user, karena itu butuh server/Cloud Function terpisah).
+  function extractMentions(text){
+    const found = [];
+    (text.match(/@([A-Za-z0-9_]{2,20})/g) || []).forEach(tag => {
+      const nameToken = tag.slice(1).toLowerCase();
+      const p = pesertaData.find(p => (p.nama || '').trim().split(' ')[0].toLowerCase() === nameToken);
+      if (p && !found.includes(p.kodeUnik)) found.push(p.kodeUnik);
+    });
+    return found;
   }
 
   chatForm?.addEventListener('submit', async (e) => {
@@ -2447,6 +2816,27 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     const text = chatInput.value.trim();
     if (!text) return;
 
+    const fb = await waitForFirebase(8000);
+    if (!fb){ showToast('Chat live tidak tersedia (Firebase gagal tersambung). Coba lagi sesaat.', 'error'); return; }
+
+    // ---- Mode EDIT: update pesan lama, bukan kirim pesan baru ----
+    if (editingMessage){
+      const targetId = editingMessage.id;
+      chatInput.value = '';
+      cancelComposerContext();
+      try {
+        await fb.updateDoc(fb.doc(fb.db, fb.CHAT_COLLECTION, targetId), {
+          pesan: text.slice(0, 500),
+          mentions: extractMentions(text),
+          editedAt: fb.serverTimestamp()
+        });
+      } catch (err){
+        console.warn('Gagal mengedit pesan:', err);
+        showToast('Gagal menyimpan perubahan pesan, coba lagi.', 'error');
+      }
+      return;
+    }
+
     // Anti-spam ringan sisi klien: cegah kirim beruntun terlalu cepat.
     const now = Date.now();
     if (now - lastChatSentAt < CHAT_COOLDOWN_MS){
@@ -2454,20 +2844,197 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       return;
     }
 
-    const fb = await waitForFirebase(8000);
-    if (!fb){ showToast('Chat live tidak tersedia (Firebase gagal tersambung). Coba lagi sesaat.', 'error'); return; }
     lastChatSentAt = now;
     chatInput.value = '';
+    const replySnapshot = replyTarget;
+    cancelComposerContext();
+    stopTypingSignal(true);
     try {
       await fb.addDoc(fb.collection(fb.db, fb.CHAT_COLLECTION), {
         nama: session.nama,
         kodeUnik: session.kodeUnik,
         pesan: text.slice(0, 500),
+        mentions: extractMentions(text),
+        replyTo: replySnapshot ? { id: replySnapshot.id, nama: replySnapshot.nama, pesan: replySnapshot.pesan } : null,
+        reactions: {},
+        pinned: false,
+        editedAt: null,
         timestamp: fb.serverTimestamp()
       });
     } catch (err){
       console.warn('Gagal mengirim pesan:', err);
       showToast('Gagal mengirim pesan, coba lagi.', 'error');
+    }
+  });
+
+  /* ---------------------------------------------------------
+     18c-0e. INDIKATOR "SEDANG MENGETIK..."
+     Disimpan di koleksi terpisah "chat_typing" (1 dokumen per
+     kodeUnik, di-overwrite tiap kali mengetik) supaya TIDAK
+     membanjiri koleksi chat_pesan yang sebenarnya. Dokumen
+     dianggap basi (diabaikan) kalau updatedAt-nya lebih dari
+     6 detik yang lalu — jadi otomatis "hilang" tanpa perlu
+     dihapus manual kalau user menutup tab tiba-tiba.
+  --------------------------------------------------------- */
+  let typingDocRef = null;
+  let typingListenerStarted = false;
+  const TYPING_STALE_MS = 6000;
+
+  async function startTypingListener(){
+    if (typingListenerStarted) return;
+    const fb = await waitForFirebase(6000);
+    if (!fb) return;
+    typingListenerStarted = true;
+    try {
+      fb.onSnapshot(fb.collection(fb.db, CHAT_TYPING_COLLECTION), (snap) => {
+        const session = getSession();
+        const now = Date.now();
+        typingOthers.clear();
+        snap.docs.forEach(d => {
+          const data = d.data();
+          const ms = data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0;
+          if (d.id === session?.kodeUnik) return; // jangan tampilkan diri sendiri
+          if (now - ms > TYPING_STALE_MS) return; // basi, abaikan
+          typingOthers.set(d.id, { nama: data.nama || 'Peserta', ms });
+        });
+        renderTypingIndicator();
+      });
+    } catch (err){
+      console.warn('Gagal memulai listener status mengetik:', err);
+    }
+    if (!typingPruneInterval){
+      typingPruneInterval = setInterval(renderTypingIndicator, 2000);
+    }
+  }
+
+  function renderTypingIndicator(){
+    if (!chatTypingIndicator || !chatTypingText) return;
+    const now = Date.now();
+    const active = [...typingOthers.values()].filter(t => now - t.ms <= TYPING_STALE_MS);
+    if (!active.length || !chatIsOpen){
+      chatTypingIndicator.style.display = 'none';
+      return;
+    }
+    chatTypingIndicator.style.display = 'flex';
+    const names = active.map(t => t.nama.split(' ')[0]);
+    chatTypingText.textContent = names.length === 1
+      ? `${names[0]} sedang mengetik...`
+      : names.length === 2
+        ? `${names[0]} & ${names[1]} sedang mengetik...`
+        : `${names.length} orang sedang mengetik...`;
+  }
+
+  async function pingTypingSignal(){
+    const session = getSession();
+    if (!session) return;
+    const fb = await waitForFirebase(4000);
+    if (!fb || !fb.setDoc) return;
+    try {
+      await fb.setDoc(fb.doc(fb.db, CHAT_TYPING_COLLECTION, session.kodeUnik), {
+        nama: session.nama, updatedAt: fb.serverTimestamp()
+      });
+    } catch (err){ /* diabaikan — indikator mengetik memang non-esensial */ }
+  }
+
+  async function stopTypingSignal(immediate){
+    const session = getSession();
+    isTypingNow = false;
+    clearTimeout(typingStopTimer);
+    if (!session) return;
+    const fb = await waitForFirebase(3000);
+    if (!fb || !fb.deleteDoc) return;
+    try { await fb.deleteDoc(fb.doc(fb.db, CHAT_TYPING_COLLECTION, session.kodeUnik)); } catch (err){ /* diabaikan */ }
+  }
+
+  chatInput?.addEventListener('input', () => {
+    const session = getSession();
+    if (!session) return;
+    startTypingListener();
+    if (!isTypingNow){ isTypingNow = true; pingTypingSignal(); }
+    clearTimeout(typingStopTimer);
+    typingStopTimer = setTimeout(() => stopTypingSignal(), 3500);
+    handleMentionAutocomplete();
+  });
+
+  /* ---------------------------------------------------------
+     18c-0f. AUTOCOMPLETE MENTION (@nama)
+     Muncul saat user mengetik "@" diikuti huruf, menyaring dari
+     daftar peserta terdaftar (pesertaData) yang namanya cocok.
+  --------------------------------------------------------- */
+  function handleMentionAutocomplete(){
+    if (!chatMentionList || !chatInput) return;
+    const val = chatInput.value;
+    const caret = chatInput.selectionStart || val.length;
+    const beforeCaret = val.slice(0, caret);
+    const match = beforeCaret.match(/@([A-Za-z0-9_]{0,20})$/);
+    if (!match){ closeMentionList(); return; }
+    const partial = match[1].toLowerCase();
+    const seen = new Set();
+    mentionCandidates = pesertaData
+      .map(p => (p.nama || '').trim().split(' ')[0])
+      .filter(first => {
+        if (!first) return false;
+        const key = first.toLowerCase();
+        if (seen.has(key) || !key.startsWith(partial)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 6);
+    if (!mentionCandidates.length){ closeMentionList(); return; }
+    mentionActiveIndex = 0;
+    chatMentionList.innerHTML = mentionCandidates.map((name, i) => `
+      <div class="chat-mention-item${i === 0 ? ' active' : ''}" data-name="${escapeHtml(name)}">
+        <span class="chat-mention-dot" style="background:${chatNameColor(name)}"></span>${escapeHtml(name)}
+      </div>`).join('');
+    chatMentionList.style.display = 'block';
+    chatMentionList.querySelectorAll('.chat-mention-item').forEach(item => {
+      item.addEventListener('click', () => insertMention(item.dataset.name));
+    });
+  }
+  function closeMentionList(){
+    if (!chatMentionList) return;
+    chatMentionList.style.display = 'none';
+    mentionCandidates = [];
+    mentionActiveIndex = -1;
+  }
+  function insertMention(name){
+    if (!chatInput) return;
+    const val = chatInput.value;
+    const caret = chatInput.selectionStart || val.length;
+    const beforeCaret = val.slice(0, caret);
+    const afterCaret = val.slice(caret);
+    const newBefore = beforeCaret.replace(/@([A-Za-z0-9_]{0,20})$/, `@${name} `);
+    chatInput.value = newBefore + afterCaret;
+    const newCaret = newBefore.length;
+    chatInput.focus();
+    chatInput.setSelectionRange(newCaret, newCaret);
+    closeMentionList();
+  }
+  chatInput?.addEventListener('keydown', (e) => {
+    if (chatMentionList?.style.display !== 'block' || !mentionCandidates.length) return;
+    if (e.key === 'ArrowDown'){
+      e.preventDefault();
+      mentionActiveIndex = (mentionActiveIndex + 1) % mentionCandidates.length;
+    } else if (e.key === 'ArrowUp'){
+      e.preventDefault();
+      mentionActiveIndex = (mentionActiveIndex - 1 + mentionCandidates.length) % mentionCandidates.length;
+    } else if (e.key === 'Enter' || e.key === 'Tab'){
+      e.preventDefault();
+      insertMention(mentionCandidates[mentionActiveIndex]);
+      return;
+    } else if (e.key === 'Escape'){
+      closeMentionList();
+      return;
+    } else {
+      return;
+    }
+    chatMentionList.querySelectorAll('.chat-mention-item').forEach((el, i) => {
+      el.classList.toggle('active', i === mentionActiveIndex);
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (chatMentionList && chatMentionList.style.display === 'block' && !chatMentionList.contains(e.target) && e.target !== chatInput){
+      closeMentionList();
     }
   });
 
@@ -2489,11 +3056,29 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       return; // flag TIDAK dikunci — openChatPanel() boleh coba lagi nanti
     }
     chatListenerStarted = true;
+    const LIVE_WINDOW = 80; // jendela "live" pesan terbaru; lebih lama -> tombol "Muat pesan lebih lama"
     try {
-      const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.orderBy('timestamp', 'asc'), fb.limit(200));
+      // PERBAIKAN BUG: query lama pakai orderBy('timestamp','asc') + limit(200),
+      // yang justru mengambil 200 pesan TERLAMA (bukan terbaru!). Begitu grup
+      // sudah punya >200 pesan sepanjang masa, pesan-pesan BARU tidak pernah
+      // muncul sama sekali di listener manapun. Sekarang: ambil N pesan
+      // TERBARU (desc + limit), lalu dibalik ke urutan ascending untuk dirender.
+      const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.orderBy('timestamp', 'desc'), fb.limit(LIVE_WINDOW));
       fb.onSnapshot(q, (snap) => {
-        applyChatChanges(snap.docChanges(), getSession());
+        const wasFirstLoad = chatFirstLoad;
+        const docsAsc = snap.docs.slice().reverse();
+        const changesAsc = snap.docChanges().slice().reverse();
+        applyChatChanges(changesAsc, getSession());
         chatFirstLoad = false;
+
+        // Siapkan cursor pagination HANYA sekali di load pertama, supaya
+        // "Muat pesan lebih lama" konsisten mengambil kelanjutan dari sana
+        // (tidak ikut geser tiap kali ada pesan baru masuk).
+        if (wasFirstLoad && docsAsc.length){
+          oldestLoadedDoc = docsAsc[0];
+          hasMoreOlderMsgs = snap.docs.length >= LIVE_WINDOW;
+          if (chatLoadOlderBtn) chatLoadOlderBtn.style.display = hasMoreOlderMsgs ? 'flex' : 'none';
+        }
       }, (err) => {
         console.warn('Chat listener error:', err.code, err.message);
         let reason;
@@ -2508,11 +3093,42 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
         }
         showChatOffline(reason);
       });
+      startPinnedMessageListener(fb);
     } catch (err){
       console.warn('Gagal memulai listener chat:', err);
       showChatOffline();
     }
   }
+
+  /* ---------------------------------------------------------
+     18c-0d. BANNER PESAN DISEMATKAN (PIN) — dikelola dari Dasbor
+     Admin (lihat admin-script.js). Di sini hanya menampilkan.
+  --------------------------------------------------------- */
+  function startPinnedMessageListener(fb){
+    if (typeof fb.where !== 'function') return; // SDK lama tanpa 'where' — banner pin dilewati, fitur lain tetap jalan
+    try {
+      const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.where('pinned', '==', true));
+      fb.onSnapshot(q, (snap) => {
+        if (snap.empty){
+          if (chatPinnedBanner) chatPinnedBanner.style.display = 'none';
+          return;
+        }
+        const d = snap.docs[0];
+        const data = d.data();
+        if (chatPinnedText) chatPinnedText.textContent = `${(data.nama || 'Peserta').split(' ')[0]}: ${(data.pesan || '').slice(0, 80)}`;
+        if (chatPinnedBanner){
+          chatPinnedBanner.style.display = 'flex';
+          chatPinnedBanner.dataset.id = d.id;
+        }
+      }, (err) => console.warn('Pinned listener error (kemungkinan butuh `where` di SDK / index Firestore):', err.code));
+    } catch (err){
+      console.warn('Gagal memulai listener pesan pin:', err);
+    }
+  }
+  chatPinnedBanner?.addEventListener('click', () => {
+    const id = chatPinnedBanner.dataset.id;
+    if (id) gotoChatMessage(id);
+  });
 
   function updateChatMemberCount(){
     if (!chatMemberCount) return;

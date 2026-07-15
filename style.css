@@ -3081,6 +3081,162 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 .chat-locked .btn-sm{ margin-top:2px; }
 
+/* =========================================================
+   CHAT — FITUR TAMBAHAN (link otomatis, reply, reaksi emoji,
+   pagination, typing indicator, edit, pin, mention, dsb.)
+========================================================= */
+
+/* ---- Link otomatis di dalam pesan ---- */
+.chat-msg-text a{ color:inherit; text-decoration:underline; text-underline-offset:2px; word-break:break-all; }
+.chat-msg.other .chat-msg-text a{ color:var(--aqua-deep); }
+
+/* ---- Separator tanggal dinamis (ganti "Hari ini" statis) ---- */
+.chat-day-sep{ text-align:center; margin:6px 0 14px; position:relative; z-index:1; }
+.chat-day-sep span{
+  background:var(--white); color:var(--ink-soft); font-size:11px; font-weight:600;
+  padding:5px 14px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+
+/* ---- Tombol "muat pesan lebih lama" ---- */
+.chat-load-older{
+  align-self:center; margin:2px auto 14px; padding:8px 16px; border-radius:20px;
+  background:var(--white); color:var(--aqua-deep); font-size:11.5px; font-weight:700;
+  box-shadow:0 2px 8px rgba(0,0,0,.07); display:flex; align-items:center; gap:6px;
+  transition:var(--transition); position:relative; z-index:1;
+}
+.chat-load-older:hover{ background:var(--aqua); color:#fff; }
+.chat-load-older.loading i{ animation:chatSpin .7s linear infinite; }
+@keyframes chatSpin{ to{ transform:rotate(360deg); } }
+
+/* ---- Pesan yang disematkan (pin) oleh admin ---- */
+.chat-pinned-banner{
+  display:flex; align-items:center; gap:10px; padding:9px 16px; flex-shrink:0;
+  background:linear-gradient(90deg, rgba(240,180,41,.16), rgba(240,180,41,.06));
+  border-bottom:1px solid var(--line); cursor:pointer;
+}
+.chat-pinned-banner > i.fa-thumbtack{ color:#D89B0B; font-size:14px; transform:rotate(20deg); flex-shrink:0; }
+.chat-pinned-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.chat-pinned-label{ font-size:9.5px; font-weight:800; color:#B4790A; text-transform:uppercase; letter-spacing:.04em; }
+.chat-pinned-text{ font-size:12px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+.chat-pinned-goto{ color:var(--ink-soft); font-size:11px; flex-shrink:0; }
+.chat-msg.pinned-highlight{ box-shadow:0 0 0 2px #F0B429, 0 1px 6px rgba(0,0,0,.06); }
+
+/* ---- Balasan (reply) yang ditampilkan di dalam bubble ---- */
+.chat-msg-quote{
+  display:flex; gap:6px; padding:6px 8px; border-radius:9px; margin-bottom:5px; cursor:pointer;
+  background:rgba(4,33,58,.08); border-left:3px solid rgba(4,33,58,.35);
+}
+.chat-msg.other .chat-msg-quote{ background:rgba(18,169,224,.08); border-left-color:var(--aqua); }
+.chat-msg-quote-body{ min-width:0; flex:1; display:flex; flex-direction:column; }
+.chat-msg-quote-name{ font-size:10.5px; font-weight:800; opacity:.85; }
+.chat-msg-quote-text{ font-size:11px; opacity:.75; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ---- Nama yang di-mention (@nama) di dalam teks ---- */
+.chat-mention-tag{ font-weight:800; text-decoration:none; }
+.chat-msg.other .chat-mention-tag{ color:var(--aqua-deep); }
+.chat-msg-text .chat-mention-tag.mention-me{
+  background:rgba(240,180,41,.28); padding:0 4px; border-radius:5px;
+}
+
+/* ---- Status edited + tick "terkirim" ---- */
+.chat-msg-edited{ font-size:9px; opacity:.6; font-style:italic; margin-right:3px; }
+.chat-msg .chat-msg-time{ display:flex; align-items:center; justify-content:flex-end; gap:4px; }
+.chat-msg-tick{ font-size:10px; opacity:.65; }
+
+/* ---- Aksi pesan (balas / reaksi / edit / hapus) muncul saat hover / tap-lama ---- */
+.chat-msg-actions{
+  position:absolute; top:-30px; right:4px; display:flex; gap:3px; padding:3px;
+  background:var(--white); border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.14);
+  opacity:0; transform:translateY(4px) scale(.92); pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease; z-index:5;
+}
+.chat-msg.other .chat-msg-actions{ left:4px; right:auto; }
+.chat-msg:hover .chat-msg-actions, .chat-msg.actions-open .chat-msg-actions{
+  opacity:1; transform:translateY(0) scale(1); pointer-events:auto;
+}
+.chat-msg-action-btn{
+  width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:var(--ink); transition:background .15s ease, transform .15s ease;
+}
+.chat-msg-action-btn:hover{ background:var(--line); transform:scale(1.12); }
+@media (hover:none){ .chat-msg-actions{ opacity:1; transform:none; pointer-events:auto; position:static; box-shadow:none; background:none; margin-top:4px; justify-content:flex-end; } }
+
+/* ---- Chip reaksi emoji di bawah bubble ---- */
+.chat-msg-reactions{ display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+.chat-reaction-chip{
+  display:flex; align-items:center; gap:3px; padding:2px 7px; border-radius:12px;
+  background:rgba(255,255,255,.75); color:var(--ink); font-size:11px; font-weight:700;
+  box-shadow:0 1px 4px rgba(0,0,0,.08); transition:transform .12s ease, background .12s ease;
+}
+.chat-msg.mine .chat-reaction-chip{ background:rgba(4,33,58,.14); }
+.chat-reaction-chip:hover{ transform:scale(1.08); }
+.chat-reaction-chip.mine-reacted{ box-shadow:0 0 0 1.5px var(--aqua-deep); }
+
+/* ---- Popover pilih emoji (muncul dekat pesan yang ditekan) ---- */
+.chat-reaction-picker{
+  position:fixed; z-index:400; display:flex; gap:2px; padding:6px 8px; border-radius:24px;
+  background:var(--white); box-shadow:0 8px 24px rgba(0,0,0,.2); animation:chatPickerIn .16s ease;
+}
+@keyframes chatPickerIn{ from{ opacity:0; transform:translateY(6px) scale(.9); } to{ opacity:1; transform:translateY(0) scale(1); } }
+.chat-reaction-picker button{ font-size:19px; padding:3px 5px; border-radius:50%; transition:transform .12s ease; line-height:1; }
+.chat-reaction-picker button:hover{ transform:scale(1.35) translateY(-3px); }
+
+/* ---- Tombol melayang "ke pesan terbaru" ---- */
+.chat-scroll-bottom{
+  position:absolute; right:16px; bottom:96px; width:38px; height:38px; border-radius:50%;
+  background:var(--white); color:var(--aqua-deep); box-shadow:0 4px 14px rgba(0,0,0,.16);
+  display:flex; align-items:center; justify-content:center; font-size:14px; z-index:6;
+  transition:var(--transition-spring);
+}
+.chat-scroll-bottom:hover{ transform:scale(1.1); }
+.chat-scroll-bottom-badge{
+  position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:9px;
+  background:#FF5A5F; color:#fff; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center;
+}
+
+/* ---- Indikator "sedang mengetik..." ---- */
+.chat-typing-indicator{
+  display:flex; align-items:center; gap:7px; padding:6px 16px 0; font-size:11px; color:var(--ink-soft);
+}
+.chat-typing-dots{ display:inline-flex; gap:3px; padding:5px 9px; border-radius:12px; background:var(--line); }
+.chat-typing-dots i{
+  width:5px; height:5px; border-radius:50%; background:var(--ink-soft); display:block;
+  animation:chatTypingBounce 1.1s ease-in-out infinite;
+}
+.chat-typing-dots i:nth-child(2){ animation-delay:.15s; }
+.chat-typing-dots i:nth-child(3){ animation-delay:.3s; }
+@keyframes chatTypingBounce{ 0%,60%,100%{ transform:translateY(0); opacity:.5; } 30%{ transform:translateY(-4px); opacity:1; } }
+
+/* ---- Bar konteks composer: balas pesan / sedang mengedit ---- */
+.chat-composer-context{
+  display:flex; align-items:center; gap:9px; padding:8px 14px; margin:8px 14px 0;
+  background:var(--line); border-radius:12px; position:relative; overflow:hidden;
+}
+.chat-context-bar{ position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--aqua); }
+.chat-context-icon{ color:var(--aqua-deep); font-size:13px; flex-shrink:0; margin-left:4px; }
+.chat-composer-context.editing .chat-context-bar{ background:#F0B429; }
+.chat-composer-context.editing .chat-context-icon{ color:#B4790A; }
+.chat-context-body{ min-width:0; flex:1; display:flex; flex-direction:column; }
+.chat-context-label{ font-size:10.5px; font-weight:800; color:var(--ink); }
+.chat-context-text{ font-size:11.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-context-close{ color:var(--ink-soft); font-size:12px; flex-shrink:0; padding:4px; }
+
+/* ---- Input wrap + daftar saran mention (@nama) ---- */
+.chat-input-wrap{ position:relative; flex:1; }
+.chat-input-wrap input{ width:100%; }
+.chat-mention-list{
+  position:absolute; left:0; right:0; bottom:calc(100% + 8px); max-height:180px; overflow-y:auto;
+  background:var(--white); border-radius:14px; box-shadow:0 8px 22px rgba(0,0,0,.16); padding:6px;
+}
+.chat-mention-item{
+  display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:9px; font-size:12.5px; font-weight:600;
+}
+.chat-mention-item:hover, .chat-mention-item.active{ background:var(--line); }
+.chat-mention-item .chat-mention-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ---- Sematkan / hapus tersedia di panel Admin ---- */
+.chat-msg-action-btn.pin-active{ color:#D89B0B; }
+
 @media (max-width:520px){
   body.chat-open-lock{ overflow:hidden; height:100svh; }
   .chat-panel{
