@@ -8,7 +8,7 @@
 ========================================================= */
 
 import {
-  firebaseConfig, SESSION_KEY,
+  firebaseConfig, SESSION_KEY, FIRESTORE_COLLECTION,
   COL_CHESS_PLAYERS, COL_CHESS_ROOMS, COL_CHESS_MATCHES, COL_CHESS_CHALLENGES,
   GAME_TIME_MS, ELO_K_FACTOR, HEARTBEAT_MS, ONLINE_TIMEOUT_MS, IDLE_TIMEOUT_MS
 } from './firebase-config.js';
@@ -31,6 +31,7 @@ const el = {
   memberBadge: $('memberBadge'),
   memberName: $('memberName'),
   memberRating: $('memberRating'),
+  topAvatarChip: $('topAvatarChip'),
 
   rankingList: $('rankingList'),
   onlineList: $('onlineList'),
@@ -102,6 +103,13 @@ const state = {
   incrementMs: 0,        // increment waktu per-langkah (Fischer) — hanya PvP
   timeControlLabel: 'Rapid 10+5',
   lastEmoteTs: null,     // dedupe reaksi emoji supaya tidak diputar ulang
+  validKodeSet: null,    // Set berisi kodeUnik peserta yang MASIH TERDAFTAR di
+                          // koleksi "pendaftaran" (null = belum dimuat sama sekali).
+                          // Dipakai buat menyaring ranking/online list supaya
+                          // peserta yang sudah dihapus admin (atau dulu dihapus
+                          // SEBELUM fitur auto-hapus profil catur ada) tidak lagi
+                          // "berhantu" di Lokon Chess Arena walau dokumen
+                          // chess_players miliknya masih tersisa di Firestore.
 };
 
 /* =========================================================
@@ -198,21 +206,54 @@ function listenRanking(){
   }, (err) => console.error('[ranking] listener error', err));
 }
 
+/* Menyaring "chess_players" hantu: peserta yang sudah dihapus dari koleksi
+   "pendaftaran" (baik lewat tombol hapus admin, ATAU lebih dulu dihapus
+   sebelum fitur auto-hapus profil catur ditambahkan) tidak akan pernah
+   ikut terhapus otomatis dari chess_players jika penghapusannya terjadi
+   di luar tombol hapus dasbor. Daripada mengandalkan penghapusan itu selalu
+   sempurna, di sini kita dengarkan LANGSUNG koleksi "pendaftaran" (sumber
+   kebenaran) secara realtime, dan tampilkan ranking/online HANYA untuk
+   kodeUnik yang benar-benar masih terdaftar di sana. Jadi begitu admin
+   menghapus peserta di dasbor, orangnya langsung hilang juga dari Lokon
+   Chess Arena — real-time, tanpa perlu bersih-bersih manual di Firestore. */
+function listenValidPeserta(){
+  const { db, fns } = state.fb;
+  fns.onSnapshot(fns.collection(db, FIRESTORE_COLLECTION), (snap) => {
+    const set = new Set();
+    snap.docs.forEach(d => {
+      const kode = d.data()?.kodeUnik;
+      if (kode) set.add(String(kode).toUpperCase());
+    });
+    state.validKodeSet = set;
+    renderLists();
+  }, (err) => console.error('[valid-peserta] listener error', err));
+}
+
+/* Daftar pemain yang sudah disaring terhadap peserta aktif. Selama
+   validKodeSet belum sempat dimuat (null), tampilkan apa adanya dulu
+   supaya arena tidak terlihat kosong sesaat — begitu data pendaftaran
+   datang (biasanya hampir bersamaan), daftar langsung tersaring rapi. */
+function getActivePlayers(){
+  if (!state.validKodeSet) return state.rankingCache;
+  return state.rankingCache.filter(p => state.validKodeSet.has(String(p.kodeUnik || '').toUpperCase()));
+}
+
 function renderLists(){
+  const activePlayers = getActivePlayers();
   const filterTxt = (el.searchInput?.value || '').trim().toLowerCase();
   const filtered = filterTxt
-    ? state.rankingCache.filter(p => p.nama.toLowerCase().includes(filterTxt))
-    : state.rankingCache;
+    ? activePlayers.filter(p => p.nama.toLowerCase().includes(filterTxt))
+    : activePlayers;
 
   UI.renderRankingList(el.rankingList, filtered, { onOpenProfile: openProfile });
-  UI.renderOnlineList(el.onlineList, state.rankingCache, {
+  UI.renderOnlineList(el.onlineList, activePlayers, {
     onOpenProfile: openProfile,
     myKode: state.session ? state.session.kodeUnik.toUpperCase() : null
   });
 
-  const onlineCount = state.rankingCache.filter(p => p.status === 'online').length;
-  const topRating = state.rankingCache.length ? state.rankingCache[0].rating : 0;
-  if (el.statTotalPlayers) el.statTotalPlayers.textContent = state.rankingCache.length;
+  const onlineCount = activePlayers.filter(p => p.status === 'online').length;
+  const topRating = activePlayers.length ? activePlayers[0].rating : 0;
+  if (el.statTotalPlayers) el.statTotalPlayers.textContent = activePlayers.length;
   if (el.statOnlineNow) el.statOnlineNow.textContent = onlineCount;
   if (el.statTopRating) el.statTopRating.textContent = topRating || '-';
   if (el.onlineCountChip) el.onlineCountChip.textContent = onlineCount;
@@ -222,6 +263,10 @@ function updateSelfBadge(mine){
   state.me = mine;
   if (el.memberName) el.memberName.textContent = mine.nama;
   if (el.memberRating) el.memberRating.textContent = `Rating ${mine.rating}`;
+  if (el.topAvatarChip){
+    el.topAvatarChip.textContent = UI.initials(mine.nama);
+    el.topAvatarChip.style.background = UI.avatarColor(mine.kodeUnik || mine.nama || '');
+  }
 }
 
 /**
@@ -1088,6 +1133,7 @@ async function boot(){
 
   UI.setLoadingProgress(el.loading, 80, 'Memuat papan 3D…');
   listenRanking();
+  listenValidPeserta();
   wireGameActions();
 
   el.searchInput && el.searchInput.addEventListener('input', renderLists);

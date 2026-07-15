@@ -98,7 +98,7 @@ body.in-game .topbar{ opacity:0; transform:translateY(-16px); pointer-events:non
 }
 .member-badge .avatar-chip{
   width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-  font-family:var(--font-hud); font-weight:700; font-size:13px; background:var(--cyan); color:#04213A;
+  font-family:var(--font-hud); font-weight:700; font-size:13px; background:var(--cyan); color:#fff;
 }
 .member-badge-text{ display:flex; flex-direction:column; line-height:1.25; }
 .member-badge-text b{ font-size:12.5px; }
@@ -429,18 +429,17 @@ input[type="range"].level-range{ width:100%; margin:10px 0 20px; }
 }
 .history-fab:hover{ color:var(--cyan); background:rgba(23,230,230,.1); }
 
-/* ---- Chip pilihan kontrol waktu di modal profil (ganti tombol tunggal) ---- */
+/* ---- Tombol tunggal "Tantang Duel" di modal profil (waktu tetap 10 menit, tanpa pilihan) ---- */
 .challenge-tc-row{ margin-top:10px; }
-.challenge-tc-label{ font-size:11.5px; color:var(--ink-dim); display:block; margin-bottom:8px; }
-.challenge-tc-chips{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.tc-chip{
-  display:flex; flex-direction:column; align-items:center; gap:2px; padding:11px 4px; border-radius:14px;
-  background:rgba(255,255,255,.05); border:1px solid var(--glass-border); transition:.2s;
+.duel-btn{
+  display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:13px 14px; border-radius:14px;
+  background:linear-gradient(120deg, var(--cyan-dim), var(--violet-dim)); border:1px solid transparent; transition:.2s;
+  font-size:14px; font-weight:700; font-family:var(--font-display); color:var(--ink); cursor:pointer;
 }
-.tc-chip b{ font-size:12.5px; font-family:var(--font-display); }
-.tc-chip span{ font-family:var(--font-hud); font-size:12px; color:var(--gold); font-weight:600; }
-.tc-chip:hover{ background:linear-gradient(120deg, var(--cyan-dim), var(--violet-dim)); border-color:transparent; transform:translateY(-2px); }
-.challenge-tc-row.disabled .tc-chip{ opacity:.35; pointer-events:none; }
+.duel-btn span{ font-family:var(--font-hud); font-size:12px; color:var(--gold); font-weight:600; }
+.duel-btn:hover{ transform:translateY(-2px); filter:brightness(1.12); }
+.duel-btn:active{ transform:translateY(0); }
+.challenge-tc-row.disabled .duel-btn{ opacity:.35; pointer-events:none; }
 .challenge-tc-status{ font-size:12px; color:var(--ink-faint); text-align:center; padding:10px; display:none; }
 .challenge-tc-row.disabled .challenge-tc-status{ display:block; }
 
@@ -557,8 +556,7 @@ input[type="range"].level-range{ width:100%; margin:10px 0 20px; }
   #challengeContainer{ left:10px; right:10px; top:64px; }
   .challenge-toast{ width:100%; }
   .history-fab{ width:34px; height:34px; font-size:12.5px; }
-  .tc-chip{ padding:9px 2px; }
-  .tc-chip b{ font-size:11px; } .tc-chip span{ font-size:11px; }
+  .duel-btn{ padding:12px 10px; font-size:13px; }
   .emote-bubble{ font-size:30px; }
   .emote-bubble.self{ right:14px; bottom:150px; }
   .emote-bubble.opp{ left:14px; top:112px; }

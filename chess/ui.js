@@ -160,7 +160,7 @@ export function renderOnlineList(el, players, { onOpenProfile, myKode } = {}){
   });
 }
 
-function avatarColor(seed = ''){
+export function avatarColor(seed = ''){
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
   const hue = Math.abs(hash) % 360;
@@ -217,11 +217,10 @@ export function openProfileModal(modalEl, player, { myKode, onChallenge, canChal
   else if (player.status === 'offline') statusEl.textContent = 'Pemain sedang offline.';
   chipsRow.style.display = canChallenge ? 'block' : 'none';
 
-  chipsRow.querySelectorAll('.tc-chip').forEach(btn => {
+  chipsRow.querySelectorAll('.duel-btn').forEach(btn => {
     btn.onclick = () => {
       if (!canPick) return;
-      const tc = TIME_CONTROLS[btn.dataset.tc];
-      onChallenge && onChallenge(player, tc);
+      onChallenge && onChallenge(player, TIME_CONTROLS.rapid);
     };
   });
 
