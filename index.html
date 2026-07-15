@@ -51,7 +51,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <!-- Stylesheet: style.css = fungsi sistem/layout, particles.css = efek visual/partikel -->
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 <link rel="stylesheet" href="particles.css?v=5">
 </head>
 <body>
@@ -330,32 +330,37 @@
     </div>
 
     <div class="timeline-wrap fade-up" id="timelineWrap">
+      <div class="timeline-progress-fill" id="timelineProgressFill" aria-hidden="true"></div>
       <div class="timeline-step" data-step="1">
-        <div class="timeline-dot"><i class="fa-solid fa-pen-to-square"></i></div>
+        <div class="timeline-dot"><i class="fa-solid fa-pen-to-square"></i><i class="fa-solid fa-check timeline-dot-check"></i></div>
         <div class="timeline-content">
           <h4>Pendaftaran</h4>
-          <p>Karyawan mengisi data & menyetor DP.</p>
+          <p class="timeline-desc" data-default="Karyawan mengisi data &amp; menyetor DP.">Karyawan mengisi data & menyetor DP.</p>
+          <div class="timeline-eta" data-eta-step="1"></div>
         </div>
       </div>
       <div class="timeline-step" data-step="2">
-        <div class="timeline-dot"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        <div class="timeline-dot"><i class="fa-solid fa-hand-holding-dollar"></i><i class="fa-solid fa-check timeline-dot-check"></i></div>
         <div class="timeline-content">
           <h4>Target Terkumpul</h4>
-          <p>Jumlah pendaftar & DP minimal tercapai.</p>
+          <p class="timeline-desc" data-default="Jumlah pendaftar &amp; DP minimal tercapai.">Jumlah pendaftar & DP minimal tercapai.</p>
+          <div class="timeline-eta" data-eta-step="2"></div>
         </div>
       </div>
       <div class="timeline-step" data-step="3">
-        <div class="timeline-dot"><i class="fa-solid fa-industry"></i></div>
+        <div class="timeline-dot"><i class="fa-solid fa-industry"></i><i class="fa-solid fa-check timeline-dot-check"></i></div>
         <div class="timeline-content">
           <h4>Produksi Massal</h4>
-          <p>Seluruh kemeja peserta dijahit bersamaan.</p>
+          <p class="timeline-desc" data-default="Seluruh kemeja peserta dijahit bersamaan.">Seluruh kemeja peserta dijahit bersamaan.</p>
+          <div class="timeline-eta" data-eta-step="3"></div>
         </div>
       </div>
       <div class="timeline-step" data-step="4">
-        <div class="timeline-dot"><i class="fa-solid fa-box-open"></i></div>
+        <div class="timeline-dot"><i class="fa-solid fa-box-open"></i><i class="fa-solid fa-check timeline-dot-check"></i></div>
         <div class="timeline-content">
           <h4>Distribusi</h4>
-          <p>Kemeja jadi dibagikan ke setiap peserta.</p>
+          <p class="timeline-desc" data-default="Kemeja jadi dibagikan ke setiap peserta.">Kemeja jadi dibagikan ke setiap peserta.</p>
+          <div class="timeline-eta" data-eta-step="4"></div>
         </div>
       </div>
     </div>
@@ -1511,6 +1516,7 @@
         doc: mods.doc, updateDoc: mods.updateDoc, deleteDoc: mods.deleteDoc, serverTimestamp: mods.serverTimestamp,
         query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
         getDocs: mods.getDocs, writeBatch: mods.writeBatch,
+        getDoc: mods.getDoc, setDoc: mods.setDoc,
         // --- Firebase Authentication (login admin) ---
         auth,
         signInWithEmailAndPassword: authMods.signInWithEmailAndPassword,
@@ -1532,7 +1538,7 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.js?v=26"></script>
+<script src="script.js?v=27"></script>
 <script src="particles.js?v=4"></script>
 </body>
 </html>

@@ -23,13 +23,18 @@
 ========================================================= */
 const TARGET_PESERTA = 30;
 
-/* CURRENT_STAGE menentukan tahap mana yang aktif di timeline:
-   1 = Pendaftaran berjalan (default)
-   2 = Target peserta & DP sudah terkumpul, menunggu produksi
-   3 = Produksi massal sedang berjalan
-   4 = Selesai — kemeja sudah didistribusikan
-   Ubah manual angka ini saat progres program berpindah tahap. */
-const CURRENT_STAGE = 1;
+/* CURRENT_STAGE dulunya angka manual yang harus diubah di kode setiap
+   kali tahap berpindah. SEKARANG diambil live dari Firestore (koleksi
+   "program_status", dokumen "estimasi") lewat dasbor admin, supaya
+   admin bisa mengganti tahap aktif & estimasi tanggal/jam tanpa
+   menyentuh kode sama sekali, dan semua pengunjung melihat tahap &
+   hitung mundur yang SAMA PERSIS secara real-time. Nilai di bawah ini
+   hanya fallback sebelum data Firestore datang (atau kalau gagal dimuat). */
+let CURRENT_STAGE = 1;
+const PROGRAM_STATUS_COLLECTION = 'program_status';
+const PROGRAM_STATUS_DOC_ID = 'estimasi';
+let estimasiData = null;
+let estimasiCountdownTimer = null;
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -1678,16 +1683,181 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
     }
   }
 
+  const timelineProgressFill = document.getElementById('timelineProgressFill');
+
   function updateTimeline(){
     const steps = document.querySelectorAll('#timelineWrap .timeline-step');
     steps.forEach(step => {
       const n = parseInt(step.dataset.step, 10);
-      step.classList.remove('is-done', 'is-active');
+      step.classList.remove('is-done', 'is-active', 'is-locked');
       if (n < CURRENT_STAGE) step.classList.add('is-done');
       else if (n === CURRENT_STAGE) step.classList.add('is-active');
+      else step.classList.add('is-locked');
     });
+    if (timelineProgressFill){
+      const pct = Math.max(0, Math.min(1, (CURRENT_STAGE - 1) / 3));
+      timelineProgressFill.style.width = (pct * 76) + '%';
+    }
+    renderAllEta();
   }
   updateTimeline();
+
+  /* =========================================================
+     18b-2. ESTIMASI TANGGAL/JAM & COUNTDOWN PER TAHAP
+     Membaca dokumen Firestore "program_status/estimasi" (dikelola
+     admin lewat dasbor): tahap aktif + estimasi tanggal & jam per
+     tahap + keterangan bebas. Tanggal/jam HANYA ESTIMASI dan BISA
+     BERUBAH kapan saja — admin tinggal mengubahnya dari dasbor, dan
+     perubahan langsung tampil ke semua pengunjung tanpa refresh.
+  ========================================================= */
+  function formatTanggalIndo(isoLike){
+    if (!isoLike) return null;
+    const d = new Date(isoLike);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) +
+      ' • ' + d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function renderEtaForStep(stepEl, stepNum){
+    const holder = stepEl.querySelector(`[data-eta-step="${stepNum}"]`);
+    const descEl = stepEl.querySelector('.timeline-desc');
+    if (!holder) return;
+
+    const stageInfo = estimasiData?.[`stage${stepNum}`] || null;
+    const keterangan = (stageInfo?.keterangan || '').trim();
+    const estimasiISO = stageInfo?.estimasiISO || null;
+
+    if (descEl){
+      descEl.textContent = keterangan || descEl.dataset.default;
+    }
+
+    if (stepNum < CURRENT_STAGE){
+      const tglSelesai = formatTanggalIndo(stageInfo?.selesaiPadaISO);
+      holder.innerHTML = `<span class="eta-badge-done"><i class="fa-solid fa-circle-check"></i> Selesai${tglSelesai ? ' • ' + escapeHtml(tglSelesai) : ''}</span>`;
+      return;
+    }
+
+    if (stepNum > CURRENT_STAGE){
+      holder.innerHTML = `<span class="eta-badge-locked"><i class="fa-solid fa-lock"></i> Menunggu tahap sebelumnya selesai</span>`;
+      return;
+    }
+
+    if (!estimasiISO){
+      holder.innerHTML = `<span class="eta-badge-locked"><i class="fa-solid fa-hourglass-half"></i> Admin belum menentukan estimasi tanggal & jam untuk tahap ini.</span>`;
+      return;
+    }
+
+    const target = new Date(estimasiISO);
+    if (isNaN(target.getTime())){
+      holder.innerHTML = `<span class="eta-badge-locked"><i class="fa-solid fa-hourglass-half"></i> Estimasi belum valid.</span>`;
+      return;
+    }
+
+    const tglLabel = formatTanggalIndo(estimasiISO);
+    holder.innerHTML = `
+      <div class="eta-countdown">
+        <div class="eta-countdown-inner">
+          <span class="eta-label"><i class="fa-solid fa-hourglass-half"></i> Estimasi selesai • ${escapeHtml(tglLabel || '-')}</span>
+          <div class="eta-digits" data-eta-digits="${stepNum}">
+            <div class="eta-unit"><span class="eta-unit-value" data-unit="d">00</span><span class="eta-unit-label">Hari</span></div>
+            <span class="eta-sep">:</span>
+            <div class="eta-unit"><span class="eta-unit-value" data-unit="h">00</span><span class="eta-unit-label">Jam</span></div>
+            <span class="eta-sep">:</span>
+            <div class="eta-unit"><span class="eta-unit-value" data-unit="m">00</span><span class="eta-unit-label">Menit</span></div>
+            <span class="eta-sep">:</span>
+            <div class="eta-unit"><span class="eta-unit-value" data-unit="s">00</span><span class="eta-unit-label">Detik</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="eta-overdue" data-eta-overdue="${stepNum}" style="display:none;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Estimasi sebelumnya sudah lewat — proses masih berjalan, admin sedang memperbarui jadwal terbaru. Mohon bersabar menunggu update ya 🙏
+      </div>
+    `;
+    if (keterangan){
+      holder.insertAdjacentHTML('beforeend', `<div class="eta-note"><i class="fa-solid fa-circle-info"></i>${escapeHtml(keterangan)}</div>`);
+    }
+  }
+
+  function renderAllEta(){
+    document.querySelectorAll('#timelineWrap .timeline-step').forEach(step => {
+      const n = parseInt(step.dataset.step, 10);
+      renderEtaForStep(step, n);
+    });
+    tickAllCountdowns();
+  }
+
+  function tickAllCountdowns(){
+    const stageInfo = estimasiData?.[`stage${CURRENT_STAGE}`] || null;
+    const estimasiISO = stageInfo?.estimasiISO || null;
+    if (!estimasiISO) return;
+    const target = new Date(estimasiISO);
+    if (isNaN(target.getTime())) return;
+
+    const digitsWrap = document.querySelector(`[data-eta-digits="${CURRENT_STAGE}"]`);
+    const overdueEl = document.querySelector(`[data-eta-overdue="${CURRENT_STAGE}"]`);
+    if (!digitsWrap) return;
+
+    const diff = target.getTime() - Date.now();
+    if (diff <= 0){
+      const cd0 = digitsWrap.closest('.eta-countdown');
+      if (cd0) cd0.style.display = 'none';
+      if (overdueEl) overdueEl.style.display = 'block';
+      return;
+    }
+    if (overdueEl) overdueEl.style.display = 'none';
+    const cd = digitsWrap.closest('.eta-countdown');
+    if (cd) cd.style.display = '';
+
+    const totalSec = Math.floor(diff / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+
+    const setUnit = (unitKey, val) => {
+      const el = digitsWrap.querySelector(`[data-unit="${unitKey}"]`);
+      if (!el) return;
+      const formatted = String(val).padStart(2, '0');
+      if (el.textContent !== formatted){
+        el.textContent = formatted;
+        el.classList.remove('tick');
+        void el.offsetWidth;
+        el.classList.add('tick');
+      }
+    };
+    setUnit('d', days);
+    setUnit('h', hours);
+    setUnit('m', mins);
+    setUnit('s', secs);
+  }
+
+  function startCountdownTicker(){
+    if (estimasiCountdownTimer) clearInterval(estimasiCountdownTimer);
+    estimasiCountdownTimer = setInterval(tickAllCountdowns, 1000);
+  }
+  startCountdownTicker();
+
+  async function startEstimasiListener(){
+    const fb = await waitForFirebase(15000);
+    if (!fb) return;
+    try {
+      fb.onSnapshot(fb.doc(fb.db, PROGRAM_STATUS_COLLECTION, PROGRAM_STATUS_DOC_ID), (snap) => {
+        if (snap.exists()){
+          estimasiData = snap.data();
+          CURRENT_STAGE = Math.min(4, Math.max(1, parseInt(estimasiData.currentStage, 10) || 1));
+        } else {
+          estimasiData = null;
+          CURRENT_STAGE = 1;
+        }
+        updateTimeline();
+      }, (err) => {
+        console.warn('Gagal memantau program_status/estimasi (diabaikan, tidak fatal):', err.code, err.message);
+      });
+    } catch (err){
+      console.warn('Gagal memasang listener program_status/estimasi:', err);
+    }
+  }
+  startEstimasiListener();
 
   /* =========================================================
      18c. FAQ ACCORDION
