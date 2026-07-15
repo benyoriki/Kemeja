@@ -659,6 +659,128 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  /* =========================================================
+     19c. ADMIN — KELOLA CHAT (sematkan 1 pesan / hapus per-pesan)
+     Pelengkap "Reset Chat" (yang menghapus SEMUA pesan sekaligus).
+     Di sini admin bisa:
+     - Menyematkan (pin) SATU pesan penting supaya muncul sebagai
+       banner di atas chat peserta (situs publik). Menyematkan
+       pesan lain otomatis melepas pin pesan sebelumnya (hanya
+       boleh 1 pesan disematkan dalam satu waktu).
+     - Menghapus pesan tertentu saja tanpa harus reset semua chat.
+  ========================================================= */
+  const adminManageChatBtn = document.getElementById('adminManageChatBtn');
+  const manageChatOverlay = document.getElementById('manageChatOverlay');
+  const manageChatClose = document.getElementById('manageChatClose');
+  const manageChatList = document.getElementById('manageChatList');
+  const manageChatEmpty = document.getElementById('manageChatEmpty');
+  const manageChatSearch = document.getElementById('manageChatSearch');
+
+  let manageChatCache = [];
+  let manageChatLoaded = false;
+
+  async function loadManageChat(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Tidak bisa memuat chat: Firebase belum tersambung.', 'error');
+      return;
+    }
+    try {
+      const q = fb.query(fb.collection(fb.db, fb.CHAT_COLLECTION), fb.orderBy('timestamp', 'desc'), fb.limit(150));
+      const snap = await fb.getDocs(q);
+      manageChatCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      manageChatLoaded = true;
+      renderManageChat();
+    } catch (err){
+      console.warn('Gagal memuat daftar chat:', err.code, err.message);
+      showToast('Gagal memuat daftar chat. Cek Firestore Rules koleksi "chat_pesan".', 'error');
+    }
+  }
+
+  function renderManageChat(){
+    if (!manageChatList) return;
+    const q = (manageChatSearch?.value || '').trim().toLowerCase();
+    let list = manageChatCache.slice();
+    if (q){
+      list = list.filter(m =>
+        (m.nama || '').toLowerCase().includes(q) || (m.pesan || '').toLowerCase().includes(q)
+      );
+    }
+    manageChatList.innerHTML = '';
+    if (manageChatEmpty) manageChatEmpty.style.display = list.length === 0 ? 'block' : 'none';
+    list.forEach(m => {
+      const waktu = m.timestamp?.toDate ? m.timestamp.toDate().toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '-';
+      const item = document.createElement('div');
+      item.className = 'chatmng-item' + (m.pinned ? ' is-pinned' : '');
+      item.innerHTML = `
+        <div class="chatmng-body">
+          <div class="chatmng-top">
+            <span class="chatmng-name">${escapeHtml(m.nama || 'Peserta')}</span>
+            <span class="chatmng-time">${escapeHtml(waktu)}</span>
+          </div>
+          <div class="chatmng-text">${escapeHtml(m.pesan || '')}</div>
+        </div>
+        <div class="chatmng-actions">
+          <button type="button" class="chatmng-btn pin-btn${m.pinned ? ' active' : ''}" title="${m.pinned ? 'Lepas sematan' : 'Sematkan pesan ini'}"><i class="fa-solid fa-thumbtack"></i></button>
+          <button type="button" class="chatmng-btn del-btn" title="Hapus pesan ini"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+      `;
+      item.querySelector('.pin-btn')?.addEventListener('click', () => toggleChatPin(m));
+      item.querySelector('.del-btn')?.addEventListener('click', () => deleteChatMessage(m));
+      manageChatList.appendChild(item);
+    });
+  }
+
+  async function toggleChatPin(msg){
+    const fb = await waitForFirebase(6000);
+    if (!fb){ showToast('Firebase belum tersambung.', 'error'); return; }
+    try {
+      const nowPinning = !msg.pinned;
+      // Hanya 1 pesan boleh disematkan dalam satu waktu — lepas pin
+      // pesan lain yang sedang aktif dulu (kalau ada) sebelum
+      // menyematkan yang baru, supaya banner di situs publik tidak ambigu.
+      if (nowPinning){
+        const others = manageChatCache.filter(m => m.pinned && m.id !== msg.id);
+        for (const o of others){
+          await fb.updateDoc(fb.doc(fb.db, fb.CHAT_COLLECTION, o.id), { pinned: false });
+          o.pinned = false;
+        }
+      }
+      await fb.updateDoc(fb.doc(fb.db, fb.CHAT_COLLECTION, msg.id), { pinned: nowPinning });
+      msg.pinned = nowPinning;
+      renderManageChat();
+      showToast(nowPinning ? 'Pesan disematkan di atas chat peserta.' : 'Sematan pesan dilepas.', 'success');
+      await logAdminAction('chat', nowPinning ? `Menyematkan pesan: "${(msg.pesan || '').slice(0, 80)}"` : `Melepas sematan pesan: "${(msg.pesan || '').slice(0, 80)}"`, msg.nama || '-');
+    } catch (err){
+      console.warn('Gagal mengubah status pin:', err);
+      showToast('Gagal menyematkan pesan, coba lagi.', 'error');
+    }
+  }
+
+  async function deleteChatMessage(msg){
+    if (!confirm(`Hapus pesan dari "${msg.nama || 'peserta'}" ini untuk semua orang?`)) return;
+    const fb = await waitForFirebase(6000);
+    if (!fb){ showToast('Firebase belum tersambung.', 'error'); return; }
+    try {
+      await fb.deleteDoc(fb.doc(fb.db, fb.CHAT_COLLECTION, msg.id));
+      manageChatCache = manageChatCache.filter(m => m.id !== msg.id);
+      renderManageChat();
+      showToast('Pesan berhasil dihapus.', 'success');
+      await logAdminAction('chat', `Menghapus 1 pesan chat: "${(msg.pesan || '').slice(0, 80)}"`, msg.nama || '-');
+    } catch (err){
+      console.warn('Gagal menghapus pesan:', err);
+      showToast('Gagal menghapus pesan, coba lagi.', 'error');
+    }
+  }
+
+  adminManageChatBtn?.addEventListener('click', () => {
+    manageChatOverlay?.classList.add('active');
+    loadManageChat();
+  });
+  manageChatClose?.addEventListener('click', () => manageChatOverlay?.classList.remove('active'));
+  manageChatOverlay?.addEventListener('click', (e) => { if (e.target === manageChatOverlay) manageChatOverlay.classList.remove('active'); });
+  manageChatSearch?.addEventListener('input', renderManageChat);
+
   function renderAdminList(){
     if (!adminUnlocked || !adminList) return;
 
@@ -1338,6 +1460,218 @@ document.addEventListener('DOMContentLoaded', () => {
       closeAddPesertaModal();
     } else {
       addPesertaError.textContent = 'Gagal menyimpan — lihat notifikasi di atas untuk detail.';
+    }
+  });
+
+  /* =========================================================
+     20. ADMIN — ESTIMASI & PROGRES TAHAPAN PROSES
+     -------------------------------------------------
+     Mengelola dokumen Firestore "program_status/estimasi":
+       { currentStage: 1-4,
+         stage1: { estimasiISO, keterangan, selesaiPadaISO },
+         stage2: {...}, stage3: {...}, stage4: {...} }
+     - currentStage dipakai situs publik untuk menandai tahap mana
+       yang aktif di timeline ("Pendaftaran" → ... → "Distribusi").
+     - Tiap stageN punya estimasi tanggal/jam selesai (bisa kosong),
+       keterangan bebas (tampil ke pengunjung), dan selesaiPadaISO
+       (dicatat otomatis begitu tahap itu ditinggalkan/dilewati,
+       supaya badge "Selesai" di situs publik bisa menampilkan
+       tanggal riil selesainya, bukan cuma tanggal estimasi).
+     Semua field disimpan lewat setDoc(..., {merge:true}) supaya
+     dokumen otomatis dibuat kalau belum pernah ada.
+  ========================================================= */
+  const STAGE_LABELS = {
+    1: 'Pendaftaran',
+    2: 'Target Terkumpul',
+    3: 'Produksi Massal',
+    4: 'Distribusi'
+  };
+  const PROGRAM_STATUS_COLLECTION = 'program_status';
+  const PROGRAM_STATUS_DOC_ID = 'estimasi';
+
+  const estimasiBtn = document.getElementById('estimasiBtn');
+  const estimasiOverlay = document.getElementById('estimasiOverlay');
+  const estimasiClose = document.getElementById('estimasiClose');
+  const estimasiStageList = document.getElementById('estimasiStageList');
+  const estCurrentStage = document.getElementById('estCurrentStage');
+  const estCurrentStageSave = document.getElementById('estCurrentStageSave');
+  const estimasiError = document.getElementById('estimasiError');
+
+  let estimasiDataCache = null;
+  let estimasiUnsub = null;
+
+  function programStatusRef(fb){
+    return fb.doc(fb.db, PROGRAM_STATUS_COLLECTION, PROGRAM_STATUS_DOC_ID);
+  }
+
+  // Format Date -> string yang dimengerti <input type="datetime-local">
+  // (butuh "YYYY-MM-DDTHH:mm", tanpa detik/zona, mengikuti waktu lokal browser).
+  function isoToDatetimeLocalValue(iso){
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  // Kebalikannya: value <input datetime-local> -> ISO string (tersimpan di Firestore).
+  function datetimeLocalValueToIso(val){
+    if (!val) return null;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function renderEstimasiForm(){
+    if (!estimasiStageList) return;
+    const data = estimasiDataCache || {};
+    const currentStage = Math.min(4, Math.max(1, parseInt(data.currentStage, 10) || 1));
+    if (estCurrentStage) estCurrentStage.value = String(currentStage);
+
+    estimasiStageList.innerHTML = '';
+    [1,2,3,4].forEach(n => {
+      const stage = data[`stage${n}`] || {};
+      const card = document.createElement('div');
+      card.className = 'estimasi-stage-card' + (n === currentStage ? ' is-current-stage' : '');
+      card.innerHTML = `
+        <div class="estimasi-stage-card-head">
+          <h4><span class="estimasi-stage-num">${n}</span> ${escapeHtml(STAGE_LABELS[n])}</h4>
+          <span class="estimasi-stage-tag">${n === currentStage ? 'Tahap Aktif' : (n < currentStage ? 'Sudah Selesai' : 'Belum Dimulai')}</span>
+        </div>
+        <div class="estimasi-stage-grid">
+          <div class="form-group">
+            <label for="estDate${n}">Estimasi Tanggal &amp; Jam Selesai</label>
+            <input type="datetime-local" id="estDate${n}" value="${isoToDatetimeLocalValue(stage.estimasiISO)}">
+          </div>
+          <div class="form-group">
+            <label for="estNote${n}">Keterangan untuk Peserta</label>
+            <textarea id="estNote${n}" rows="2" placeholder="Contoh: Menunggu 10 peserta lagi sebelum produksi dimulai.">${escapeHtml(stage.keterangan || '')}</textarea>
+          </div>
+        </div>
+        <div class="estimasi-stage-actions">
+          <button class="btn btn-primary ripple" type="button" data-save-stage="${n}"><i class="fa-solid fa-floppy-disk"></i> Simpan Tahap ${n}</button>
+        </div>
+      `;
+      estimasiStageList.appendChild(card);
+    });
+  }
+
+  async function loadEstimasiRealtime(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      if (estimasiError) estimasiError.textContent = 'Tidak bisa memuat data: Firebase belum tersambung.';
+      return;
+    }
+    if (estimasiUnsub) return; // listener sudah aktif, tidak perlu pasang ulang
+    try {
+      estimasiUnsub = fb.onSnapshot(programStatusRef(fb), (snap) => {
+        estimasiDataCache = snap.exists() ? snap.data() : null;
+        renderEstimasiForm();
+      }, (err) => {
+        console.warn('Gagal memantau program_status/estimasi:', err.code, err.message);
+        if (estimasiError) estimasiError.textContent = 'Gagal memuat data — cek Firestore Rules koleksi "program_status".';
+      });
+    } catch (err){
+      console.warn('Gagal memasang listener program_status/estimasi:', err);
+    }
+  }
+
+  estimasiBtn?.addEventListener('click', () => {
+    estimasiOverlay?.classList.add('active');
+    if (estimasiError) estimasiError.textContent = '';
+    loadEstimasiRealtime();
+  });
+  estimasiClose?.addEventListener('click', () => estimasiOverlay?.classList.remove('active'));
+  estimasiOverlay?.addEventListener('click', (e) => { if (e.target === estimasiOverlay) estimasiOverlay.classList.remove('active'); });
+
+  // Simpan 1 kartu tahap (estimasi tanggal/jam + keterangan) — event delegation
+  // supaya tetap berfungsi walau kartu di-render ulang oleh listener realtime.
+  estimasiStageList?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-save-stage]');
+    if (!btn) return;
+    const n = parseInt(btn.dataset.saveStage, 10);
+    const dateInput = document.getElementById(`estDate${n}`);
+    const noteInput = document.getElementById(`estNote${n}`);
+    const estimasiISO = datetimeLocalValueToIso(dateInput?.value || '');
+    const keterangan = (noteInput?.value || '').trim();
+
+    const confirmed = await showAdminConfirm({
+      title: `Simpan Estimasi Tahap ${n} — ${STAGE_LABELS[n]}?`,
+      messageHtml: `<p>Estimasi tanggal/jam &amp; keterangan untuk tahap <b>${escapeHtml(STAGE_LABELS[n])}</b> akan diperbarui dan langsung tampil ke semua pengunjung situs. Pastikan tanggalnya sudah benar.</p>`,
+      confirmLabel: 'Ya, Simpan'
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      await fb.setDoc(programStatusRef(fb), {
+        [`stage${n}`]: { estimasiISO, keterangan },
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      }, { merge: true });
+      await logAdminAction('edit', `Estimasi: ${estimasiISO ? new Date(estimasiISO).toLocaleString('id-ID') : 'kosong'} • Keterangan: ${keterangan || '-'}`, `Tahap ${n} — ${STAGE_LABELS[n]}`);
+      showToast(`Estimasi tahap "${STAGE_LABELS[n]}" berhasil disimpan.`, 'success');
+    } catch (err){
+      console.warn('Gagal menyimpan estimasi tahap:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+
+  // Update tahap aktif (dengan pencatatan otomatis "selesaiPadaISO" untuk
+  // tahap-tahap yang baru saja dilewati, supaya badge "Selesai" di situs
+  // publik bisa menampilkan tanggal selesai yang sebenarnya).
+  estCurrentStageSave?.addEventListener('click', async () => {
+    const newStage = parseInt(estCurrentStage?.value, 10) || 1;
+    const oldStage = Math.min(4, Math.max(1, parseInt(estimasiDataCache?.currentStage, 10) || 1));
+
+    if (newStage === oldStage){
+      showToast('Tahap aktif tidak berubah.', 'error');
+      return;
+    }
+
+    const confirmed = await showAdminConfirm({
+      title: 'Update Tahap Aktif Program?',
+      messageHtml: `<p>Tahap aktif akan diubah dari <b>"${escapeHtml(STAGE_LABELS[oldStage])}"</b> menjadi <b>"${escapeHtml(STAGE_LABELS[newStage])}"</b>. Semua pengunjung situs akan langsung melihat perubahan ini di bagian "Progress Iuran Bersama".</p>`,
+      confirmLabel: 'Ya, Update Tahap',
+      danger: newStage < oldStage
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    estCurrentStageSave.disabled = true;
+    const originalHtml = estCurrentStageSave.innerHTML;
+    estCurrentStageSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      const patch = { currentStage: newStage, updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString() };
+      // Kalau tahap MAJU, catat tanggal selesai riil untuk tahap-tahap yang baru dilewati.
+      if (newStage > oldStage){
+        const nowIso = new Date().toISOString();
+        for (let n = oldStage; n < newStage; n++){
+          const existing = estimasiDataCache?.[`stage${n}`] || {};
+          patch[`stage${n}`] = { ...existing, selesaiPadaISO: nowIso };
+        }
+      }
+      await fb.setDoc(programStatusRef(fb), patch, { merge: true });
+      await logAdminAction('edit', `Tahap aktif: "${STAGE_LABELS[oldStage]}" → "${STAGE_LABELS[newStage]}"`, 'Progres Program');
+      showToast('Tahap aktif berhasil diperbarui.', 'success');
+    } catch (err){
+      console.warn('Gagal update tahap aktif:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      estCurrentStageSave.disabled = false;
+      estCurrentStageSave.innerHTML = originalHtml;
     }
   });
 

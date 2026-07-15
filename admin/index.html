@@ -19,8 +19,8 @@
      komponen admin-*/adash-* sudah didefinisikan lengkap di sana) +
      lapisan CSS khusus halaman ini supaya tampil sebagai HALAMAN PENUH,
      bukan modal kotak seperti sebelumnya. -->
-<link rel="stylesheet" href="../style.css?v=21">
-<link rel="stylesheet" href="admin-style.css?v=1">
+<link rel="stylesheet" href="../style.css?v=22">
+<link rel="stylesheet" href="admin-style.css?v=2">
 </head>
 <body>
 
@@ -95,9 +95,11 @@
             <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
             <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
             <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
+            <button class="adash-icon-btn" id="estimasiBtn" type="button" title="Kelola estimasi & progres tahapan"><i class="fa-solid fa-hourglass-half"></i></button>
           </div>
           <div class="adash-btn-divider" aria-hidden="true"></div>
           <div class="adash-btn-group">
+            <button class="adash-icon-btn" id="adminManageChatBtn" type="button" title="Kelola & sematkan pesan chat grup"><i class="fa-solid fa-thumbtack"></i></button>
             <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
             <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
           </div>
@@ -318,6 +320,66 @@
   </div>
 </div>
 
+<!-- ===================================================== -->
+<!-- ADMIN: KELOLA CHAT GRUP (sematkan pesan penting / hapus
+     pesan individual — pelengkap "Reset Chat" yang menghapus semua) -->
+<!-- ===================================================== -->
+<div class="admin-overlay" id="manageChatOverlay">
+  <div class="admin-box history-box">
+    <button class="admin-close" id="manageChatClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+    <h3 class="addpeserta-title"><i class="fa-solid fa-thumbtack"></i> Kelola Chat Grup</h3>
+    <p class="addpeserta-desc">Sematkan 1 pesan penting (mis. pengumuman jadwal) agar selalu tampil di atas chat peserta, atau hapus pesan tertentu tanpa harus reset semua.</p>
+    <div class="adash-search" style="margin-bottom:14px;">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="manageChatSearch" placeholder="Cari isi pesan atau nama pengirim...">
+    </div>
+    <div class="admin-history-list" id="manageChatList"><!-- diisi via JS --></div>
+    <p class="adash-empty" id="manageChatEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Belum ada pesan chat.</p>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ADMIN: ESTIMASI & COUNTDOWN TAHAPAN PROSES
+     Mengatur tahap aktif (Pendaftaran → Target Terkumpul → Produksi
+     Massal → Distribusi) beserta estimasi tanggal/jam selesai &
+     keterangan per tahap, yang tampil sebagai hitung mundur beranimasi
+     di situs publik. Estimasi ini SIFATNYA BISA BERUBAH — kalau ada
+     kendala (target belum tercapai, produksi molor, dll), admin
+     tinggal menggeser tanggal & menambahkan keterangan di sini. -->
+<!-- ===================================================== -->
+<div class="admin-overlay" id="estimasiOverlay">
+  <div class="admin-box history-box">
+    <button class="admin-close" id="estimasiClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+    <h3 class="addpeserta-title"><i class="fa-solid fa-hourglass-half"></i> Estimasi &amp; Progres Tahapan</h3>
+    <p class="addpeserta-desc">
+      Atur tahap yang sedang aktif serta estimasi tanggal &amp; jam selesai tiap tahap.
+      Ini <b>hanya perkiraan</b> dan bisa berubah kapan saja sesuai kendala di lapangan —
+      tambahkan keterangan singkat di tiap tahap supaya peserta paham alasan perubahan &amp; tetap sabar menunggu.
+      Perubahan langsung tampil real-time ke semua pengunjung situs.
+    </p>
+
+    <div class="estimasi-stage-select">
+      <label for="estCurrentStage"><i class="fa-solid fa-flag-checkered"></i> Tahap Aktif Saat Ini</label>
+      <div class="estimasi-stage-select-row">
+        <select id="estCurrentStage">
+          <option value="1">1 — Pendaftaran</option>
+          <option value="2">2 — Target Terkumpul</option>
+          <option value="3">3 — Produksi Massal</option>
+          <option value="4">4 — Distribusi</option>
+        </select>
+        <button class="btn btn-primary ripple" id="estCurrentStageSave" type="button"><i class="fa-solid fa-flag-checkered"></i> Update Tahap Aktif</button>
+      </div>
+      <small class="total-fee-note">Menaikkan tahap berarti tahap sebelumnya dianggap SELESAI dan tampil bertanda centang di situs publik.</small>
+    </div>
+
+    <div class="estimasi-stage-list" id="estimasiStageList">
+      <!-- 4 kartu tahap dirender oleh JS: admin-script.js -> renderEstimasiForm() -->
+    </div>
+
+    <small class="admin-error" id="estimasiError"></small>
+  </div>
+</div>
+
 <!-- Firebase (modular v10 via CDN) — konfigurasi SAMA PERSIS dengan
      situs publik, jadi terhubung ke database live yang sama. -->
 <script type="module">
@@ -363,6 +425,7 @@
         doc: mods.doc, updateDoc: mods.updateDoc, deleteDoc: mods.deleteDoc, serverTimestamp: mods.serverTimestamp,
         query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
         getDocs: mods.getDocs, writeBatch: mods.writeBatch,
+        getDoc: mods.getDoc, setDoc: mods.setDoc,
         auth,
         signInWithEmailAndPassword: authMods.signInWithEmailAndPassword,
         signOut: authMods.signOut,
@@ -378,6 +441,6 @@
 })();
 </script>
 
-<script src="admin-script.js?v=1"></script>
+<script src="admin-script.js?v=2"></script>
 </body>
 </html>
