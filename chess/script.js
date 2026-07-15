@@ -211,6 +211,57 @@ function updateSelfBadge(mine){
   if (el.memberRating) el.memberRating.textContent = `Rating ${mine.rating}`;
 }
 
+/**
+ * PENTING (perbaikan bug utama): profil catur milik sendiri (state.me)
+ * dulunya HANYA diisi lewat listener ranking Top-100. Kalau peserta
+ * belum masuk Top-100 (rating rendah/baru daftar dengan banyak pemain
+ * lain), atau listener ranking itu belum sempat memuat waktu peserta
+ * buru-buru klik "Terima" di tantangan duel yang masuk, state.me tetap
+ * null -> acceptChallenge() crash diam-diam (game tidak pernah jalan).
+ * Listener khusus 1 dokumen ini jauh lebih cepat & selalu akurat
+ * berapa pun rating/posisi peserta di ranking.
+ */
+function listenMyProfile(ref){
+  const { fns } = state.fb;
+  fns.onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    updateSelfBadge({ ...data, status: computeStatus(data.lastActiveAt) });
+  }, (err) => console.error('[profil-sendiri] listener error', err));
+}
+
+/**
+ * PERBAIKAN BUG: kalau sesi sebelumnya terputus mendadak (tab ditutup,
+ * koneksi putus) SEBELUM finishRoom() sempat jalan, field inGame di
+ * Firestore bisa "nyangkut" true selamanya. Akibatnya peserta terkunci
+ * permanen: semua tantangan masuk otomatis ditolak diam-diam, dan dia
+ * sendiri tidak bisa mengirim tantangan baru. Dipanggil sekali saat
+ * boot untuk memulihkan keadaan:
+ * - Kalau room-nya ternyata masih berjalan -> otomatis disambungkan
+ *   kembali ke papan (reconnect), bukan cuma direset.
+ * - Kalau room sudah selesai/hilang -> reset inGame supaya tidak
+ *   terkunci permanen.
+ */
+async function recoverActiveSession(ref){
+  const { db, fns } = state.fb;
+  try {
+    const snap = await fns.getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!data.inGame || !data.currentRoomId) return;
+
+    const roomSnap = await fns.getDoc(fns.doc(db, COL_CHESS_ROOMS, data.currentRoomId));
+    if (roomSnap.exists() && roomSnap.data().status === 'ongoing'){
+      UI.toast(el.toastContainer, 'Menyambungkan kembali ke permainan yang tertunda…', 'info');
+      enterRoom(data.currentRoomId);
+    } else {
+      await fns.updateDoc(ref, { inGame: false, currentRoomId: null });
+    }
+  } catch (err){
+    console.error('[recoverActiveSession] gagal memulihkan sesi', err);
+  }
+}
+
 /* =========================================================
    5. PROFIL POPUP + KIRIM TANTANGAN
 ========================================================= */
@@ -244,15 +295,17 @@ async function sendChallenge(target){
   sound.challenge();
 
   // Batas waktu tunggu di sisi penantang
+  let unsub = () => {};
   const timeout = setTimeout(async () => {
     const snap = await fns.getDoc(ref);
     if (snap.exists() && snap.data().status === 'pending'){
       await fns.updateDoc(ref, { status: 'expired' });
       UI.toast(el.toastContainer, `${target.nama} tidak merespons tantangan.`, 'error');
     }
+    unsub(); // PERBAIKAN BUG: dulu listener ini tidak pernah dilepas saat expired (kebocoran listener)
   }, 30000);
 
-  const unsub = fns.onSnapshot(ref, (snap) => {
+  unsub = fns.onSnapshot(ref, (snap) => {
     if (!snap.exists()) return;
     const d = snap.data();
     if (d.status === 'accepted' && d.roomId){
@@ -298,7 +351,31 @@ function listenIncomingChallenges(){
 
 async function acceptChallenge(challengeId, data){
   const { db, fns } = state.fb;
-  const me = state.me;
+  let me = state.me;
+
+  // PERBAIKAN BUG: dulu kalau state.me belum siap, baris di bawah
+  // langsung crash (me.kodeUnik pada null) dan permainan tidak pernah
+  // jalan sama sekali tanpa pesan apa pun ke peserta. Sekarang: coba
+  // ambil profil langsung sekali sebagai fallback, dan kalau tetap
+  // gagal, tolak tantangan dengan pesan yang jelas alih-alih diam saja.
+  if (!me){
+    try {
+      const myKode = state.session.kodeUnik.toUpperCase();
+      const snap = await fns.getDoc(fns.doc(db, COL_CHESS_PLAYERS, myKode));
+      if (snap.exists()) me = { ...snap.data(), status: computeStatus(snap.data().lastActiveAt) };
+    } catch (err){ console.error('[acceptChallenge] gagal ambil profil sendiri', err); }
+  }
+  if (!me){
+    UI.toast(el.toastContainer, 'Profil kamu belum siap, coba lagi sesaat.', 'error');
+    fns.updateDoc(fns.doc(db, COL_CHESS_CHALLENGES, challengeId), { status: 'rejected' }).catch(() => {});
+    return;
+  }
+  if (me.inGame){
+    UI.toast(el.toastContainer, 'Kamu sedang dalam permainan lain.', 'error');
+    fns.updateDoc(fns.doc(db, COL_CHESS_CHALLENGES, challengeId), { status: 'rejected' }).catch(() => {});
+    return;
+  }
+
   const iAmWhite = Math.random() < 0.5;
   const roomRef = await fns.addDoc(fns.collection(db, COL_CHESS_ROOMS), {
     players: {
@@ -854,11 +931,13 @@ async function boot(){
   UI.setLoadingProgress(el.loading, 55, 'Memeriksa sesi peserta…');
   state.session = readSession();
 
+  let myPlayerRef = null;
   if (state.session){
     el.guestBadge && (el.guestBadge.style.display = 'none');
     el.memberBadge && (el.memberBadge.style.display = 'flex');
-    const ref = await ensurePlayerDoc();
-    startHeartbeat(ref);
+    myPlayerRef = await ensurePlayerDoc();
+    startHeartbeat(myPlayerRef);
+    listenMyProfile(myPlayerRef);
     listenIncomingChallenges();
   } else {
     el.guestBadge && (el.guestBadge.style.display = 'flex');
@@ -893,6 +972,13 @@ async function boot(){
   if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
+
+  // PENTING: pemulihan sesi (reconnect ke room yang masih berjalan, atau
+  // reset flag inGame yang nyangkut) dijalankan PALING TERAKHIR, setelah
+  // semua tombol aksi dalam game (wireGameActions) sudah ter-pasang —
+  // supaya kalau langsung reconnect ke papan, tombol menyerah/remis/keluar
+  // sudah berfungsi, bukan mati karena listenernya belum sempat dipasang.
+  if (myPlayerRef) await recoverActiveSession(myPlayerRef);
 }
 
 boot().catch(err => {
