@@ -43,6 +43,9 @@
     <div id="guestBadge" class="guest-badge glass">
       <i class="fa-solid fa-eye"></i> Mode Tamu — hanya melihat
     </div>
+    <button id="btnMatchHistory" class="history-fab glass" title="Riwayat Pertandingan Saya" style="display:none;">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    </button>
     <div id="memberBadge" class="member-badge glass">
       <span class="avatar-chip" id="topAvatarChip">?</span>
       <div class="member-badge-text">
@@ -159,9 +162,13 @@
 
   <div class="draw-offer-box glass" id="drawOfferBox"></div>
 
+  <div class="emote-bubble-layer" id="emoteBubbleLayer"></div>
+  <div class="emote-picker glass" id="emotePicker" style="display:none;"></div>
+
   <div class="action-dock glass">
     <button class="dock-btn danger" id="btnResign" title="Menyerah"><i class="fa-solid fa-flag"></i></button>
     <button class="dock-btn" id="btnDraw" title="Tawarkan Remis"><i class="fa-solid fa-handshake"></i></button>
+    <button class="dock-btn" id="btnEmote" title="Kirim Reaksi"><i class="fa-regular fa-face-smile"></i></button>
     <button class="dock-btn" id="btnUndo" title="Undo (vs komputer)"><i class="fa-solid fa-rotate-left"></i></button>
     <button class="dock-btn" id="btnZoomOut" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
     <button class="dock-btn" id="btnZoomIn" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
@@ -218,7 +225,26 @@
       <span>Jam main: <b data-f="playtime">-</b></span>
     </div>
     <div class="badge-list" data-f="badges"></div>
-    <button class="btn-challenge" data-f="challengebtn">⚔ Tantang Duel</button>
+    <div class="challenge-tc-row" data-f="challengechips">
+      <span class="challenge-tc-label">⚔ Tantang Duel — pilih kontrol waktu:</span>
+      <div class="challenge-tc-chips">
+        <button class="tc-chip" data-tc="bullet"><b>Bullet</b><span>3+0</span></button>
+        <button class="tc-chip" data-tc="blitz"><b>Blitz</b><span>5+3</span></button>
+        <button class="tc-chip" data-tc="rapid"><b>Rapid</b><span>10+5</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: RIWAYAT PERTANDINGAN SAYA ============ -->
+<div id="matchHistoryModal" class="modal-backdrop">
+  <div class="modal-box glass history-modal-box">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+    <h3><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pertandingan Saya</h3>
+    <p class="history-modal-desc">30 pertandingan lawan player terakhir, terbaru di atas.</p>
+    <div id="matchHistoryList" class="history-list"></div>
+    <p class="empty-hint" id="matchHistoryEmpty" style="display:none;">Belum ada pertandingan lawan player. Yuk tantang peserta lain!</p>
+    <p class="empty-hint" id="matchHistoryLoading">Memuat riwayat…</p>
   </div>
 </div>
 

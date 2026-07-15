@@ -50,6 +50,16 @@ const el = {
   guestLockModal: $('guestLockModal'),
   drawOfferBox: $('drawOfferBox'),
 
+  btnMatchHistory: $('btnMatchHistory'),
+  matchHistoryModal: $('matchHistoryModal'),
+  matchHistoryList: $('matchHistoryList'),
+  matchHistoryEmpty: $('matchHistoryEmpty'),
+  matchHistoryLoading: $('matchHistoryLoading'),
+
+  btnEmote: $('btnEmote'),
+  emotePicker: $('emotePicker'),
+  emoteBubbleLayer: $('emoteBubbleLayer'),
+
   toastContainer: $('toastContainer'),
   challengeContainer: $('challengeContainer'),
 
@@ -89,6 +99,9 @@ const state = {
   opponentProfile: null,
   gameStartedAt: 0,
   watchdogLastOpponentActive: 0,
+  incrementMs: 0,        // increment waktu per-langkah (Fischer) — hanya PvP
+  timeControlLabel: 'Rapid 10+5',
+  lastEmoteTs: null,     // dedupe reaksi emoji supaya tidak diputar ulang
 };
 
 /* =========================================================
@@ -263,6 +276,49 @@ async function recoverActiveSession(ref){
 }
 
 /* =========================================================
+   5b. RIWAYAT PERTANDINGAN SAYA
+   Datanya sebenarnya SUDAH lama disimpan tiap game PvP selesai
+   (koleksi chess_matches, lihat finishRoom) tapi belum pernah
+   ditampilkan ke pemain — di sini baru dibaca & dirender.
+========================================================= */
+async function openMatchHistory(){
+  if (!state.session){ openGuestLock(); return; }
+  el.matchHistoryModal.classList.add('open');
+  el.matchHistoryList.innerHTML = '';
+  el.matchHistoryEmpty.style.display = 'none';
+  el.matchHistoryLoading.style.display = 'block';
+
+  const { db, fns } = state.fb;
+  const myKode = state.session.kodeUnik.toUpperCase();
+  try {
+    // Sengaja TANPA orderBy digabung where(array-contains) — kombinasi itu
+    // butuh composite index tambahan di Firestore Console. Diambil lalu
+    // diurutkan di sisi klien saja (jumlahnya kecil, ringan).
+    const q = fns.query(
+      fns.collection(db, COL_CHESS_MATCHES),
+      fns.where('players', 'array-contains', myKode),
+      fns.limit(60)
+    );
+    const snap = await fns.getDocs(q);
+    let matches = snap.docs.map(d => d.data());
+    matches.sort((a, b) => (b.endedAt?.toMillis?.() || 0) - (a.endedAt?.toMillis?.() || 0));
+    matches = matches.slice(0, 30);
+
+    el.matchHistoryLoading.style.display = 'none';
+    if (!matches.length){
+      el.matchHistoryEmpty.style.display = 'block';
+      return;
+    }
+    UI.renderMatchHistory(el.matchHistoryList, matches, myKode);
+  } catch (err){
+    console.warn('Gagal memuat riwayat pertandingan:', err);
+    el.matchHistoryLoading.style.display = 'none';
+    el.matchHistoryEmpty.textContent = 'Gagal memuat riwayat. Coba lagi sesaat.';
+    el.matchHistoryEmpty.style.display = 'block';
+  }
+}
+
+/* =========================================================
    5. PROFIL POPUP + KIRIM TANTANGAN
 ========================================================= */
 function openProfile(player){
@@ -271,27 +327,31 @@ function openProfile(player){
   UI.openProfileModal(el.profileModal, player, {
     myKode,
     canChallenge: !!state.session,
-    onChallenge: (target) => {
+    onChallenge: (target, tc) => {
       if (!state.session){ openGuestLock(); return; }
-      sendChallenge(target);
+      sendChallenge(target, tc);
       UI.closeModal(el.profileModal);
     }
   });
 }
 
-async function sendChallenge(target){
+async function sendChallenge(target, tc){
   const { db, fns } = state.fb;
   const me = state.me;
   if (!me){ UI.toast(el.toastContainer, 'Profil kamu belum siap, coba lagi sesaat.', 'error'); return; }
   if (me.inGame){ UI.toast(el.toastContainer, 'Kamu sedang dalam permainan.', 'error'); return; }
+  const timeControl = tc || UI.TIME_CONTROLS.rapid;
 
   const ref = await fns.addDoc(fns.collection(db, COL_CHESS_CHALLENGES), {
     from: { kodeUnik: me.kodeUnik, nama: me.nama, rating: me.rating },
     to: target.kodeUnik,
     status: 'pending',
+    timeControlMs: timeControl.ms,
+    incrementMs: timeControl.inc,
+    timeControlLabel: timeControl.label,
     createdAt: fns.serverTimestamp()
   });
-  UI.toast(el.toastContainer, `Tantangan dikirim ke ${target.nama}, menunggu respons…`, 'info');
+  UI.toast(el.toastContainer, `Tantangan ${timeControl.label} dikirim ke ${target.nama}, menunggu respons…`, 'info');
   sound.challenge();
 
   // Batas waktu tunggu di sisi penantang
@@ -377,6 +437,11 @@ async function acceptChallenge(challengeId, data){
   }
 
   const iAmWhite = Math.random() < 0.5;
+  // Fallback GAME_TIME_MS/0 kalau ini tantangan format lama (sebelum fitur
+  // kontrol waktu ada) yang kebetulan masih 'pending' saat fitur ini dirilis.
+  const timeControlMs = data.timeControlMs || GAME_TIME_MS;
+  const incrementMs = data.incrementMs || 0;
+  const timeControlLabel = data.timeControlLabel || 'Rapid 10+5';
   const roomRef = await fns.addDoc(fns.collection(db, COL_CHESS_ROOMS), {
     players: {
       w: iAmWhite ? pick(me) : pick(data.from),
@@ -386,11 +451,13 @@ async function acceptChallenge(challengeId, data){
     fen: 'start',
     pgn: [],
     turn: 'w',
-    whiteTimeMs: GAME_TIME_MS,
-    blackTimeMs: GAME_TIME_MS,
+    whiteTimeMs: timeControlMs,
+    blackTimeMs: timeControlMs,
+    timeControlMs, incrementMs, timeControlLabel,
     turnStartedAt: fns.serverTimestamp(),
     status: 'ongoing',
     drawOfferBy: null,
+    emote: null,
     vsComputer: false,
     createdAt: fns.serverTimestamp(),
     updatedAt: fns.serverTimestamp()
@@ -448,7 +515,7 @@ function enterRoom(roomId){
   state.vsComputer = false;
   state.roomId = roomId;
   UI.switchScreen({ lobbyScreen: el.lobby, gameScreen: el.game }, 'gameScreen');
-  el.gameModeLabel.textContent = 'Lawan Player • Ranking Aktif';
+  el.gameModeLabel.textContent = 'Lawan Player • Menyambung…';
 
   if (state.roomUnsub) state.roomUnsub();
   const roomRef = fns.doc(db, COL_CHESS_ROOMS, roomId);
@@ -463,6 +530,10 @@ function enterRoom(roomId){
       const myKode = state.session.kodeUnik.toUpperCase();
       state.myColor = room.players.w.kodeUnik === myKode ? 'w' : 'b';
       state.opponentProfile = state.myColor === 'w' ? room.players.b : room.players.w;
+      state.incrementMs = room.incrementMs || 0;
+      state.timeControlLabel = room.timeControlLabel || 'Rapid 10+5';
+      state.lastEmoteTs = room.emote?.ts || null; // jangan putar ulang reaksi lama saat baru masuk/reconnect
+      el.gameModeLabel.textContent = `Lawan Player • ${state.timeControlLabel}`;
       await setupBoardForNewGame(room.fen === 'start' ? undefined : room.fen);
       state.scene.setOrientation(state.myColor);
       startLocalTimerLoop();
@@ -502,6 +573,16 @@ function applyRoomSnapshot(room){
   } else {
     el.drawOfferBox && el.drawOfferBox.classList.remove('show');
   }
+
+  // Reaksi emoji cepat (👍😮😂 dst.) — dibandingkan pakai timestamp klien
+  // supaya tiap reaksi baru cuma "diputar" sekali, tidak berulang tiap
+  // snapshot lain masuk (mis. saat lawan jalan).
+  if (room.emote && room.emote.ts && room.emote.ts !== state.lastEmoteTs){
+    state.lastEmoteTs = room.emote.ts;
+    const isSelf = room.emote.by === state.myColor;
+    UI.showEmoteBubble(el.emoteBubbleLayer, room.emote.emoji, isSelf);
+    if (!isSelf && navigator.vibrate){ try { navigator.vibrate(35); } catch (err) { /* diabaikan */ } }
+  }
 }
 
 function showDrawOfferPrompt(room){
@@ -530,9 +611,20 @@ async function handleRoomFinished(room){
   if (outcome === 'win'){ sound.victory(); state.scene.celebrateVictory(); }
   else if (outcome === 'lose'){ sound.lose(); }
   else { sound.draw(); }
+  vibrateOutcome(outcome);
 
   const myDelta = room.ratingDelta ? (state.myColor === 'w' ? room.ratingDelta.w : room.ratingDelta.b) : 0;
   UI.showVictoryModal(el.victoryModal, { outcome, reason: room.reason, ratingDelta: myDelta, vsComputer: false });
+}
+
+/** Pola getar HP singkat sesuai hasil akhir — aman dilewati di device/browser tanpa dukungan getar. */
+function vibrateOutcome(outcome){
+  if (!navigator.vibrate) return;
+  try {
+    if (outcome === 'win') navigator.vibrate([40, 60, 40, 60, 120]);
+    else if (outcome === 'lose') navigator.vibrate(180);
+    else navigator.vibrate([60, 40, 60]);
+  } catch (err) { /* diabaikan */ }
 }
 
 /* =========================================================
@@ -613,7 +705,10 @@ async function commitMove(from, to, promotion){
   });
 
   if (moveResult.captured) sound.capture(); else sound.move();
-  if (state.match.isCheck() && !state.match.isCheckmate()) sound.check();
+  if (state.match.isCheck() && !state.match.isCheckmate()){
+    sound.check();
+    if (navigator.vibrate){ try { navigator.vibrate(60); } catch (err) { /* diabaikan */ } }
+  }
 
   reflectGameStatusEffects();
   renderHud();
@@ -623,6 +718,9 @@ async function commitMove(from, to, promotion){
   const elapsed = now - state.turnStartedAtMs;
   const moverColor = moveResult.color;
   state.localTimers[moverColor] = Math.max(0, state.localTimers[moverColor] - elapsed);
+  // Fischer increment: tambahkan waktu setelah bergerak (hanya PvP, kalau
+  // kontrol waktunya memang punya increment — Bullet 3+0 tidak dapat tambahan).
+  if (!state.vsComputer && state.incrementMs) state.localTimers[moverColor] += state.incrementMs;
   state.turnStartedAtMs = now;
 
   if (state.vsComputer){
@@ -743,6 +841,7 @@ function finishLocalGame(winnerColor, reason){
   if (outcome === 'win'){ sound.victory(); state.scene.celebrateVictory(); }
   else if (outcome === 'lose'){ sound.lose(); }
   else { sound.draw(); }
+  vibrateOutcome(outcome);
   UI.showVictoryModal(el.victoryModal, { outcome, reason, ratingDelta: 0, vsComputer: true });
   if (state.computer){ state.computer.destroy(); state.computer = null; }
 }
@@ -785,6 +884,7 @@ async function finishRoom(roomId, winnerColor, reason){
         result: winnerColor || 'draw', reason,
         ratingDelta: { w: deltaA, b: deltaB },
         pgn: room.pgn || [],
+        timeControlLabel: room.timeControlLabel || 'Rapid 10+5',
         durationMs: Date.now() - (room.createdAt?.toMillis ? room.createdAt.toMillis() : Date.now()),
         endedAt: fns.serverTimestamp()
       });
@@ -896,9 +996,50 @@ function wireGameActions(){
   });
   $('victoryRematchBtn') && $('victoryRematchBtn').addEventListener('click', () => {
     UI.closeModal(el.victoryModal);
-    if (state.vsComputer) startComputerGame();
-    else exitToLobby();
+    if (state.vsComputer){
+      startComputerGame();
+    } else if (state.opponentProfile){
+      // PERBAIKAN: sebelumnya tombol "Main Lagi" untuk mode PvP cuma
+      // exitToLobby() — sama saja dengan tombol Keluar, TIDAK benar-benar
+      // mengirim rematch. Sekarang kirim ulang tantangan sungguhan ke
+      // lawan yang sama, pakai kontrol waktu yang sama seperti game barusan.
+      const opp = state.opponentProfile;
+      const tc = Object.values(UI.TIME_CONTROLS).find(t => t.label === state.timeControlLabel) || UI.TIME_CONTROLS.rapid;
+      exitToLobby();
+      sendChallenge(opp, tc);
+    } else {
+      exitToLobby();
+    }
   });
+
+  // ---- Reaksi emoji cepat saat main (👍😮😂 dst., hanya mode PvP) ----
+  if (el.emotePicker){
+    UI.buildEmotePicker(el.emotePicker, {
+      onPick: async (emoji) => {
+        el.emotePicker.classList.remove('show');
+        if (state.vsComputer || !state.roomId){ return; }
+        const { db, fns } = state.fb;
+        try {
+          await fns.updateDoc(fns.doc(db, COL_CHESS_ROOMS, state.roomId), {
+            emote: { by: state.myColor, emoji, ts: Date.now() }
+          });
+        } catch (err){ console.warn('Gagal mengirim reaksi:', err); }
+      }
+    });
+  }
+  el.btnEmote && el.btnEmote.addEventListener('click', () => {
+    if (state.vsComputer){ UI.toast(el.toastContainer, 'Reaksi hanya tersedia saat lawan player.', 'info'); return; }
+    el.emotePicker.classList.toggle('show');
+  });
+  document.addEventListener('click', (e) => {
+    if (el.emotePicker && el.emotePicker.classList.contains('show') &&
+        !el.emotePicker.contains(e.target) && e.target !== el.btnEmote && !el.btnEmote?.contains(e.target)){
+      el.emotePicker.classList.remove('show');
+    }
+  });
+
+  // ---- Riwayat Pertandingan Saya ----
+  el.btnMatchHistory && el.btnMatchHistory.addEventListener('click', openMatchHistory);
 
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => UI.closeModal(btn.closest('.modal-backdrop')));
@@ -935,6 +1076,7 @@ async function boot(){
   if (state.session){
     el.guestBadge && (el.guestBadge.style.display = 'none');
     el.memberBadge && (el.memberBadge.style.display = 'flex');
+    el.btnMatchHistory && (el.btnMatchHistory.style.display = 'flex');
     myPlayerRef = await ensurePlayerDoc();
     startHeartbeat(myPlayerRef);
     listenMyProfile(myPlayerRef);

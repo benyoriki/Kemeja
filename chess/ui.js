@@ -15,6 +15,20 @@ export const TIER_THRESHOLDS = [
   { min: 2100, label: 'Grandmaster', color: '#FF4361' }
 ];
 
+export const REASON_LABEL = {
+  checkmate: 'Skakmat', timeout: 'Waktu habis', resign: 'Menyerah',
+  abandon: 'Lawan kabur dari permainan', stalemate: 'Stalemate', draw_agree: 'Sepakat remis',
+  draw_rule: 'Remis (aturan repetisi/50 langkah)'
+};
+
+export const TIME_CONTROLS = {
+  bullet: { key: 'bullet', label: 'Bullet 3+0', short: '3+0', ms: 3 * 60 * 1000, inc: 0 },
+  blitz:  { key: 'blitz',  label: 'Blitz 5+3',  short: '5+3', ms: 5 * 60 * 1000, inc: 3000 },
+  rapid:  { key: 'rapid',  label: 'Rapid 10+5', short: '10+5', ms: 10 * 60 * 1000, inc: 5000 }
+};
+
+export const QUICK_EMOTES = ['👍', '🤝', '😮', '😂', '😢', '👏'];
+
 export function tierFor(rating){
   let t = TIER_THRESHOLDS[0];
   for (const tier of TIER_THRESHOLDS) if (rating >= tier.min) t = tier;
@@ -187,16 +201,29 @@ export function openProfileModal(modalEl, player, { myKode, onChallenge, canChal
   const badgesEl = modalEl.querySelector('[data-f="badges"]');
   badgesEl.innerHTML = computeAchievements(player).map(b => `<span class="badge-chip" title="${b.desc}">${b.icon} ${b.label}</span>`).join('') || '<span class="empty-hint">Belum ada pencapaian</span>';
 
-  const challengeBtn = modalEl.querySelector('[data-f="challengebtn"]');
+  const chipsRow = modalEl.querySelector('[data-f="challengechips"]');
   const isSelf = player.kodeUnik === myKode;
-  if (isSelf || !canChallenge){
-    challengeBtn.style.display = 'none';
-  } else {
-    challengeBtn.style.display = 'inline-flex';
-    challengeBtn.disabled = player.status === 'offline' || player.inGame;
-    challengeBtn.textContent = player.inGame ? 'Sedang Bermain' : (player.status === 'offline' ? 'Pemain Offline' : '⚔ Tantang Duel');
-    challengeBtn.onclick = () => onChallenge && onChallenge(player);
+  const canPick = canChallenge && !isSelf && player.status !== 'offline' && !player.inGame;
+  chipsRow.classList.toggle('disabled', !canPick);
+  let statusEl = chipsRow.querySelector('.challenge-tc-status');
+  if (!statusEl){
+    statusEl = document.createElement('p');
+    statusEl.className = 'challenge-tc-status';
+    chipsRow.appendChild(statusEl);
   }
+  if (isSelf) statusEl.textContent = 'Ini profil kamu sendiri.';
+  else if (!canChallenge) statusEl.textContent = '';
+  else if (player.inGame) statusEl.textContent = 'Pemain sedang bermain.';
+  else if (player.status === 'offline') statusEl.textContent = 'Pemain sedang offline.';
+  chipsRow.style.display = canChallenge ? 'block' : 'none';
+
+  chipsRow.querySelectorAll('.tc-chip').forEach(btn => {
+    btn.onclick = () => {
+      if (!canPick) return;
+      const tc = TIME_CONTROLS[btn.dataset.tc];
+      onChallenge && onChallenge(player, tc);
+    };
+  });
 
   modalEl.classList.add('open');
 }
@@ -274,12 +301,7 @@ export function showVictoryModal(modalEl, { outcome, reason, ratingDelta, vsComp
   else if (outcome === 'lose'){ titleEl.textContent = 'KALAH'; modalEl.classList.add('outcome-lose'); }
   else { titleEl.textContent = 'REMIS'; modalEl.classList.add('outcome-draw'); }
 
-  const reasonLabel = {
-    checkmate: 'Skakmat', timeout: 'Waktu habis', resign: 'Menyerah',
-    abandon: 'Lawan kabur dari permainan', stalemate: 'Stalemate', draw_agree: 'Sepakat remis',
-    draw_rule: 'Remis (aturan repetisi/50 langkah)'
-  }[reason] || reason;
-  subEl.textContent = reasonLabel;
+  subEl.textContent = REASON_LABEL[reason] || reason;
 
   if (vsComputer){
     deltaEl.textContent = 'Mode lawan komputer — rating tidak berubah';
@@ -308,4 +330,57 @@ export function switchScreen(screens, activeId){
     el.classList.toggle('active', id === activeId);
   });
   document.body.classList.toggle('in-game', activeId === 'gameScreen');
+}
+
+/* ---------------- Riwayat Pertandingan Saya ---------------- */
+
+export function renderMatchHistory(el, matches, myKode){
+  if (!el) return;
+  el.innerHTML = matches.map(m => {
+    const iAmWhite = m.white?.kodeUnik === myKode;
+    const me = iAmWhite ? m.white : m.black;
+    const opp = iAmWhite ? m.black : m.white;
+    const myColorKey = iAmWhite ? 'w' : 'b';
+    const outcome = m.result === 'draw' ? 'draw' : (m.result === myColorKey ? 'win' : 'lose');
+    const outcomeLabel = { win: 'Menang', lose: 'Kalah', draw: 'Seri' }[outcome];
+    const delta = m.ratingDelta ? (myColorKey === 'w' ? m.ratingDelta.w : m.ratingDelta.b) : 0;
+    const sign = delta > 0 ? '+' : '';
+    const reason = REASON_LABEL[m.reason] || m.reason || '-';
+    const tc = m.timeControlLabel || 'Rapid 10+5';
+    return `
+      <div class="history-row result-${outcome}">
+        <span class="history-avatar" style="background:${avatarColor(opp?.kodeUnik || '?')}">${initials(opp?.nama || '?')}</span>
+        <div class="history-body">
+          <div class="history-top">
+            <span>${escapeHtml(me?.nama?.split(' ')[0] || 'Kamu')}</span>
+            <span class="history-vs">vs</span>
+            <span>${escapeHtml(opp?.nama || 'Pemain')}</span>
+          </div>
+          <div class="history-meta">
+            <span>${reason}</span><span>•</span><span>${tc}</span><span>•</span><span>${fmtDate(m.endedAt)}</span>
+          </div>
+        </div>
+        <span class="history-result-chip">${outcomeLabel}</span>
+        <span class="history-delta ${delta >= 0 ? 'delta-positive' : 'delta-negative'}">${sign}${delta}</span>
+      </div>`;
+  }).join('');
+}
+
+/* ---------------- Reaksi emoji cepat saat main ---------------- */
+
+export function buildEmotePicker(pickerEl, { onPick } = {}){
+  if (!pickerEl) return;
+  pickerEl.innerHTML = QUICK_EMOTES.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('');
+  pickerEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => onPick && onPick(btn.dataset.emoji));
+  });
+}
+
+export function showEmoteBubble(layerEl, emoji, isSelf){
+  if (!layerEl) return;
+  const bubble = document.createElement('div');
+  bubble.className = `emote-bubble ${isSelf ? 'self' : 'opp'}`;
+  bubble.textContent = emoji;
+  layerEl.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 2300);
 }
