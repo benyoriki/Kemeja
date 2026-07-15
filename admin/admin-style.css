@@ -76,7 +76,8 @@ body{
    sendiri, blur, tanpa diklik.
 ========================================================= */
 .admin-overlay#addPesertaOverlay,
-.admin-overlay#adminHistoryOverlay{
+.admin-overlay#adminHistoryOverlay,
+.admin-overlay#estimasiOverlay{
   position:fixed !important;
   inset:0 !important;
   opacity:0 !important;
@@ -91,7 +92,8 @@ body{
 }
 
 .admin-overlay#addPesertaOverlay.active,
-.admin-overlay#adminHistoryOverlay.active{
+.admin-overlay#adminHistoryOverlay.active,
+.admin-overlay#estimasiOverlay.active{
   opacity:1 !important;
   visibility:visible !important;
   pointer-events:auto !important;
@@ -99,7 +101,8 @@ body{
 
 /* Kotak modalnya sendiri: entrance animasi halus (spring), bukan cuma muncul mendadak */
 #addPesertaOverlay .admin-box,
-#adminHistoryOverlay .admin-box{
+#adminHistoryOverlay .admin-box,
+#estimasiOverlay .admin-box{
   transform:translateY(14px) scale(.97);
   opacity:0;
   transition:transform .38s cubic-bezier(.2,.8,.3,1), opacity .3s ease;
@@ -108,13 +111,14 @@ body{
 }
 
 #addPesertaOverlay.active .admin-box,
-#adminHistoryOverlay.active .admin-box{
+#adminHistoryOverlay.active .admin-box,
+#estimasiOverlay.active .admin-box{
   transform:translateY(0) scale(1);
   opacity:1;
 }
 
 @media (prefers-reduced-motion: reduce){
-  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
 }
 
 /* Tombol X di pojok kanan atas = tautan "kembali ke situs publik" */
