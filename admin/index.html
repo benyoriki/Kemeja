@@ -2,445 +2,302 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dasbor Admin — LOKON PRIMA</title>
-<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>Lokon Arena — Catur 3D | LOKON PRIMA</title>
+<meta name="description" content="Main catur 3D real-time melawan komputer atau sesama peserta LOKON PRIMA. Ranking ELO live, tantangan duel, dan papan 3D HD.">
+<meta name="theme-color" content="#05070E">
 <link rel="icon" href="../favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../favicon.png">
+<link rel="manifest" href="manifest.webmanifest">
 
-<!-- Google Fonts: sama dengan situs publik, supaya identitas visual konsisten -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="style.css?v=1">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-<!-- Pakai ulang design system situs publik (variabel warna, tipografi,
-     komponen admin-*/adash-* sudah didefinisikan lengkap di sana) +
-     lapisan CSS khusus halaman ini supaya tampil sebagai HALAMAN PENUH,
-     bukan modal kotak seperti sebelumnya. -->
-<link rel="stylesheet" href="../style.css?v=22">
-<link rel="stylesheet" href="admin-style.css?v=2">
+<!-- Peta impor modul Three.js (ESM, CDN unpkg) — dipakai oleh effects.js -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
 
-<!-- Toast Notification Container -->
+<!-- ============ LOADING SCREEN ============ -->
+<div id="loadingScreen">
+  <i class="fa-solid fa-chess-knight loading-knight"></i>
+  <div class="loading-title">LOKON ARENA</div>
+  <div class="loading-bar-track"><div class="loading-bar-fill" data-f="bar"></div></div>
+  <div class="loading-label" data-f="label">Memuat…</div>
+</div>
+
+<!-- ============ TOPBAR ============ -->
+<header class="topbar" id="topbar">
+  <a href="../index.html#home" class="topbar-back glass">
+    <i class="fa-solid fa-arrow-left"></i>
+    <span>Kembali ke <b>LOKON PRIMA</b></span>
+  </a>
+  <div class="topbar-badges">
+    <div id="guestBadge" class="guest-badge glass">
+      <i class="fa-solid fa-eye"></i> Mode Tamu — hanya melihat
+    </div>
+    <button id="btnMatchHistory" class="history-fab glass" title="Riwayat Pertandingan Saya" style="display:none;">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+    </button>
+    <div id="memberBadge" class="member-badge glass">
+      <span class="avatar-chip" id="topAvatarChip">?</span>
+      <div class="member-badge-text">
+        <b id="memberName">-</b>
+        <span id="memberRating">Rating -</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ LOBBY / DASHBOARD ============ -->
+<main id="lobbyScreen" class="active">
+
+  <div class="lobby-orb-layer" aria-hidden="true">
+    <span class="lobby-orb o1"></span>
+    <span class="lobby-orb o2"></span>
+    <span class="lobby-orb o3"></span>
+  </div>
+
+  <div class="lobby-hero">
+    <div class="lobby-hero-badge"><i class="fa-solid fa-chess-knight"></i> Arena Catur Resmi Peserta</div>
+    <h1>Lokon Chess Arena</h1>
+    <p>Papan catur 3D, ranking real-time, dan tantangan duel — khusus peserta LOKON PRIMA.</p>
+
+    <div class="lobby-stats-strip">
+      <div class="lobby-stat-chip">
+        <i class="fa-solid fa-users"></i>
+        <div><b id="statTotalPlayers">-</b><span>Total Peserta</span></div>
+      </div>
+      <div class="lobby-stat-chip">
+        <i class="fa-solid fa-circle-dot online-pulse-dot"></i>
+        <div><b id="statOnlineNow">-</b><span>Online Sekarang</span></div>
+      </div>
+      <div class="lobby-stat-chip">
+        <i class="fa-solid fa-crown"></i>
+        <div><b id="statTopRating">-</b><span>Rating Tertinggi</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mode-select-row">
+    <button id="btnVsComputer" class="mode-card computer glass">
+      <span class="mode-card-tag">Latihan</span>
+      <span class="mode-icon-badge"><i class="fa-solid fa-robot mode-icon"></i></span>
+      <h3>Lawan Komputer</h3>
+      <p>Main melawan mesin AI level 1–20. Tidak memengaruhi rating maupun statistik — murni untuk berlatih.</p>
+      <span class="mode-card-foot">Level 1–20 <i class="fa-solid fa-arrow-right"></i></span>
+    </button>
+    <button id="btnVsPlayerPanel" class="mode-card player glass">
+      <span class="mode-card-tag">Ranking Aktif</span>
+      <span class="mode-icon-badge"><i class="fa-solid fa-user-group mode-icon"></i></span>
+      <h3>Lawan Player Online</h3>
+      <p>Tantang peserta lain secara real-time. Menang/kalah memengaruhi rating ELO & statistik profil kamu.</p>
+      <span class="mode-card-foot">Real-time • ELO <i class="fa-solid fa-arrow-right"></i></span>
+    </button>
+  </div>
+
+  <div class="lobby-grid">
+    <section class="panel glass">
+      <div class="panel-head">
+        <h3><i class="fa-solid fa-ranking-star"></i> Peringkat Real-Time <span class="panel-count-chip">Top 100</span></h3>
+        <input id="searchPlayerInput" class="panel-search" type="text" placeholder="Cari nama…">
+      </div>
+      <div id="rankingList" class="panel-list"></div>
+    </section>
+
+    <section class="panel glass">
+      <div class="panel-head">
+        <h3><i class="fa-solid fa-signal"></i> Pemain Online <span class="panel-count-chip online" id="onlineCountChip">0</span></h3>
+      </div>
+      <div id="onlineList" class="panel-list"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ LAYAR PERMAINAN 3D ============ -->
+<section id="gameScreen">
+  <div id="board3d"></div>
+
+  <div class="duel-bar-wrap glass">
+    <div class="duel-bar-label" id="gameModeLabel">Memuat mode…</div>
+    <div class="duel-bar">
+      <div class="duel-bar-fill-opp" id="duelFillOpp" style="width:50%"></div>
+      <div class="duel-bar-fill-self" id="duelFillSelf" style="width:50%"></div>
+    </div>
+  </div>
+
+  <div class="hud-card hud-opp glass">
+    <div class="hud-row-top">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="hud-avatar" id="hudOppAvatar">?</span>
+        <div class="hud-info"><b id="hudOppName">Lawan</b><span id="hudOppRating">-</span></div>
+      </div>
+      <div class="hud-timer" id="hudOppTimer">10:00</div>
+    </div>
+    <div class="hud-captured" id="hudOppCaptured"></div>
+  </div>
+
+  <div class="hud-card hud-self glass">
+    <div class="hud-row-top">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="hud-avatar" id="hudSelfAvatar">?</span>
+        <div class="hud-info"><b id="hudSelfName">Kamu</b><span id="hudSelfRating">-</span></div>
+      </div>
+      <div class="hud-timer" id="hudSelfTimer">10:00</div>
+    </div>
+    <div class="hud-captured" id="hudSelfCaptured"></div>
+  </div>
+
+  <aside class="move-history-panel glass">
+    <h4>Riwayat Langkah</h4>
+    <div id="moveHistoryList"></div>
+  </aside>
+
+  <div class="draw-offer-box glass" id="drawOfferBox"></div>
+
+  <div class="emote-bubble-layer" id="emoteBubbleLayer"></div>
+  <div class="emote-picker glass" id="emotePicker" style="display:none;"></div>
+
+  <div class="action-dock glass">
+    <button class="dock-btn danger" id="btnResign" title="Menyerah"><i class="fa-solid fa-flag"></i></button>
+    <button class="dock-btn" id="btnDraw" title="Tawarkan Remis"><i class="fa-solid fa-handshake"></i></button>
+    <button class="dock-btn" id="btnEmote" title="Kirim Reaksi"><i class="fa-regular fa-face-smile"></i></button>
+    <button class="dock-btn" id="btnUndo" title="Undo (vs komputer)"><i class="fa-solid fa-rotate-left"></i></button>
+    <button class="dock-btn" id="btnZoomOut" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+    <button class="dock-btn" id="btnZoomIn" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+    <button class="dock-btn" id="btnMute" title="Mute"><i class="fa-solid fa-volume-high"></i></button>
+    <button class="dock-btn" id="btnFullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+    <button class="dock-btn" id="btnSettings" title="Pengaturan"><i class="fa-solid fa-gear"></i></button>
+    <button class="dock-btn exit" id="btnExitGame" title="Keluar"><i class="fa-solid fa-door-open"></i></button>
+  </div>
+</section>
+
+<!-- ============ MODAL: PILIH LEVEL KOMPUTER ============ -->
+<div id="computerLevelPanel" class="modal-backdrop">
+  <div class="modal-box glass">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+    <h3><i class="fa-solid fa-robot"></i> Lawan Komputer</h3>
+    <p style="font-size:12.5px;color:var(--ink-dim);margin-top:6px;">Pilih tingkat kesulitan mesin (1 = sangat mudah, 20 = grandmaster).</p>
+    <div class="level-value-big" id="computerLevelValue">10</div>
+    <input type="range" class="level-range" id="computerLevelRange" min="1" max="20" value="10">
+    <button class="btn-start-computer" id="startComputerBtn">Mulai Bermain</button>
+  </div>
+</div>
+
+<!-- ============ MODAL: PROFIL PEMAIN ============ -->
+<div id="profileModal" class="modal-backdrop">
+  <div class="modal-box glass">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+    <div class="profile-head">
+      <span class="profile-avatar" data-f="avatar">?</span>
+      <div class="profile-head-info">
+        <b data-f="nama">Nama Pemain</b>
+        <div class="profile-status-line">
+          <span class="profile-status-dot" data-f="statusdot"></span>
+          <span data-f="statustext">Offline</span>
+        </div>
+      </div>
+    </div>
+    <div class="profile-rating-row">
+      <span class="profile-rating-big" data-f="rating">1000</span>
+      <span class="profile-tier-chip" data-f="tier">Pemula</span>
+      <span class="fair-play-chip" data-f="fairplay"><i class="fa-solid fa-shield"></i> Fair Play</span>
+    </div>
+    <div class="profile-stats-grid">
+      <div class="stat-cell"><b data-f="total">0</b><span>Main</span></div>
+      <div class="stat-cell"><b data-f="menang">0</b><span>Menang</span></div>
+      <div class="stat-cell"><b data-f="kalah">0</b><span>Kalah</span></div>
+      <div class="stat-cell"><b data-f="seri">0</b><span>Seri</span></div>
+    </div>
+    <div class="profile-stats-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div class="stat-cell"><b data-f="winrate">0%</b><span>Win Rate</span></div>
+      <div class="stat-cell"><b data-f="kabur">0</b><span>Kabur</span></div>
+    </div>
+    <div class="profile-meta-row">
+      <span>Bergabung: <b data-f="joined">-</b></span>
+      <span>Jam main: <b data-f="playtime">-</b></span>
+    </div>
+    <div class="badge-list" data-f="badges"></div>
+    <div class="challenge-tc-row" data-f="challengechips">
+      <button class="duel-btn" data-f="duelbtn"><i class="fa-solid fa-hand-fist"></i> Tantang Duel <span>10 menit</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: RIWAYAT PERTANDINGAN SAYA ============ -->
+<div id="matchHistoryModal" class="modal-backdrop">
+  <div class="modal-box glass history-modal-box">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+    <h3><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pertandingan Saya</h3>
+    <p class="history-modal-desc">30 pertandingan lawan player terakhir, terbaru di atas.</p>
+    <div id="matchHistoryList" class="history-list"></div>
+    <p class="empty-hint" id="matchHistoryEmpty" style="display:none;">Belum ada pertandingan lawan player. Yuk tantang peserta lain!</p>
+    <p class="empty-hint" id="matchHistoryLoading">Memuat riwayat…</p>
+  </div>
+</div>
+
+<!-- ============ MODAL: KEMENANGAN/KEKALAHAN ============ -->
+<div id="victoryModal" class="modal-backdrop">
+  <div class="modal-box glass">
+    <i class="fa-solid fa-trophy victory-icon"></i>
+    <div class="victory-title" data-f="title">KEMENANGAN!</div>
+    <div class="victory-subtitle" data-f="subtitle">Skakmat</div>
+    <div class="victory-delta" data-f="delta">Rating +18</div>
+    <div class="victory-actions">
+      <button class="btn-victory ghost" id="victoryExitBtn">Kembali ke Dasbor</button>
+      <button class="btn-victory primary" id="victoryRematchBtn">Main Lagi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: PENGATURAN ============ -->
+<div id="settingsModal" class="modal-backdrop">
+  <div class="modal-box glass">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+    <h3><i class="fa-solid fa-gear"></i> Pengaturan</h3>
+    <div class="settings-row">
+      <label>Volume Suara</label>
+      <input type="range" id="settingVolume" min="0" max="1" step="0.05" value="0.6">
+    </div>
+    <div class="settings-row">
+      <label>Bisukan Suara</label>
+      <label class="switch"><input type="checkbox" id="settingMuted"><span class="slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <label>Bayangan (Shadow)</label>
+      <label class="switch"><input type="checkbox" id="settingShadow" checked><span class="slider"></span></label>
+    </div>
+    <div class="settings-row">
+      <label>Efek Bloom/Glow</label>
+      <label class="switch"><input type="checkbox" id="settingBloom" checked><span class="slider"></span></label>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: TAMU BELUM DAFTAR ============ -->
+<div id="guestLockModal" class="modal-backdrop">
+  <div class="modal-box glass" style="text-align:center;">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+    <i class="fa-solid fa-lock guest-lock-icon"></i>
+    <h3>Silakan Daftar Terlebih Dahulu</h3>
+    <p style="font-size:13px;color:var(--ink-dim);margin-top:8px;">Kamu perlu terdaftar sebagai peserta LOKON PRIMA untuk bisa bermain, mengirim tantangan, dan muncul di ranking. Sebagai tamu, kamu tetap bisa melihat dasbor peringkat & pemain online secara real-time.</p>
+    <div class="guest-lock-actions">
+      <button class="btn-outline" data-close-modal>Tutup</button>
+      <a href="../index.html#daftar" class="btn-solid">Daftar Sekarang</a>
+    </div>
+  </div>
+</div>
+
 <div id="toastContainer"></div>
+<div id="challengeContainer"></div>
 
-<!-- ===================================================== -->
-<!-- HALAMAN ADMIN — LOGIN + DASBOR (halaman penuh, bukan modal) -->
-<!-- ===================================================== -->
-<div class="admin-overlay active" id="adminOverlay">
-  <div class="admin-box">
-    <a href="../index.html" class="admin-close" id="adminClose" aria-label="Kembali ke situs" title="Kembali ke situs publik"><i class="fa-solid fa-xmark"></i></a>
-
-    <!-- Layar login -->
-    <div class="admin-login" id="adminLogin">
-      <span class="admin-login-eyebrow"><span class="dot"></span> AKSES TERBATAS</span>
-      <div class="admin-icon"><i class="fa-solid fa-shield-halved"></i></div>
-      <h3>Panel Kontrol Admin</h3>
-      <p>Khusus tim keuangan &amp; penanggung jawab program untuk mengelola data peserta dan pembayaran.</p>
-
-      <div class="admin-field">
-        <label for="adminUsername">Email Admin</label>
-        <div class="admin-input-wrap">
-          <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="adminUsername" placeholder="nama@lokonprima.com" autocomplete="username">
-        </div>
-      </div>
-
-      <div class="admin-field">
-        <label for="adminPasscode">Kata Sandi</label>
-        <div class="admin-input-wrap">
-          <i class="fa-solid fa-lock"></i>
-          <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="current-password">
-          <button type="button" class="admin-pass-toggle" id="adminPassToggle" aria-label="Tampilkan/sembunyikan kata sandi" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
-        </div>
-      </div>
-
-      <div class="admin-field admin-captcha">
-        <label for="adminCaptchaInput">Verifikasi keamanan</label>
-        <div class="admin-captcha-row">
-          <div class="admin-captcha-equation">
-            <span id="adminCaptchaQuestion">-</span> <span class="eq-sign">=</span> <span class="eq-mark">?</span>
-          </div>
-          <input type="text" id="adminCaptchaInput" placeholder="Jawaban" inputmode="numeric" autocomplete="off">
-          <button type="button" class="admin-captcha-refresh" id="adminCaptchaRefresh" aria-label="Ganti soal"><i class="fa-solid fa-rotate"></i></button>
-        </div>
-      </div>
-
-      <small class="admin-error" id="adminLoginError"></small>
-
-      <div class="admin-login-actions">
-        <a class="btn btn-outline-dark" id="adminCancelBtn" href="../index.html">Batal</a>
-        <button class="btn btn-primary ripple" id="adminLoginBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
-      </div>
-
-      <p class="admin-login-trust"><i class="fa-solid fa-fingerprint"></i> Diamankan dengan Firebase Authentication — enkripsi ujung-ke-ujung.</p>
-    </div>
-
-    <!-- Panel kelola peserta (DASBOR ADMIN) -->
-    <div class="admin-panel" id="adminPanel">
-
-      <div class="adash-header">
-        <div class="adash-header-left">
-          <div class="adash-logo-badge"><i class="fa-solid fa-chart-pie"></i></div>
-          <div>
-            <h3>Dasbor Admin <span class="adash-live-pill"><span class="dot"></span> LIVE</span></h3>
-            <p id="adashClock">Memuat waktu...</p>
-          </div>
-        </div>
-        <div class="adash-header-right">
-          <div class="adash-btn-group">
-            <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
-            <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
-            <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
-            <button class="adash-icon-btn" id="estimasiBtn" type="button" title="Kelola estimasi & progres tahapan"><i class="fa-solid fa-hourglass-half"></i></button>
-          </div>
-          <div class="adash-btn-divider" aria-hidden="true"></div>
-          <div class="adash-btn-group">
-            <button class="adash-icon-btn" id="adminManageChatBtn" type="button" title="Kelola & sematkan pesan chat grup"><i class="fa-solid fa-thumbtack"></i></button>
-            <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
-            <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
-          </div>
-        </div>
-      </div>
-
-      <div class="adash-stats">
-        <div class="adash-stat">
-          <div class="adash-stat-icon ic-blue"><i class="fa-solid fa-users"></i></div>
-          <div class="adash-stat-txt"><span id="adashTotal">0</span><p>Total Peserta</p></div>
-        </div>
-        <div class="adash-stat">
-          <div class="adash-stat-icon ic-green"><i class="fa-solid fa-sack-dollar"></i></div>
-          <div class="adash-stat-txt"><span id="adashPendapatan">Rp0</span><p>Dana Terkumpul</p></div>
-        </div>
-        <div class="adash-stat">
-          <div class="adash-stat-icon ic-amber"><i class="fa-solid fa-hourglass-half"></i></div>
-          <div class="adash-stat-txt"><span id="adashMenunggu">0</span><p>Menunggu DP</p></div>
-        </div>
-        <div class="adash-stat">
-          <div class="adash-stat-icon ic-purple"><i class="fa-solid fa-coins"></i></div>
-          <div class="adash-stat-txt"><span id="adashCicilan">0</span><p>Cicilan 2x Jalan</p></div>
-        </div>
-        <div class="adash-stat">
-          <div class="adash-stat-icon ic-teal"><i class="fa-solid fa-circle-check"></i></div>
-          <div class="adash-stat-txt"><span id="adashLunas">0</span><p>Lunas</p></div>
-        </div>
-      </div>
-
-      <div class="adash-toolbar">
-        <div class="adash-search">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="adminSearch" placeholder="Cari nama, WhatsApp, atau departemen...">
-        </div>
-        <div class="adash-filters" id="adminFilters">
-          <button class="adash-chip active" data-filter="semua">Semua</button>
-          <button class="adash-chip" data-filter="belum_dp">Menunggu DP</button>
-          <button class="adash-chip" data-filter="dp">DP Terbayar</button>
-          <button class="adash-chip" data-filter="cicilan">Cicilan 2x</button>
-          <button class="adash-chip" data-filter="lunas">Lunas</button>
-        </div>
-      </div>
-
-      <div class="admin-list" id="adminList"><!-- diisi via JS --></div>
-      <p class="adash-empty" id="adminEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Tidak ada peserta pada kategori ini.</p>
-    </div>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: EDIT DATA PESERTA -->
-<!-- ===================================================== -->
-<div class="admin-overlay" id="addPesertaOverlay">
-  <div class="admin-box addpeserta-box">
-    <button class="admin-close" id="addPesertaClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-
-    <h3 class="addpeserta-title"><i class="fa-solid fa-user-pen"></i> Edit Data Peserta</h3>
-    <p class="addpeserta-desc">Perbarui data peserta ini. <b>Kode Unik</b> tidak bisa diubah karena dipakai peserta untuk login &amp; cek status.</p>
-
-    <form id="addPesertaForm" class="addpeserta-form" novalidate>
-      <div class="form-grid">
-
-        <div class="form-group full">
-          <label for="apKodeUnik">Kode Unik / No. Struk</label>
-          <input type="text" id="apKodeUnik" placeholder="Contoh: LP-20260709-7162" required style="text-transform:uppercase;" readonly>
-        </div>
-
-        <div class="form-group">
-          <label for="apNama">Nama Lengkap <span class="req">*</span></label>
-          <input type="text" id="apNama" required>
-        </div>
-
-        <div class="form-group">
-          <label for="apNamaBordir">Nama Bordir</label>
-          <input type="text" id="apNamaBordir">
-        </div>
-
-        <div class="form-group">
-          <label for="apWhatsapp">Nomor WhatsApp (opsional)</label>
-          <input type="tel" id="apWhatsapp" inputmode="numeric" placeholder="Contoh: 0812xxxxxxxx">
-        </div>
-
-        <div class="form-group">
-          <label for="apDepartemen">Departemen</label>
-          <select id="apDepartemen">
-            <option value="Distribusi">Distribusi</option>
-            <option value="Gudang">Gudang</option>
-            <option value="Sales & Marketing">Sales & Marketing</option>
-            <option value="Driver / Ekspedisi">Driver / Ekspedisi</option>
-            <option value="Administrasi">Administrasi</option>
-            <option value="Keuangan">Keuangan</option>
-            <option value="Lainnya">Lainnya</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="apGender">Jenis Kelamin</label>
-          <select id="apGender">
-            <option value="Laki-laki">Laki-laki</option>
-            <option value="Perempuan">Perempuan</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="apUkuran">Ukuran Kemeja <span class="req">*</span></label>
-          <select id="apUkuran" required>
-            <option value="">Pilih Ukuran</option>
-            <option value="S">S</option>
-            <option value="M">M</option>
-            <option value="L">L</option>
-            <option value="XL">XL</option>
-            <option value="XXL">XXL</option>
-            <option value="XXXL">XXXL</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="apJumlah">Jumlah <span class="req">*</span></label>
-          <input type="number" id="apJumlah" min="1" value="1" required>
-        </div>
-
-        <div class="form-group full">
-          <label>Jenis Kemeja <span class="req">*</span></label>
-          <div class="radio-group">
-            <label class="radio-card">
-              <input type="radio" name="apJenis" value="pendek" data-harga="155000" checked>
-              <span><i class="fa-solid fa-shirt"></i> Lengan Pendek <b>Rp155.000</b></span>
-            </label>
-            <label class="radio-card">
-              <input type="radio" name="apJenis" value="panjang" data-harga="160000">
-              <span><i class="fa-solid fa-shirt"></i> Lengan Panjang <b>Rp160.000</b></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-group full">
-          <label>Metode Pembayaran</label>
-          <div class="radio-group">
-            <label class="radio-card">
-              <input type="radio" name="apMetode" value="tunai" checked>
-              <span><i class="fa-solid fa-money-bill-wave"></i> Tunai / Lunas</span>
-            </label>
-            <label class="radio-card">
-              <input type="radio" name="apMetode" value="cicilan">
-              <span><i class="fa-solid fa-coins"></i> 2x Cicilan</span>
-            </label>
-          </div>
-          <small class="total-fee-note" id="apMetodeNote"></small>
-        </div>
-
-        <div class="form-group">
-          <label>Total Harga</label>
-          <div id="apTotalHarga" class="total-harga">Rp150.000</div>
-        </div>
-
-        <div class="form-group full">
-          <label for="apCatatan">Catatan</label>
-          <textarea id="apCatatan" rows="2"></textarea>
-        </div>
-      </div>
-
-      <small class="admin-error" id="addPesertaError"></small>
-
-      <div class="admin-login-actions">
-        <button class="btn btn-outline-dark" id="addPesertaCancelBtn" type="button">Batal</button>
-        <button class="btn btn-primary ripple" id="addPesertaSubmitBtn" type="submit"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: KONFIRMASI RESET / HAPUS CHAT GRUP -->
-<!-- ===================================================== -->
-<div class="confirm-overlay" id="resetChatOverlay">
-  <div class="confirm-box">
-    <div class="confirm-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-    <h3>Hapus Semua Chat Grup?</h3>
-    <p>Tindakan ini akan <b>menghapus permanen seluruh pesan</b> di Grup Chat Peserta untuk semua orang. Data yang sudah dihapus tidak bisa dikembalikan.</p>
-    <div class="confirm-actions">
-      <button class="btn btn-outline-dark" id="resetChatCancelBtn" type="button">Batal</button>
-      <button class="btn btn-danger ripple" id="resetChatConfirmBtn" type="button"><i class="fa-solid fa-trash-can"></i> Ya, Hapus Semua</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: KONFIRMASI PERUBAHAN (GENERIK, dipakai untuk SEMUA
-     aksi di dasbor: ubah status bayar, edit data, hapus peserta) -->
-<!-- ===================================================== -->
-<div class="confirm-overlay" id="adminGenericConfirmOverlay">
-  <div class="confirm-box">
-    <div class="confirm-icon" id="agcIcon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-    <h3 id="agcTitle">Konfirmasi Perubahan</h3>
-    <div id="agcMessage" class="agc-message">Apakah Anda yakin?</div>
-    <small class="admin-error" id="agcError"></small>
-    <div class="confirm-actions">
-      <button class="btn btn-outline-dark" id="agcCancelBtn" type="button">Batal</button>
-      <button class="btn btn-primary ripple" id="agcConfirmBtn" type="button"><i class="fa-solid fa-check"></i> <span id="agcConfirmLabel">Ya, Simpan</span></button>
-    </div>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: RIWAYAT AKTIVITAS ADMIN (log siapa mengubah apa) -->
-<!-- ===================================================== -->
-<div class="admin-overlay" id="adminHistoryOverlay">
-  <div class="admin-box history-box">
-    <button class="admin-close" id="adminHistoryClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-    <h3 class="addpeserta-title"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Aktivitas Admin</h3>
-    <p class="addpeserta-desc">Catatan otomatis setiap perubahan yang dilakukan admin di dasbor ini: siapa, kapan, dan apa yang diubah.</p>
-    <div class="adash-search" style="margin-bottom:14px;">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="adminHistorySearch" placeholder="Cari nama admin, nama peserta, atau jenis aksi...">
-    </div>
-    <div class="admin-history-list" id="adminHistoryList"><!-- diisi via JS --></div>
-    <p class="adash-empty" id="adminHistoryEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Belum ada riwayat aktivitas.</p>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: KELOLA CHAT GRUP (sematkan pesan penting / hapus
-     pesan individual — pelengkap "Reset Chat" yang menghapus semua) -->
-<!-- ===================================================== -->
-<div class="admin-overlay" id="manageChatOverlay">
-  <div class="admin-box history-box">
-    <button class="admin-close" id="manageChatClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-    <h3 class="addpeserta-title"><i class="fa-solid fa-thumbtack"></i> Kelola Chat Grup</h3>
-    <p class="addpeserta-desc">Sematkan 1 pesan penting (mis. pengumuman jadwal) agar selalu tampil di atas chat peserta, atau hapus pesan tertentu tanpa harus reset semua.</p>
-    <div class="adash-search" style="margin-bottom:14px;">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="manageChatSearch" placeholder="Cari isi pesan atau nama pengirim...">
-    </div>
-    <div class="admin-history-list" id="manageChatList"><!-- diisi via JS --></div>
-    <p class="adash-empty" id="manageChatEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Belum ada pesan chat.</p>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: ESTIMASI & COUNTDOWN TAHAPAN PROSES
-     Mengatur tahap aktif (Pendaftaran → Target Terkumpul → Produksi
-     Massal → Distribusi) beserta estimasi tanggal/jam selesai &
-     keterangan per tahap, yang tampil sebagai hitung mundur beranimasi
-     di situs publik. Estimasi ini SIFATNYA BISA BERUBAH — kalau ada
-     kendala (target belum tercapai, produksi molor, dll), admin
-     tinggal menggeser tanggal & menambahkan keterangan di sini. -->
-<!-- ===================================================== -->
-<div class="admin-overlay" id="estimasiOverlay">
-  <div class="admin-box history-box">
-    <button class="admin-close" id="estimasiClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-    <h3 class="addpeserta-title"><i class="fa-solid fa-hourglass-half"></i> Estimasi &amp; Progres Tahapan</h3>
-    <p class="addpeserta-desc">
-      Atur tahap yang sedang aktif serta estimasi tanggal &amp; jam selesai tiap tahap.
-      Ini <b>hanya perkiraan</b> dan bisa berubah kapan saja sesuai kendala di lapangan —
-      tambahkan keterangan singkat di tiap tahap supaya peserta paham alasan perubahan &amp; tetap sabar menunggu.
-      Perubahan langsung tampil real-time ke semua pengunjung situs.
-    </p>
-
-    <div class="estimasi-stage-select">
-      <label for="estCurrentStage"><i class="fa-solid fa-flag-checkered"></i> Tahap Aktif Saat Ini</label>
-      <div class="estimasi-stage-select-row">
-        <select id="estCurrentStage">
-          <option value="1">1 — Pendaftaran</option>
-          <option value="2">2 — Target Terkumpul</option>
-          <option value="3">3 — Produksi Massal</option>
-          <option value="4">4 — Distribusi</option>
-        </select>
-        <button class="btn btn-primary ripple" id="estCurrentStageSave" type="button"><i class="fa-solid fa-flag-checkered"></i> Update Tahap Aktif</button>
-      </div>
-      <small class="total-fee-note">Menaikkan tahap berarti tahap sebelumnya dianggap SELESAI dan tampil bertanda centang di situs publik.</small>
-    </div>
-
-    <div class="estimasi-stage-list" id="estimasiStageList">
-      <!-- 4 kartu tahap dirender oleh JS: admin-script.js -> renderEstimasiForm() -->
-    </div>
-
-    <small class="admin-error" id="estimasiError"></small>
-  </div>
-</div>
-
-<!-- Firebase (modular v10 via CDN) — konfigurasi SAMA PERSIS dengan
-     situs publik, jadi terhubung ke database live yang sama. -->
-<script type="module">
-(async () => {
-  const firebaseConfig = {
-    apiKey: "AIzaSyBg7JYwpE6mUja1j7NBC8Rfq9Snx_HX77w",
-    authDomain: "lp-kemeja.firebaseapp.com",
-    projectId: "lp-kemeja",
-    storageBucket: "lp-kemeja.firebasestorage.app",
-    messagingSenderId: "152507973931",
-    appId: "1:152507973931:web:fd9fd3fabfe862a9cf856e"
-  };
-  const FIRESTORE_COLLECTION = "pendaftaran";
-  const CHAT_COLLECTION = "chat_pesan";
-
-  async function loadFirebaseSDK(){
-    let db = null, auth = null, mods = null, authMods = null;
-    const SDK_VER = "10.12.2";
-    for (let attempt = 1; attempt <= 3; attempt++){
-      try {
-        const [{ initializeApp }, firestoreMod, authModImport] = await Promise.all([
-          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-app.js`),
-          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-firestore.js`),
-          import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-auth.js`)
-        ]);
-        mods = firestoreMod;
-        authMods = authModImport;
-        const app = initializeApp(firebaseConfig);
-        db = mods.getFirestore(app);
-        auth = authMods.getAuth(app);
-        break;
-      } catch (err) {
-        console.warn(`SDK Firebase gagal dimuat (percobaan ${attempt}/3):`, err);
-        if (attempt < 3) await new Promise(r => setTimeout(r, 1500 * attempt));
-      }
-    }
-    if (!db || !auth){
-      console.warn("SDK Firebase tetap gagal setelah 3 percobaan — cek koneksi internet.");
-      window.__lokonFirebase = null;
-    } else {
-      window.__lokonFirebase = {
-        db, collection: mods.collection, addDoc: mods.addDoc, onSnapshot: mods.onSnapshot,
-        doc: mods.doc, updateDoc: mods.updateDoc, deleteDoc: mods.deleteDoc, serverTimestamp: mods.serverTimestamp,
-        query: mods.query, orderBy: mods.orderBy, limit: mods.limit,
-        getDocs: mods.getDocs, writeBatch: mods.writeBatch,
-        getDoc: mods.getDoc, setDoc: mods.setDoc,
-        auth,
-        signInWithEmailAndPassword: authMods.signInWithEmailAndPassword,
-        signOut: authMods.signOut,
-        onAuthStateChanged: authMods.onAuthStateChanged,
-        FIRESTORE_COLLECTION, CHAT_COLLECTION
-      };
-    }
-    window.dispatchEvent(new CustomEvent("lokon-firebase-ready"));
-    return window.__lokonFirebase;
-  }
-  window.__lokonRetryFirebase = loadFirebaseSDK;
-  await loadFirebaseSDK();
-})();
-</script>
-
-<script src="admin-script.js?v=2"></script>
+<script type="module" src="script.js?v=1"></script>
 </body>
 </html>
