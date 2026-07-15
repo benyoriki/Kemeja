@@ -1386,8 +1386,21 @@
     <span class="chat-header-live"><span class="dot"></span> LIVE</span>
   </div>
 
+  <!-- Banner pesan yang disematkan admin (muncul otomatis kalau ada) -->
+  <div class="chat-pinned-banner" id="chatPinnedBanner" style="display:none;">
+    <i class="fa-solid fa-thumbtack"></i>
+    <div class="chat-pinned-body">
+      <span class="chat-pinned-label">Pesan Disematkan</span>
+      <span class="chat-pinned-text" id="chatPinnedText"></span>
+    </div>
+    <span class="chat-pinned-goto" id="chatPinnedGoto"><i class="fa-solid fa-chevron-right"></i></span>
+  </div>
+
   <div class="chat-body" id="chatBody">
     <div class="chat-body-deco" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <button type="button" class="chat-load-older" id="chatLoadOlderBtn" style="display:none;">
+      <i class="fa-solid fa-rotate-left"></i> Muat pesan lebih lama
+    </button>
     <div class="chat-day-sep"><span>Hari ini</span></div>
     <p class="chat-empty" id="chatEmpty" style="display:none;">
       <i class="fa-solid fa-comment-dots"></i> Belum ada percakapan. Jadilah yang pertama menyapa!
@@ -1398,11 +1411,37 @@
     <!-- pesan dirender via JS -->
   </div>
 
+  <!-- Tombol melayang "ke pesan terbaru" (muncul saat scroll ke atas) -->
+  <button type="button" class="chat-scroll-bottom" id="chatScrollBottomBtn" style="display:none;" aria-label="Ke pesan terbaru">
+    <i class="fa-solid fa-arrow-down"></i>
+    <span class="chat-scroll-bottom-badge" id="chatScrollBottomBadge" style="display:none;">0</span>
+  </button>
+
+  <!-- Indikator "sedang mengetik..." -->
+  <div class="chat-typing-indicator" id="chatTypingIndicator" style="display:none;">
+    <span class="chat-typing-dots"><i></i><i></i><i></i></span>
+    <span id="chatTypingText"></span>
+  </div>
+
   <div class="chat-footer">
+    <!-- Bar konteks: sedang membalas pesan / sedang mengedit pesan sendiri -->
+    <div class="chat-composer-context" id="chatComposerContext" style="display:none;">
+      <span class="chat-context-bar"></span>
+      <i class="chat-context-icon fa-solid fa-reply" id="chatContextIcon"></i>
+      <div class="chat-context-body">
+        <span class="chat-context-label" id="chatContextLabel"></span>
+        <span class="chat-context-text" id="chatContextText"></span>
+      </div>
+      <button type="button" class="chat-context-close" id="chatContextClose" aria-label="Batalkan"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
     <!-- Untuk PESERTA terverifikasi -->
     <form class="chat-input-row" id="chatForm" style="display:none;">
-      <input type="text" id="chatInput" placeholder="Tulis pesan..." maxlength="500" autocomplete="off">
-      <button type="submit" class="chat-send-btn" aria-label="Kirim pesan"><i class="fa-solid fa-paper-plane"></i></button>
+      <div class="chat-input-wrap">
+        <input type="text" id="chatInput" placeholder="Tulis pesan..." maxlength="500" autocomplete="off">
+        <div class="chat-mention-list" id="chatMentionList" style="display:none;"></div>
+      </div>
+      <button type="submit" class="chat-send-btn" id="chatSendBtn" aria-label="Kirim pesan"><i class="fa-solid fa-paper-plane"></i></button>
     </form>
 
     <!-- Untuk TAMU / pengunjung: hanya bisa lihat -->
@@ -1413,6 +1452,14 @@
     </div>
   </div>
 </div>
+
+<!-- Popover pilih emoji reaksi — SENGAJA di luar #chatPanel (bukan
+     descendant-nya), karena #chatPanel punya CSS "transform" untuk animasi
+     buka/tutup. Kalau elemen position:fixed ini dijadikan anak #chatPanel,
+     transform pada induknya akan membuat posisi "fixed" jadi relatif ke
+     #chatPanel (bukan ke viewport asli) — akibatnya posisi popover meleset
+     dari perhitungan getBoundingClientRect() di JS yang berbasis viewport. -->
+<div class="chat-reaction-picker" id="chatReactionPicker" style="display:none;"></div>
 
 <!-- Back To Top -->
 <button id="backToTop" aria-label="Kembali ke atas"><i class="fa-solid fa-arrow-up"></i></button>

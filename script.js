@@ -2341,6 +2341,24 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
   let unreadCount = 0;
   let chatIsOpen = false;
   let chatListenerStarted = false;
+
+  // PERBAIKAN BUG: sebelumnya badge notifikasi "pesan belum dibaca" HANYA
+  // menghitung pesan yang datang SAAT panel chat sedang tertutup DAN
+  // pengunjung sedang berada di halaman (listener real-time sudah aktif).
+  // Pesan yang terkirim SEBELUM pengunjung membuka halaman (mis. semalam,
+  // atau sebelum tab dibuka) tidak pernah dihitung sama sekali, sehingga
+  // badge merah tidak muncul walau sebenarnya ada pesan yang belum dibaca.
+  // Sekarang waktu "terakhir dibaca" disimpan di localStorage (per
+  // perangkat/browser), supaya begitu halaman dibuka lagi, semua pesan
+  // yang timestamp-nya lebih baru dari waktu itu langsung dihitung sebagai
+  // belum dibaca — persis seperti badge notifikasi WhatsApp/Telegram.
+  const CHAT_LAST_READ_KEY = 'lokonChatLastReadMs';
+  function getChatLastReadMs(){
+    try { return Number(localStorage.getItem(CHAT_LAST_READ_KEY)) || 0; } catch (err) { return 0; }
+  }
+  function setChatLastReadMs(ms){
+    try { localStorage.setItem(CHAT_LAST_READ_KEY, String(ms)); } catch (err) { /* diabaikan (mis. mode privat) */ }
+  }
   const CHAT_EMOJI_SET = ['👍','❤️','😂','😮','😢','🙏'];
   let replyTarget = null;      // { id, nama, pesan } pesan yang sedang dibalas
   let editingMessage = null;   // { id, pesan } pesan milik sendiri yang sedang diedit
@@ -2529,6 +2547,7 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     document.body.classList.add('chat-open-lock');
     unreadCount = 0;
     newSinceScrolledUp = 0;
+    setChatLastReadMs(Date.now());
     updateChatBadge();
     startChatListener();
     startTypingListener();
@@ -2544,6 +2563,10 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     closeMentionList();
     stopTypingSignal();
     if (chatTypingIndicator) chatTypingIndicator.style.display = 'none';
+    // Simpan lagi waktu "terakhir dibaca" saat ditutup — supaya pesan yang
+    // masuk SAAT panel masih terbuka (sudah kelihatan langsung, jadi sudah
+    // "dibaca") tidak ikut dihitung lagi sebagai belum dibaca di kunjungan berikutnya.
+    setChatLastReadMs(Date.now());
   }
   chatFab?.addEventListener('click', openChatPanel);
   chatClose?.addEventListener('click', closeChatPanel);
@@ -2833,8 +2856,11 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
   // Firestore melaporkan perubahan (pesan baru masuk/dihapus/diedit/direaksi).
   // Jauh lebih ringan karena cuma menyentuh DOM untuk pesan yang benar-benar berubah.
   function applyChatChanges(changes, session){
+    const isInitialBatch = chatFirstLoad; // nilainya TIDAK berubah selama fungsi ini berjalan (lihat startChatListener)
+    const lastReadMs = getChatLastReadMs();
     let addedWhileClosed = 0;
     let addedWhileScrolledUp = 0;
+    let addedFromHistoryUnread = 0; // pesan lama (sebelum halaman ini dibuka) yang ternyata belum pernah dibaca
     let hasChange = false;
     let structuralChange = false; // pesan baru/hilang -> perlu rebuild separator tanggal
 
@@ -2872,6 +2898,12 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
         hasChange = true; structuralChange = true;
         if (!chatFirstLoad && !chatIsOpen) addedWhileClosed++;
         if (!chatFirstLoad && chatIsOpen && !isChatNearBottom()) addedWhileScrolledUp++;
+        // Riwayat pesan lama (batch pertama saat listener baru mulai): kalau
+        // belum pernah dibuka sebelumnya (localStorage kosong) ATAU pesan
+        // ini lebih baru dari terakhir kali chat dibuka, hitung sebagai
+        // belum dibaca — supaya badge merah langsung muncul begitu halaman
+        // dibuka, bukan menunggu ada pesan baru datang secara live.
+        if (isInitialBatch && !mine && !chatIsOpen && ms > lastReadMs) addedFromHistoryUnread++;
 
         // Bunyi + notifikasi HANYA untuk pesan baru beneran (bukan saat
         // memuat riwayat pertama kali) dan bukan pesan dari diri sendiri.
@@ -2888,6 +2920,10 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
       }
     });
 
+    if (addedFromHistoryUnread > 0){
+      unreadCount += addedFromHistoryUnread;
+      updateChatBadge();
+    }
     if (!hasChange) return;
     chatMessages.sort((a, b) => (a._ms || 0) - (b._ms || 0));
     if (structuralChange) rebuildDaySeparators();
