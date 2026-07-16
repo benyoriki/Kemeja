@@ -15,6 +15,12 @@
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+<!-- jsPDF + AutoTable: dipakai untuk membuat file PDF "Daftar Peserta"
+     (vektor, jadi teks selalu tajam walau datanya ratusan baris — beda
+     dengan versi JPG lama yang bisa buram kalau daftarnya kepanjangan). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
 <!-- Pakai ulang design system situs publik (variabel warna, tipografi,
      komponen admin-*/adash-* sudah didefinisikan lengkap di sana) +
      lapisan CSS khusus halaman ini supaya tampil sebagai HALAMAN PENUH,
@@ -94,7 +100,7 @@
           <div class="adash-btn-group">
             <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
             <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
-            <button class="adash-icon-btn" id="adminExportJpgBtn" type="button" title="Unduh Daftar Peserta (JPG) — siap dikirim ke grup WhatsApp"><i class="fa-solid fa-image"></i></button>
+            <button class="adash-icon-btn" id="adminExportPdfBtn" type="button" title="Unduh Daftar Peserta (PDF) — rapi, tajam & siap dibagikan"><i class="fa-solid fa-file-pdf"></i></button>
             <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
             <button class="adash-icon-btn" id="estimasiBtn" type="button" title="Kelola estimasi & progres tahapan"><i class="fa-solid fa-hourglass-half"></i></button>
           </div>
@@ -146,11 +152,11 @@
             <i class="fa-solid fa-chevron-right adi-chevron"></i>
           </button>
 
-          <button class="adash-drawer-item" type="button" data-target="adminExportJpgBtn">
-            <span class="adi-icon adi-purple"><i class="fa-solid fa-image"></i></span>
+          <button class="adash-drawer-item" type="button" data-target="adminExportPdfBtn">
+            <span class="adi-icon adi-purple"><i class="fa-solid fa-file-pdf"></i></span>
             <span class="adi-text">
-              <span class="adi-title">Unduh Daftar (JPG)</span>
-              <span class="adi-desc">Gambar daftar peserta, siap dikirim ke grup WhatsApp</span>
+              <span class="adi-title">Unduh Daftar (PDF)</span>
+              <span class="adi-desc">Dokumen PDF rapi &amp; tajam, tidak buram walau data banyak</span>
             </span>
             <i class="fa-solid fa-chevron-right adi-chevron"></i>
           </button>

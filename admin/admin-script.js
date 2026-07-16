@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminLogoutBtn = document.getElementById('adminLogoutBtn');
   const adminRefreshBtn = document.getElementById('adminRefreshBtn');
   const adminExportBtn = document.getElementById('adminExportBtn');
-  const adminExportJpgBtn = document.getElementById('adminExportJpgBtn');
+  const adminExportPdfBtn = document.getElementById('adminExportPdfBtn');
   const adminSearchInput = document.getElementById('adminSearch');
   const adminFiltersWrap = document.getElementById('adminFilters');
   const adashClock = document.getElementById('adashClock');
@@ -583,12 +583,16 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* =========================================================
-     18b. EXPORT DAFTAR PESERTA SEBAGAI GAMBAR JPG
-     Dipakai admin untuk share cepat ke grup WhatsApp — jadi TIDAK
-     mengandalkan screenshot manual dasbor (yang suka kepotong/berantakan
-     kalau daftarnya panjang). Digambar sendiri di <canvas> baris demi
-     baris, jadi hasilnya selalu rapi & lengkap sepanjang apa pun
-     datanya, lalu diunduh sebagai satu file .jpg.
+     18b. EXPORT DAFTAR PESERTA SEBAGAI FILE PDF
+     Diganti dari versi gambar (.jpg) ke dokumen PDF asli: teks di
+     tabelnya digambar sebagai VEKTOR (bukan piksel), jadi tetap
+     tajam & enak dibaca walau daftar pesertanya sangat panjang —
+     beda dengan JPG lama yang gampang buram kalau datanya makin
+     banyak. Dibuat pakai jsPDF + AutoTable, dengan tata letak
+     kartu, badge status berwarna, kartu info rekening, ringkasan,
+     dan penomoran halaman — supaya nuansa modern & premiumnya
+     tetap sama (bahkan lebih rapi & lebih profesional untuk
+     dibagikan atau dicetak) dibanding versi gambar sebelumnya.
   ========================================================= */
   function formatTanggalJamIndo(date){
     const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
@@ -601,374 +605,321 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Rounded-rect helper (Canvas belum semua browser dukung ctx.roundRect asli)
-  function jpgRoundedRect(ctx, x, y, w, h, r){
-    if (typeof r === 'number') r = { tl:r, tr:r, br:r, bl:r };
-    ctx.beginPath();
-    ctx.moveTo(x + r.tl, y);
-    ctx.lineTo(x + w - r.tr, y);
-    ctx.arcTo(x + w, y, x + w, y + r.tr, r.tr);
-    ctx.lineTo(x + w, y + h - r.br);
-    ctx.arcTo(x + w, y + h, x + w - r.br, y + h, r.br);
-    ctx.lineTo(x + r.bl, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r.bl, r.bl);
-    ctx.lineTo(x, y + r.tl);
-    ctx.arcTo(x, y, x + r.tl, y, r.tl);
-    ctx.closePath();
+  function hexToRgbArr(hex){
+    const h = hex.replace('#','');
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
   }
 
-  function jpgTruncate(ctx, text, maxWidth){
-    text = String(text ?? '-');
-    if (ctx.measureText(text).width <= maxWidth) return text;
-    while (text.length > 1 && ctx.measureText(text + '…').width > maxWidth){
-      text = text.slice(0, -1);
+  function pdfLerpColor(c1, c2, t){
+    return [
+      Math.round(c1[0] + (c2[0]-c1[0])*t),
+      Math.round(c1[1] + (c2[1]-c1[1])*t),
+      Math.round(c1[2] + (c2[2]-c1[2])*t)
+    ];
+  }
+
+  // jsPDF tidak punya gradient asli untuk fill sederhana, jadi
+  // disimulasikan dengan banyak potongan tipis vertikal — cukup
+  // untuk garis aksen brand tipis di bawah header.
+  function pdfGradientRect(doc, x, y, w, h, hexFrom, hexTo, steps = 48){
+    const c1 = hexToRgbArr(hexFrom), c2 = hexToRgbArr(hexTo);
+    const stepW = w / steps;
+    for (let i = 0; i < steps; i++){
+      const [r,g,b] = pdfLerpColor(c1, c2, i/(steps-1));
+      doc.setFillColor(r,g,b);
+      doc.rect(x + i*stepW, y, stepW + 0.6, h, 'F');
     }
-    return text + '…';
   }
 
-  function jpgGlow(ctx, x, y, r, color){
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, color);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  // Lencana centang kecil khusus status LUNAS di dalam badge PDF.
+  function pdfCheckMark(doc, cx, cy, r, colorHex){
+    const [rr,gg,bb] = hexToRgbArr(colorHex);
+    doc.setDrawColor(rr,gg,bb);
+    doc.setLineWidth(1.2);
+    doc.line(cx - r*0.5, cy, cx - r*0.05, cy + r*0.45);
+    doc.line(cx - r*0.05, cy + r*0.45, cx + r*0.55, cy - r*0.45);
   }
 
-  // Lencana bulat kecil bertanda centang — sentuhan "istimewa" khusus untuk
-  // status LUNAS, supaya beda dari sekadar teks/pill polos.
-  function jpgCheckBadge(ctx, cx, cy, r, bg, fg){
-    ctx.fillStyle = bg;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = fg; ctx.lineWidth = 1.8;
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(cx - r * 0.45, cy);
-    ctx.lineTo(cx - r * 0.1, cy + r * 0.4);
-    ctx.lineTo(cx + r * 0.5, cy - r * 0.45);
-    ctx.stroke();
-  }
-
-  async function exportPesertaAsJpg(){
+  async function exportPesertaAsPdf(){
     if (!pesertaData.length){
       showToast('Belum ada data peserta untuk diunduh.', 'error');
       return;
     }
-    const iconEl = adminExportJpgBtn.querySelector('i');
-    adminExportJpgBtn.disabled = true;
-    iconEl?.classList.replace('fa-image', 'fa-circle-notch');
+    if (!window.jspdf || !window.jspdf.jsPDF){
+      showToast('Modul PDF belum siap dimuat — cek koneksi internet lalu coba lagi.', 'error');
+      return;
+    }
+    const iconEl = adminExportPdfBtn.querySelector('i');
+    adminExportPdfBtn.disabled = true;
+    iconEl?.classList.replace('fa-file-pdf', 'fa-circle-notch');
     iconEl?.classList.add('fa-spin');
     try {
-      // Pastikan font Google Fonts (Outfit/Inter/JetBrains Mono) sudah
-      // benar-benar kepasang sebelum digambar, kalau tidak Canvas akan
-      // diam-diam fallback ke font default sistem dan hasilnya beda jauh.
-      if (document.fonts?.ready) await document.fonts.ready;
-
+      const { jsPDF } = window.jspdf;
       const rows = [...pesertaData].sort((a, b) => (a._ms || 0) - (b._ms || 0));
 
-      const W = 1080;
-      const PAD = 56;
-      const HEADER_H = 300;
-      const TABLE_HEAD_H = 64;
-      const ROW_H = 76;
-      const FOOTER_H = 176;
-      const PAYMENT_CARD_H = 132;   // tinggi kartu info rekening transfer
-      const PAYMENT_BLOCK_H = 40 + PAYMENT_CARD_H + 34; // margin atas + kartu + margin bawah
-      const COLW = { no:56, nama:266, bordir:206, ukuran:96, lengan:108 };
-      COLW.status = (W - PAD * 2) - COLW.no - COLW.nama - COLW.bordir - COLW.ukuran - COLW.lengan;
-      const tableH = TABLE_HEAD_H + rows.length * ROW_H;
-      const H = HEADER_H + tableH + PAYMENT_BLOCK_H + FOOTER_H;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const PAGE_W = doc.internal.pageSize.getWidth();
+      const PAGE_H = doc.internal.pageSize.getHeight();
+      const MARGIN = 40;
+      const CONTENT_W = PAGE_W - MARGIN * 2;
 
-      // Data rekening pembayaran — tampil sebagai kartu info di bawah tabel,
-      // supaya peserta yang menerima gambar ini langsung tahu ke mana harus
-      // transfer tanpa perlu tanya lagi di chat.
+      const NAVY = '#0B2545', TEAL = '#0D9488', BLUE = '#12A9E0', TEAL2 = '#0FD8B8';
+      const SLATE = '#475569', SLATE_L = '#64748B', SLATE_XL = '#94A3B8';
+      const [navyR,navyG,navyB] = hexToRgbArr(NAVY);
+      const [tealR,tealG,tealB] = hexToRgbArr(TEAL);
+      const [slateR,slateG,slateB] = hexToRgbArr(SLATE);
+      const [slateLR,slateLG,slateLB] = hexToRgbArr(SLATE_L);
+
       const REKENING = { bank: 'Bank BCA', nomor: '0830142452', atasNama: 'KAMIL MUHAMMAD NUR' };
-
-      const canvas = document.createElement('canvas');
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext('2d');
-
-      // ===== Latar belakang: PUTIH BERSIH — supaya nama peserta jauh lebih
-      // kebaca ketimbang versi gelap sebelumnya. Glow brand tetap ada di
-      // pojok tapi dibuat SANGAT tipis, sekadar sentuhan "canggih" tanpa
-      // mengganggu kontras teks. =====
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, W, H);
-      jpgGlow(ctx, W - 40, 10, 340, 'rgba(18,169,224,0.07)');
-      jpgGlow(ctx, 20, H - 50, 300, 'rgba(15,216,184,0.06)');
-
-      // ===== Header =====
-      ctx.fillStyle = '#475569';
-      ctx.font = '600 24px Outfit, sans-serif';
-      ctx.fillText('PT. LOKON PRIMA — DISTRIBUTOR AIR MINUM', PAD, 76);
-
-      ctx.fillStyle = '#CCFBF1';
-      jpgRoundedRect(ctx, PAD, 94, 258, 40, 20); ctx.fill();
-      ctx.fillStyle = '#0D9488';
-      ctx.beginPath(); ctx.arc(PAD + 22, 114, 5, 0, Math.PI * 2); ctx.fill();
-      ctx.font = '700 14px "JetBrains Mono", monospace';
-      ctx.fillText('DAFTAR PESERTA RESMI', PAD + 38, 119);
-
-      ctx.fillStyle = '#0B2545';
-      ctx.font = '800 56px Outfit, sans-serif';
-      ctx.fillText('Kemeja Kerja 2026', PAD, 202);
-
       const { hariTanggal, jam } = formatTanggalJamIndo(new Date());
-      ctx.fillStyle = '#64748B';
-      ctx.font = '500 24px Inter, sans-serif';
-      ctx.fillText(`${hariTanggal}  •  Diperbarui pukul ${jam}`, PAD, 242);
 
-      const lineGrad = ctx.createLinearGradient(PAD, 0, W - PAD, 0);
-      lineGrad.addColorStop(0, '#12A9E0'); lineGrad.addColorStop(1, '#0FD8B8');
-      ctx.fillStyle = lineGrad;
-      ctx.fillRect(PAD, 266, W - PAD * 2, 3);
+      /* ===== HEADER (halaman pertama) ===== */
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text('PT. LOKON PRIMA — DISTRIBUTOR AIR MINUM', MARGIN, 42);
 
-      // ===== Kartu tabel — putih dengan garis tepi tipis + bayangan lembut,
-      // supaya tetap terlihat sebagai "kartu" walau latarnya sudah putih =====
-      const tableX = PAD, tableY = HEADER_H, tableW = W - PAD * 2;
-      ctx.save();
-      ctx.shadowColor = 'rgba(15,23,42,0.10)';
-      ctx.shadowBlur = 26;
-      ctx.shadowOffsetY = 10;
-      ctx.fillStyle = '#FFFFFF';
-      jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22); ctx.fill();
-      ctx.restore();
-      ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 1;
-      jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22); ctx.stroke();
+      doc.setFillColor(204, 251, 241);
+      doc.roundedRect(MARGIN, 52, 172, 22, 11, 11, 'F');
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(MARGIN + 14, 63, 3, 'F');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('DAFTAR PESERTA RESMI', MARGIN + 24, 66);
 
-      ctx.fillStyle = '#F8FAFC';
-      jpgRoundedRect(ctx, tableX, tableY, tableW, TABLE_HEAD_H, { tl:22, tr:22, br:0, bl:0 }); ctx.fill();
-      ctx.strokeStyle = '#E2E8F0';
-      ctx.beginPath();
-      ctx.moveTo(tableX, tableY + TABLE_HEAD_H);
-      ctx.lineTo(tableX + tableW, tableY + TABLE_HEAD_H);
-      ctx.stroke();
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(26);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text('Kemeja Kerja 2026', MARGIN, 108);
 
-      let cx = tableX + 24;
-      ctx.font = '700 15px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#64748B';
-      [['NO', COLW.no], ['NAMA PESERTA', COLW.nama], ['NAMA BORDIR', COLW.bordir],
-       ['UKURAN', COLW.ukuran], ['LENGAN', COLW.lengan], ['STATUS PEMBAYARAN', COLW.status]]
-        .forEach(([label, w]) => { ctx.fillText(label, cx, tableY + 40); cx += w; });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.setTextColor(slateLR, slateLG, slateLB);
+      doc.text(`${hariTanggal}  •  Diperbarui pukul ${jam}`, MARGIN, 126);
 
-      // PERBAIKAN: seluruh isi baris (zebra, garis aksen kiri, dsb.) di-"clip"
-      // ke bentuk rounded-rect kartu ini, supaya tidak ada lagi warna yang
-      // "bocor"/menonjol keluar melewati sudut membundar di baris paling
-      // atas & paling bawah (bug yang terlihat di versi sebelumnya).
-      ctx.save();
-      jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22);
-      ctx.clip();
+      pdfGradientRect(doc, MARGIN, 138, CONTENT_W, 2.4, BLUE, TEAL2);
+      const HEADER_BOTTOM = 138 + 2.4 + 24;
 
-      rows.forEach((p, i) => {
-        const y = tableY + TABLE_HEAD_H + i * ROW_H;
+      /* ===== TABEL PESERTA ===== */
+      const STATUS_COLORS = {
+        lunas:    { bg: [220,252,231], fg: [21,128,61] },
+        dp:       { bg: [254,243,199], fg: [180,83,9]  },
+        belum_dp: { bg: [252,234,234], fg: [192,57,43] }
+      };
+
+      const tableRows = rows.map((p, i) => {
         const status = p.pembayaran?.status || 'belum_dp';
         const dibayar = p.pembayaran?.totalDibayar || 0;
         const isLunas = status === 'lunas';
         const isDp = !isLunas && dibayar > 0;
+        const statusKey = isLunas ? 'lunas' : (isDp ? 'dp' : 'belum_dp');
+        const statusText = isLunas ? 'LUNAS' : (isDp ? `DP ${formatRupiah(dibayar)}` : 'Belum DP');
+        return {
+          cells: [String(i + 1), p.nama || '-', p.namaBordir || '-', p.ukuranKemeja || '-',
+                  p.jenis === 'Lengan Panjang' ? 'Panjang' : 'Pendek', statusText],
+          statusKey, statusText
+        };
+      });
 
-        // Warna aksen per status — merah untuk "Belum DP" dibuat beda jelas
-        // supaya langsung kelihatan siapa yang perlu ditagih, tapi memakai
-        // nuansa yang sedikit lebih lembut (bukan merah menyala) supaya
-        // daftar tetap enak dipandang meski banyak yang belum bayar.
-        const accent = isLunas ? '#16A34A' : isDp ? '#D97706' : '#E0524F';
+      doc.autoTable({
+        startY: HEADER_BOTTOM,
+        margin: { left: MARGIN, right: MARGIN, top: 54, bottom: 70 },
+        head: [['NO', 'NAMA PESERTA', 'NAMA BORDIR', 'UKURAN', 'LENGAN', 'STATUS PEMBAYARAN']],
+        body: tableRows.map(r => r.cells),
+        theme: 'plain',
+        styles: {
+          font: 'helvetica', fontSize: 9.5,
+          cellPadding: { top: 8, bottom: 8, left: 10, right: 6 },
+          textColor: [71, 85, 105], lineColor: [226, 232, 240], lineWidth: { bottom: 0.6 },
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: [11, 37, 69], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.6,
+          cellPadding: { top: 10, bottom: 10, left: 10, right: 6 }, lineWidth: 0
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 28, halign: 'center', textColor: [148, 163, 184], fontStyle: 'bold' },
+          1: { cellWidth: 126, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
+          2: { cellWidth: 108 },
+          3: { cellWidth: 52, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
+          4: { cellWidth: 60, halign: 'center', textColor: [100, 116, 139] },
+          5: { cellWidth: 141, halign: 'left' }
+        },
+        didParseCell: (data) => {
+          // Sembunyikan teks asli kolom status — akan digambar ulang
+          // sebagai badge berwarna lewat didDrawCell di bawah, supaya
+          // tampil sebagai "pill" bukan teks polos.
+          if (data.section === 'body' && data.column.index === 5){
+            data.cell.text = [];
+          }
+        },
+        didDrawCell: (data) => {
+          if (data.section !== 'body') return;
+          const info = tableRows[data.row.index];
+          if (!info) return;
 
-        if (i % 2 === 1){
-          ctx.fillStyle = '#F8FAFC';
-          ctx.fillRect(tableX, y, tableW, ROW_H);
-        }
-        // Garis aksen tipis di kiri tiap baris sesuai status pembayaran —
-        // bantu mata memindai daftar panjang tanpa perlu baca satu-satu.
-        ctx.fillStyle = accent;
-        ctx.fillRect(tableX, y, 4, ROW_H);
+          // Garis aksen tipis di kiri tiap baris sesuai status pembayaran —
+          // bantu mata memindai daftar panjang tanpa perlu baca satu-satu.
+          if (data.column.index === 0){
+            const accent = info.statusKey === 'lunas' ? [22,163,74]
+              : info.statusKey === 'dp' ? [217,119,6] : [224,82,79];
+            doc.setFillColor(...accent);
+            doc.rect(MARGIN, data.cell.y, 2.6, data.cell.height, 'F');
+          }
 
-        let x = tableX + 24;
-        const midY = y + ROW_H / 2 + 6;
-
-        ctx.font = '600 17px Inter, sans-serif';
-        ctx.fillStyle = '#94A3B8';
-        ctx.fillText(String(i + 1), x, midY);
-        x += COLW.no;
-
-        // Nama peserta: hitam pekat & extra-bold — elemen paling penting
-        // di kartu, jadi harus paling menonjol di antara semua kolom.
-        ctx.font = '800 18px Outfit, sans-serif';
-        ctx.fillStyle = '#0F172A';
-        ctx.fillText(jpgTruncate(ctx, p.nama || '-', COLW.nama - 20), x, midY);
-        x += COLW.nama;
-
-        ctx.font = '500 17px Inter, sans-serif';
-        ctx.fillStyle = '#475569';
-        ctx.fillText(jpgTruncate(ctx, p.namaBordir || '-', COLW.bordir - 20), x, midY);
-        x += COLW.bordir;
-
-        ctx.font = '700 17px "JetBrains Mono", monospace';
-        ctx.fillStyle = '#0369A1';
-        ctx.fillText(p.ukuranKemeja || '-', x, midY);
-        x += COLW.ukuran;
-
-        ctx.font = '500 16px Inter, sans-serif';
-        ctx.fillStyle = '#64748B';
-        ctx.fillText(p.jenis === 'Lengan Panjang' ? 'Panjang' : 'Pendek', x, midY);
-        x += COLW.lengan;
-
-        let statusText, statusFg, statusBg;
-        if (isLunas){
-          statusText = 'LUNAS'; statusFg = '#15803D'; statusBg = '#DCFCE7';
-        } else if (isDp){
-          statusText = `DP ${formatRupiah(dibayar)}`; statusFg = '#B45309'; statusBg = '#FEF3C7';
-        } else {
-          // "Belum DP": tetap beda jelas dari status lain, tapi memakai
-          // merah-koral yang sedikit lebih lembut supaya tidak terlalu
-          // "berteriak" saat daftarnya panjang & didominasi status ini.
-          statusText = 'Belum DP'; statusFg = '#C0392B'; statusBg = '#FCEAEA';
-        }
-
-        ctx.font = '700 16px "JetBrains Mono", monospace';
-        const badgeExtra = isLunas ? 28 : 0; // ruang tambahan untuk lencana centang
-        const badgeW = Math.min(ctx.measureText(statusText).width + 28 + badgeExtra, COLW.status - 16);
-        const badgeY = y + ROW_H / 2 - 18;
-        ctx.fillStyle = statusBg;
-        jpgRoundedRect(ctx, x, badgeY, badgeW, 36, 18); ctx.fill();
-
-        if (isLunas){
-          // Sentuhan "istimewa" khusus peserta lunas: garis tepi hijau tipis
-          // + lencana bulat bertanda centang di dalam pill, bukan cuma teks polos.
-          ctx.strokeStyle = 'rgba(21,128,61,0.35)'; ctx.lineWidth = 1.4;
-          jpgRoundedRect(ctx, x, badgeY, badgeW, 36, 18); ctx.stroke();
-          jpgCheckBadge(ctx, x + 18, badgeY + 18, 9, '#16A34A', '#FFFFFF');
-          ctx.fillStyle = statusFg;
-          ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 46), x + 32, midY);
-        } else {
-          ctx.fillStyle = statusFg;
-          ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 24), x + 14, midY);
-        }
-
-        // Garis pemisah super tipis antar baris — bantu mata menyusuri baris
-        // panjang ke kanan tanpa "tersasar" ke baris tetangga.
-        if (i < rows.length - 1){
-          ctx.strokeStyle = 'rgba(226,232,240,0.8)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(tableX + 20, y + ROW_H);
-          ctx.lineTo(tableX + tableW - 20, y + ROW_H);
-          ctx.stroke();
+          // Badge status berwarna, dengan lencana centang khusus untuk LUNAS.
+          if (data.column.index === 5){
+            const conf = STATUS_COLORS[info.statusKey];
+            const isLunas = info.statusKey === 'lunas';
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(8.6);
+            const textW = doc.getTextWidth(info.statusText);
+            const badgeExtra = isLunas ? 15 : 0;
+            const badgeW = Math.min(textW + 20 + badgeExtra, data.cell.width - 8);
+            const badgeH = 16;
+            const badgeX = data.cell.x + 4;
+            const badgeY = data.cell.y + (data.cell.height - badgeH) / 2;
+            doc.setFillColor(...conf.bg);
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 8, 8, 'F');
+            doc.setTextColor(...conf.fg);
+            if (isLunas){
+              doc.setDrawColor(21,128,61);
+              doc.setLineWidth(0.6);
+              doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 8, 8, 'S');
+              pdfCheckMark(doc, badgeX + 13, badgeY + badgeH/2, 5, '#16A34A');
+              doc.text(info.statusText, badgeX + 22, badgeY + badgeH/2 + 3);
+            } else {
+              doc.text(info.statusText, badgeX + 10, badgeY + badgeH/2 + 3);
+            }
+          }
+        },
+        didDrawPage: (data) => {
+          // Strip merek tipis di bagian atas tiap halaman ke-2 dst, supaya
+          // tabel yang panjang tetap kelihatan identitasnya di setiap halaman.
+          if (data.pageNumber > 1){
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(slateR, slateG, slateB);
+            doc.text('PT. LOKON PRIMA — Daftar Peserta Kemeja Kerja 2026', MARGIN, 28);
+            pdfGradientRect(doc, MARGIN, 36, CONTENT_W, 1.6, BLUE, TEAL2);
+          }
         }
       });
 
-      ctx.restore(); // lepas clip rounded-rect setelah semua baris selesai digambar
+      /* =========================================================
+         KARTU INFO REKENING TRANSFER + RINGKASAN + BRANDING —
+         tampil menonjol di bawah tabel, pindah ke halaman baru
+         otomatis kalau ruang yang tersisa tidak cukup.
+      ========================================================= */
+      const CARD_H = 78, CARD_GAP = 26, SUMMARY_BLOCK_H = 100;
+      let finalY = doc.lastAutoTable.finalY + CARD_GAP;
+      if (finalY + CARD_H + SUMMARY_BLOCK_H > PAGE_H - 40){
+        doc.addPage();
+        finalY = 56;
+      }
 
-      // =========================================================
-      // KARTU INFO REKENING TRANSFER — tampil menonjol di bawah tabel,
-      // supaya siapa pun yang menerima gambar ini langsung tahu ke mana
-      // harus transfer, tanpa perlu tanya lagi di chat grup.
-      // =========================================================
-      const cardX = tableX, cardY = tableY + tableH + 40, cardW = tableW, cardH = PAYMENT_CARD_H;
+      doc.setFillColor(239, 252, 249);
+      doc.roundedRect(MARGIN, finalY, CONTENT_W, CARD_H, 12, 12, 'F');
+      doc.setDrawColor(18, 169, 224);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(MARGIN, finalY, CONTENT_W, CARD_H, 12, 12, 'S');
 
-      ctx.save();
-      ctx.shadowColor = 'rgba(15,23,42,0.10)';
-      ctx.shadowBlur = 22;
-      ctx.shadowOffsetY = 8;
-      const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
-      cardGrad.addColorStop(0, '#EFFCF9'); cardGrad.addColorStop(1, '#EAF6FD');
-      ctx.fillStyle = cardGrad;
-      jpgRoundedRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.fill();
-      ctx.restore();
-      ctx.strokeStyle = 'rgba(18,169,224,0.28)'; ctx.lineWidth = 1.4;
-      jpgRoundedRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.stroke();
+      const iconSize = 38, iconX = MARGIN + 16, iconY = finalY + (CARD_H - iconSize) / 2;
+      doc.setFillColor(18, 169, 224);
+      doc.roundedRect(iconX, iconY, iconSize, iconSize, 8, 8, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(iconX + 6, iconY + 10, iconSize - 12, iconSize - 20, 3, 3, 'F');
+      doc.setFillColor(18, 169, 224);
+      doc.rect(iconX + 6, iconY + 14, iconSize - 12, 4, 'F');
 
-      // Ikon kartu/bank di kiri, kotak gradient teal→biru khas brand
-      const iconSize = 64, iconX = cardX + 22, iconY = cardY + (cardH - iconSize) / 2;
-      const iconGrad = ctx.createLinearGradient(iconX, iconY, iconX + iconSize, iconY + iconSize);
-      iconGrad.addColorStop(0, '#12A9E0'); iconGrad.addColorStop(1, '#0FD8B8');
-      ctx.fillStyle = iconGrad;
-      jpgRoundedRect(ctx, iconX, iconY, iconSize, iconSize, 16); ctx.fill();
-      // Piktogram kartu bank sederhana (strip + chip) di dalam ikon
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      jpgRoundedRect(ctx, iconX + 10, iconY + 16, iconSize - 20, iconSize - 32, 5); ctx.fill();
-      ctx.fillStyle = iconGrad;
-      ctx.fillRect(iconX + 10, iconY + 24, iconSize - 20, 7);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      jpgRoundedRect(ctx, iconX + 14, iconY + 38, 14, 10, 3); ctx.fill();
+      const textX = iconX + iconSize + 18;
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8.6);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('TRANSFER PEMBAYARAN KE REKENING', textX, finalY + 22);
 
-      // Lencana kecil "BCA" di pojok kanan atas kartu — kesan logo bank
-      const bcaW = 68, bcaH = 30, bcaX = cardX + cardW - bcaW - 20, bcaY = cardY + 18;
-      ctx.fillStyle = '#12A9E0';
-      jpgRoundedRect(ctx, bcaX, bcaY, bcaW, bcaH, 9); ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '800 14px "JetBrains Mono", monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('BCA', bcaX + bcaW / 2, bcaY + bcaH / 2 + 5);
-      ctx.textAlign = 'left';
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(17);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text(REKENING.nomor, textX, finalY + 44);
 
-      // Teks: label kecil, nomor rekening besar & tebal (paling penting,
-      // jadi elemen paling menonjol di kartu), lalu bank + atas nama.
-      const textX = iconX + iconSize + 22;
-      ctx.font = '700 13px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#0D9488';
-      ctx.fillText('TRANSFER PEMBAYARAN KE REKENING', textX, cardY + 32);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, textX, finalY + 60);
 
-      ctx.font = '800 30px "JetBrains Mono", monospace';
-      ctx.fillStyle = '#0B2545';
-      ctx.fillText(REKENING.nomor, textX, cardY + 68);
+      const bcaW = 40, bcaH = 18, bcaX = MARGIN + CONTENT_W - bcaW - 16, bcaY = finalY + 14;
+      doc.setFillColor(18, 169, 224);
+      doc.roundedRect(bcaX, bcaY, bcaW, bcaH, 5, 5, 'F');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.text('BCA', bcaX + bcaW / 2, bcaY + bcaH / 2 + 3, { align: 'center' });
 
-      ctx.font = '600 16px Inter, sans-serif';
-      ctx.fillStyle = '#475569';
-      ctx.fillText(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, textX, cardY + 96);
-
-      // ===== Footer: ringkasan + branding =====
       const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
       const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
-      const footerY = cardY + cardH + 54;
+      const sumY = finalY + CARD_H + 34;
 
-      ctx.font = '700 22px Outfit, sans-serif';
-      ctx.fillStyle = '#0B2545';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12.5);
+      doc.setTextColor(navyR, navyG, navyB);
       const totalLabel = `Total ${rows.length} Peserta`;
-      ctx.fillText(totalLabel, PAD, footerY);
-      const totalLabelW = ctx.measureText(totalLabel).width;
-      ctx.font = '500 20px Inter, sans-serif';
-      ctx.fillStyle = '#64748B';
-      ctx.fillText(`•  ${lunasCount} Lunas   •  ${dpCount} DP Terbayar`, PAD + totalLabelW + 90, footerY);
+      doc.text(totalLabel, MARGIN, sumY);
+      const totalLabelW = doc.getTextWidth(totalLabel);
 
-      // Tautan website ditampilkan sebagai pil/tombol kecil supaya lebih
-      // menarik & terlihat "bisa diklik", bukan cuma teks polos.
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.setTextColor(slateLR, slateLG, slateLB);
+      doc.text(`•  ${lunasCount} Lunas   •  ${dpCount} DP Terbayar`, MARGIN + totalLabelW + 14, sumY);
+
       const linkText = 'benyoriki.github.io/Kemeja';
-      ctx.font = '700 16px "JetBrains Mono", monospace';
-      const linkTextW = ctx.measureText(linkText).width;
-      const linkPadX = 16, linkDot = 10;
-      const linkW = linkDot + 10 + linkTextW + linkPadX * 2;
-      const linkH = 34, linkX = PAD, linkY = footerY + 20;
-      ctx.fillStyle = '#E6F7F4';
-      jpgRoundedRect(ctx, linkX, linkY, linkW, linkH, 17); ctx.fill();
-      ctx.strokeStyle = 'rgba(13,148,136,0.3)'; ctx.lineWidth = 1.2;
-      jpgRoundedRect(ctx, linkX, linkY, linkW, linkH, 17); ctx.stroke();
-      ctx.fillStyle = '#0D9488';
-      ctx.beginPath(); ctx.arc(linkX + linkPadX + linkDot / 2, linkY + linkH / 2, linkDot / 2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillText(linkText, linkX + linkPadX + linkDot + 10, linkY + linkH / 2 + 5);
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8.6);
+      const linkTextW = doc.getTextWidth(linkText);
+      const linkPadX = 10, linkDot = 6;
+      const linkW = linkDot + 8 + linkTextW + linkPadX * 2;
+      const linkH = 20, linkY = sumY + 16;
+      doc.setFillColor(230, 247, 244);
+      doc.roundedRect(MARGIN, linkY, linkW, linkH, 10, 10, 'F');
+      doc.setDrawColor(13, 148, 136);
+      doc.setLineWidth(0.6);
+      doc.roundedRect(MARGIN, linkY, linkW, linkH, 10, 10, 'S');
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(MARGIN + linkPadX + linkDot / 2, linkY + linkH / 2, linkDot / 2, 'F');
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text(linkText, MARGIN + linkPadX + linkDot + 8, linkY + linkH / 2 + 3);
 
-      ctx.font = '400 15px Inter, sans-serif';
-      ctx.fillStyle = '#94A3B8';
-      ctx.fillText('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', PAD, linkY + linkH + 34);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.6);
+      doc.setTextColor(...hexToRgbArr(SLATE_XL));
+      doc.text('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', MARGIN, linkY + linkH + 22);
 
-      canvas.toBlob((blob) => {
-        if (!blob){ showToast('Gagal membuat gambar. Coba lagi.', 'error'); return; }
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `daftar-peserta-kemeja-${new Date().toISOString().slice(0,10)}.jpg`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('Gambar daftar peserta berhasil diunduh — siap dikirim ke grup WhatsApp.', 'success');
-      }, 'image/jpeg', 0.94);
+      /* ===== NOMOR HALAMAN — dipasang terakhir, karena total halaman
+         baru pasti diketahui setelah semua konten selesai digambar ===== */
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++){
+        doc.setPage(p);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...hexToRgbArr(SLATE_XL));
+        doc.text(`Halaman ${p} dari ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 24, { align: 'right' });
+      }
+
+      doc.save(`daftar-peserta-kemeja-${new Date().toISOString().slice(0,10)}.pdf`);
+      showToast('Dokumen PDF daftar peserta berhasil diunduh — rapi, tajam & siap dibagikan.', 'success');
     } catch (err){
-      console.error('Gagal membuat gambar daftar peserta:', err);
-      showToast('Terjadi kesalahan saat membuat gambar.', 'error');
+      console.error('Gagal membuat PDF daftar peserta:', err);
+      showToast('Terjadi kesalahan saat membuat PDF.', 'error');
     } finally {
-      adminExportJpgBtn.disabled = false;
+      adminExportPdfBtn.disabled = false;
       iconEl?.classList.remove('fa-spin');
-      iconEl?.classList.replace('fa-circle-notch', 'fa-image');
+      iconEl?.classList.replace('fa-circle-notch', 'fa-file-pdf');
     }
   }
 
-  adminExportJpgBtn?.addEventListener('click', exportPesertaAsJpg);
+  adminExportPdfBtn?.addEventListener('click', exportPesertaAsPdf);
 
   /* =========================================================
      19b. ADMIN — HAPUS / RESET CHAT GRUP PESERTA
