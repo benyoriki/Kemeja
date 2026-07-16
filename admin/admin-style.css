@@ -395,16 +395,63 @@ body{
 }
 
 /* =========================================================
-   11. RESPONSIVE — ruang napas ekstra di layar sangat lebar,
-   dan kepadatan pas di HP.
+   11. RESPONSIVE — DESKTOP/PC
+   -------------------------------------------------
+   BUG DITEMUKAN: `.admin-box{ width:100%; }` (baris ~69) TIDAK
+   punya max-width sama sekali di antara ~780px sampai 1600px —
+   artinya di resolusi laptop/PC paling umum (1280–1536px), seluruh
+   dasbor melebar mentah-mentah dari tepi ke tepi jendela browser:
+   kartu statistik jadi terlalu renggang, daftar peserta jadi satu
+   kolom yang sangat lebar & baris teksnya jadi kepanjangan tanpa
+   ritme, dan toolbar/pencarian terasa "kosong" di tengah ruang
+   kosong. Itu penyebab utama kesan "berantakan" di PC.
+
+   PERBAIKAN: kontainer diberi max-width bertahap (bukan lompat
+   langsung dari mobile ke 1600px), daftar peserta jadi grid 2 kolom
+   mulai laptop kecil dan 3 kolom di layar sangat lebar, serta kartu
+   "Dana Terkumpul" dirombak jadi satu baris horizontal (ikon •
+   angka • progress bar) di desktop supaya tidak lagi jadi banner
+   pendek yang melebar kosong.
 ========================================================= */
+@media (min-width:1024px){
+  .admin-overlay.admin-dash-mode .admin-box{ max-width:1180px; }
+
+  .adash-stats{ gap:16px; }
+
+  .admin-list{
+    display:grid; grid-template-columns:repeat(2, 1fr);
+    gap:14px 16px; align-items:start;
+  }
+  /* Animasi stagger per-baris tidak relevan lagi di layout grid */
+  .admin-row{ animation-delay:0s !important; transition:transform .22s cubic-bezier(.2,.8,.3,1), box-shadow .22s ease; }
+  .admin-row:hover{ transform:translateY(-3px); box-shadow:0 14px 32px rgba(2,8,20,.35); }
+
+  /* Kartu hero "Dana Terkumpul": dari stack vertikal jadi satu baris
+     horizontal lega — ikon, angka+label, lalu progress bar mengisi
+     sisa ruang. Memanfaatkan lebar desktop alih-alih menyisakan
+     banyak ruang kosong di kanan. */
+  .adash-stat:nth-child(2){
+    display:flex; align-items:center; gap:22px; padding:20px 26px;
+  }
+  .adash-stat:nth-child(2) .adash-stat-txt{
+    display:flex; align-items:center; gap:28px; flex:1; flex-wrap:nowrap;
+  }
+  .adash-stat:nth-child(2) .adash-stat-txt > span{
+    flex-shrink:0;
+  }
+  .adash-stat:nth-child(2) .adash-hero-progress{
+    flex:1; min-width:240px; margin-top:0;
+  }
+}
+
 @media (min-width:1300px){
   .admin-overlay{ padding-top:40px; }
+  .admin-overlay.admin-dash-mode .admin-box{ max-width:1320px; }
 }
 
 @media (min-width:1600px){
   .admin-overlay.admin-dash-mode .admin-box{ max-width:1560px; }
-  .admin-list{ grid-template-columns:repeat(3, 1fr); }
+  .admin-list{ grid-template-columns:repeat(3, 1fr); gap:16px; }
 }
 
 @media (max-width:640px){
