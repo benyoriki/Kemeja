@@ -747,12 +747,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 24, halign: 'center', textColor: [148, 163, 184], fontStyle: 'bold' },
-          1: { cellWidth: 130, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
+          0: { cellWidth: 32, halign: 'center', textColor: [148, 163, 184], fontStyle: 'bold', cellPadding: { top: 8, bottom: 8, left: 4, right: 4 } },
+          1: { cellWidth: 138, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
           2: { cellWidth: 92 },
-          3: { cellWidth: 60, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
-          4: { cellWidth: 54, halign: 'center', textColor: [100, 116, 139] },
-          5: { cellWidth: 155, halign: 'left' }
+          3: { cellWidth: 55, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
+          4: { cellWidth: 51, halign: 'center', textColor: [100, 116, 139] },
+          5: { cellWidth: 147, halign: 'left' }
         },
         didParseCell: (data) => {
           // Sembunyikan teks asli kolom status — akan digambar ulang
