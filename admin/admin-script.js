@@ -216,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminLogoutBtn = document.getElementById('adminLogoutBtn');
   const adminRefreshBtn = document.getElementById('adminRefreshBtn');
   const adminExportBtn = document.getElementById('adminExportBtn');
+  const adminExportJpgBtn = document.getElementById('adminExportJpgBtn');
   const adminSearchInput = document.getElementById('adminSearch');
   const adminFiltersWrap = document.getElementById('adminFilters');
   const adashClock = document.getElementById('adashClock');
@@ -580,6 +581,238 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
     showToast('Data berhasil diexport ke CSV.', 'success');
   });
+
+  /* =========================================================
+     18b. EXPORT DAFTAR PESERTA SEBAGAI GAMBAR JPG
+     Dipakai admin untuk share cepat ke grup WhatsApp — jadi TIDAK
+     mengandalkan screenshot manual dasbor (yang suka kepotong/berantakan
+     kalau daftarnya panjang). Digambar sendiri di <canvas> baris demi
+     baris, jadi hasilnya selalu rapi & lengkap sepanjang apa pun
+     datanya, lalu diunduh sebagai satu file .jpg.
+  ========================================================= */
+  function formatTanggalJamIndo(date){
+    const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const jam = String(date.getHours()).padStart(2,'0');
+    const menit = String(date.getMinutes()).padStart(2,'0');
+    return {
+      hariTanggal: `${HARI[date.getDay()]}, ${date.getDate()} ${BULAN[date.getMonth()]} ${date.getFullYear()}`,
+      jam: `${jam}.${menit} WIB`
+    };
+  }
+
+  // Rounded-rect helper (Canvas belum semua browser dukung ctx.roundRect asli)
+  function jpgRoundedRect(ctx, x, y, w, h, r){
+    if (typeof r === 'number') r = { tl:r, tr:r, br:r, bl:r };
+    ctx.beginPath();
+    ctx.moveTo(x + r.tl, y);
+    ctx.lineTo(x + w - r.tr, y);
+    ctx.arcTo(x + w, y, x + w, y + r.tr, r.tr);
+    ctx.lineTo(x + w, y + h - r.br);
+    ctx.arcTo(x + w, y + h, x + w - r.br, y + h, r.br);
+    ctx.lineTo(x + r.bl, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r.bl, r.bl);
+    ctx.lineTo(x, y + r.tl);
+    ctx.arcTo(x, y, x + r.tl, y, r.tl);
+    ctx.closePath();
+  }
+
+  function jpgTruncate(ctx, text, maxWidth){
+    text = String(text ?? '-');
+    if (ctx.measureText(text).width <= maxWidth) return text;
+    while (text.length > 1 && ctx.measureText(text + '…').width > maxWidth){
+      text = text.slice(0, -1);
+    }
+    return text + '…';
+  }
+
+  function jpgGlow(ctx, x, y, r, color){
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  async function exportPesertaAsJpg(){
+    if (!pesertaData.length){
+      showToast('Belum ada data peserta untuk diunduh.', 'error');
+      return;
+    }
+    const iconEl = adminExportJpgBtn.querySelector('i');
+    adminExportJpgBtn.disabled = true;
+    iconEl?.classList.replace('fa-image', 'fa-circle-notch');
+    iconEl?.classList.add('fa-spin');
+    try {
+      // Pastikan font Google Fonts (Outfit/Inter/JetBrains Mono) sudah
+      // benar-benar kepasang sebelum digambar, kalau tidak Canvas akan
+      // diam-diam fallback ke font default sistem dan hasilnya beda jauh.
+      if (document.fonts?.ready) await document.fonts.ready;
+
+      const rows = [...pesertaData].sort((a, b) => (a._ms || 0) - (b._ms || 0));
+
+      const W = 1080;
+      const PAD = 56;
+      const HEADER_H = 300;
+      const TABLE_HEAD_H = 64;
+      const ROW_H = 76;
+      const FOOTER_H = 150;
+      const COLW = { no:56, nama:266, bordir:206, ukuran:96, lengan:108 };
+      COLW.status = (W - PAD * 2) - COLW.no - COLW.nama - COLW.bordir - COLW.ukuran - COLW.lengan;
+      const tableH = TABLE_HEAD_H + rows.length * ROW_H;
+      const H = HEADER_H + tableH + FOOTER_H;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+
+      // ===== Latar belakang: gradient navy khas brand + glow lembut =====
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, '#0B2545');
+      bg.addColorStop(0.45, '#0E3A66');
+      bg.addColorStop(1, '#071022');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+      jpgGlow(ctx, W - 60, 40, 360, 'rgba(18,169,224,0.30)');
+      jpgGlow(ctx, 40, H - 80, 320, 'rgba(15,216,184,0.16)');
+
+      // ===== Header =====
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.font = '600 24px Outfit, sans-serif';
+      ctx.fillText('PT. LOKON PRIMA — DISTRIBUTOR AIR MINUM', PAD, 76);
+
+      ctx.fillStyle = 'rgba(15,216,184,0.16)';
+      jpgRoundedRect(ctx, PAD, 94, 258, 40, 20); ctx.fill();
+      ctx.fillStyle = '#0FD8B8';
+      ctx.beginPath(); ctx.arc(PAD + 22, 114, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '700 14px "JetBrains Mono", monospace';
+      ctx.fillText('DAFTAR PESERTA RESMI', PAD + 38, 119);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '800 56px Outfit, sans-serif';
+      ctx.fillText('Kemeja Kerja 2026', PAD, 202);
+
+      const { hariTanggal, jam } = formatTanggalJamIndo(new Date());
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.font = '500 24px Inter, sans-serif';
+      ctx.fillText(`${hariTanggal}  •  Diperbarui pukul ${jam}`, PAD, 242);
+
+      const lineGrad = ctx.createLinearGradient(PAD, 0, W - PAD, 0);
+      lineGrad.addColorStop(0, '#12A9E0'); lineGrad.addColorStop(1, '#0FD8B8');
+      ctx.fillStyle = lineGrad;
+      ctx.fillRect(PAD, 266, W - PAD * 2, 3);
+
+      // ===== Kartu tabel =====
+      const tableX = PAD, tableY = HEADER_H, tableW = W - PAD * 2;
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1;
+      jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22); ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      jpgRoundedRect(ctx, tableX, tableY, tableW, TABLE_HEAD_H, { tl:22, tr:22, br:0, bl:0 }); ctx.fill();
+
+      let cx = tableX + 24;
+      ctx.font = '700 15px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      [['NO', COLW.no], ['NAMA PESERTA', COLW.nama], ['NAMA BORDIR', COLW.bordir],
+       ['UKURAN', COLW.ukuran], ['LENGAN', COLW.lengan], ['STATUS PEMBAYARAN', COLW.status]]
+        .forEach(([label, w]) => { ctx.fillText(label, cx, tableY + 40); cx += w; });
+
+      rows.forEach((p, i) => {
+        const y = tableY + TABLE_HEAD_H + i * ROW_H;
+        if (i % 2 === 1){
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          ctx.fillRect(tableX, y, tableW, ROW_H);
+        }
+        let x = tableX + 24;
+        const midY = y + ROW_H / 2 + 6;
+
+        ctx.font = '600 17px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText(String(i + 1), x, midY);
+        x += COLW.no;
+
+        ctx.font = '700 18px Outfit, sans-serif';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(jpgTruncate(ctx, p.nama || '-', COLW.nama - 20), x, midY);
+        x += COLW.nama;
+
+        ctx.font = '500 17px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.78)';
+        ctx.fillText(jpgTruncate(ctx, p.namaBordir || '-', COLW.bordir - 20), x, midY);
+        x += COLW.bordir;
+
+        ctx.font = '700 17px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#12A9E0';
+        ctx.fillText(p.ukuranKemeja || '-', x, midY);
+        x += COLW.ukuran;
+
+        ctx.font = '500 16px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText(p.jenis === 'Lengan Panjang' ? 'Panjang' : 'Pendek', x, midY);
+        x += COLW.lengan;
+
+        const status = p.pembayaran?.status || 'belum_dp';
+        const dibayar = p.pembayaran?.totalDibayar || 0;
+        let statusText, statusFg, statusBg;
+        if (status === 'lunas'){
+          statusText = 'LUNAS'; statusFg = '#0FD8B8'; statusBg = 'rgba(15,216,184,0.16)';
+        } else if (dibayar > 0){
+          statusText = `DP ${formatRupiah(dibayar)}`; statusFg = '#F2C14E'; statusBg = 'rgba(242,193,78,0.16)';
+        } else {
+          statusText = 'Belum DP'; statusFg = 'rgba(255,255,255,0.55)'; statusBg = 'rgba(255,255,255,0.07)';
+        }
+        ctx.font = '700 16px "JetBrains Mono", monospace';
+        const badgeW = Math.min(ctx.measureText(statusText).width + 28, COLW.status - 16);
+        ctx.fillStyle = statusBg;
+        jpgRoundedRect(ctx, x, y + ROW_H / 2 - 18, badgeW, 36, 18); ctx.fill();
+        ctx.fillStyle = statusFg;
+        ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 24), x + 14, midY);
+      });
+
+      // ===== Footer: ringkasan + branding =====
+      const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
+      const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
+      const footerY = tableY + tableH + 54;
+
+      ctx.font = '700 22px Outfit, sans-serif';
+      ctx.fillStyle = '#FFFFFF';
+      const totalLabel = `Total ${rows.length} Peserta`;
+      ctx.fillText(totalLabel, PAD, footerY);
+      const totalLabelW = ctx.measureText(totalLabel).width;
+      ctx.font = '500 20px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillText(`•  ${lunasCount} Lunas   •  ${dpCount} DP Terbayar`, PAD + totalLabelW + 90, footerY);
+
+      ctx.font = '600 17px "JetBrains Mono", monospace';
+      ctx.fillStyle = 'rgba(18,169,224,0.9)';
+      ctx.fillText('benyoriki.github.io/Kemeja', PAD, footerY + 40);
+      ctx.font = '400 15px Inter, sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillText('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', PAD, footerY + 68);
+
+      canvas.toBlob((blob) => {
+        if (!blob){ showToast('Gagal membuat gambar. Coba lagi.', 'error'); return; }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `daftar-peserta-kemeja-${new Date().toISOString().slice(0,10)}.jpg`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Gambar daftar peserta berhasil diunduh — siap dikirim ke grup WhatsApp.', 'success');
+      }, 'image/jpeg', 0.94);
+    } catch (err){
+      console.error('Gagal membuat gambar daftar peserta:', err);
+      showToast('Terjadi kesalahan saat membuat gambar.', 'error');
+    } finally {
+      adminExportJpgBtn.disabled = false;
+      iconEl?.classList.remove('fa-spin');
+      iconEl?.classList.replace('fa-circle-notch', 'fa-image');
+    }
+  }
+
+  adminExportJpgBtn?.addEventListener('click', exportPesertaAsJpg);
 
   /* =========================================================
      19b. ADMIN — HAPUS / RESET CHAT GRUP PESERTA
