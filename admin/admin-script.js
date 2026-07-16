@@ -670,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const HEADER_H = 300;
       const TABLE_HEAD_H = 64;
       const ROW_H = 76;
-      const FOOTER_H = 150;
+      const FOOTER_H = 176;
       const PAYMENT_CARD_H = 132;   // tinggi kartu info rekening transfer
       const PAYMENT_BLOCK_H = 40 + PAYMENT_CARD_H + 34; // margin atas + kartu + margin bawah
       const COLW = { no:56, nama:266, bordir:206, ukuran:96, lengan:108 };
@@ -750,6 +750,14 @@ document.addEventListener('DOMContentLoaded', () => {
        ['UKURAN', COLW.ukuran], ['LENGAN', COLW.lengan], ['STATUS PEMBAYARAN', COLW.status]]
         .forEach(([label, w]) => { ctx.fillText(label, cx, tableY + 40); cx += w; });
 
+      // PERBAIKAN: seluruh isi baris (zebra, garis aksen kiri, dsb.) di-"clip"
+      // ke bentuk rounded-rect kartu ini, supaya tidak ada lagi warna yang
+      // "bocor"/menonjol keluar melewati sudut membundar di baris paling
+      // atas & paling bawah (bug yang terlihat di versi sebelumnya).
+      ctx.save();
+      jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22);
+      ctx.clip();
+
       rows.forEach((p, i) => {
         const y = tableY + TABLE_HEAD_H + i * ROW_H;
         const status = p.pembayaran?.status || 'belum_dp';
@@ -757,9 +765,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLunas = status === 'lunas';
         const isDp = !isLunas && dibayar > 0;
 
-        // Warna aksen per status — merah untuk "Belum DP" dibuat paling
-        // menonjol supaya langsung kelihatan siapa yang perlu ditagih.
-        const accent = isLunas ? '#16A34A' : isDp ? '#D97706' : '#DC2626';
+        // Warna aksen per status — merah untuk "Belum DP" dibuat beda jelas
+        // supaya langsung kelihatan siapa yang perlu ditagih, tapi memakai
+        // nuansa yang sedikit lebih lembut (bukan merah menyala) supaya
+        // daftar tetap enak dipandang meski banyak yang belum bayar.
+        const accent = isLunas ? '#16A34A' : isDp ? '#D97706' : '#E0524F';
 
         if (i % 2 === 1){
           ctx.fillStyle = '#F8FAFC';
@@ -806,9 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (isDp){
           statusText = `DP ${formatRupiah(dibayar)}`; statusFg = '#B45309'; statusBg = '#FEF3C7';
         } else {
-          // "Belum DP" sengaja dibuat MERAH & tegas — beda jelas dari status
-          // lain supaya langsung ketara siapa yang belum bayar sama sekali.
-          statusText = 'Belum DP'; statusFg = '#DC2626'; statusBg = '#FEE2E2';
+          // "Belum DP": tetap beda jelas dari status lain, tapi memakai
+          // merah-koral yang sedikit lebih lembut supaya tidak terlalu
+          // "berteriak" saat daftarnya panjang & didominasi status ini.
+          statusText = 'Belum DP'; statusFg = '#C0392B'; statusBg = '#FCEAEA';
         }
 
         ctx.font = '700 16px "JetBrains Mono", monospace';
@@ -830,7 +841,20 @@ document.addEventListener('DOMContentLoaded', () => {
           ctx.fillStyle = statusFg;
           ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 24), x + 14, midY);
         }
+
+        // Garis pemisah super tipis antar baris — bantu mata menyusuri baris
+        // panjang ke kanan tanpa "tersasar" ke baris tetangga.
+        if (i < rows.length - 1){
+          ctx.strokeStyle = 'rgba(226,232,240,0.8)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(tableX + 20, y + ROW_H);
+          ctx.lineTo(tableX + tableW - 20, y + ROW_H);
+          ctx.stroke();
+        }
       });
+
+      ctx.restore(); // lepas clip rounded-rect setelah semua baris selesai digambar
 
       // =========================================================
       // KARTU INFO REKENING TRANSFER — tampil menonjol di bawah tabel,
@@ -922,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       ctx.font = '400 15px Inter, sans-serif';
       ctx.fillStyle = '#94A3B8';
-      ctx.fillText('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', PAD, linkY + linkH + 30);
+      ctx.fillText('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', PAD, linkY + linkH + 34);
 
       canvas.toBlob((blob) => {
         if (!blob){ showToast('Gagal membuat gambar. Coba lagi.', 'error'); return; }
