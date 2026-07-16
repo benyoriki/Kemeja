@@ -705,6 +705,46 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(slateLR, slateLG, slateLB);
       doc.text(`${hariTanggal}  •  Diperbarui pukul ${jam}`, MARGIN, 126);
 
+      /* ===== KARTU RINGKAS REKENING + WEBSITE (kanan atas header) —
+         mengisi ruang kosong di sebelah judul, supaya info transfer
+         langsung terlihat begitu PDF dibuka, tanpa perlu ke halaman
+         terakhir. Kartu lengkap (dengan ringkasan & logo BCA) tetap
+         dipertahankan di bawah tabel sebagai rujukan detail. ===== */
+      const miniCardW = 205, miniCardH = 84, miniCardX = MARGIN + CONTENT_W - miniCardW, miniCardY = 40;
+      doc.setFillColor(239, 252, 249);
+      doc.roundedRect(miniCardX, miniCardY, miniCardW, miniCardH, 10, 10, 'F');
+      doc.setDrawColor(18, 169, 224);
+      doc.setLineWidth(0.7);
+      doc.roundedRect(miniCardX, miniCardY, miniCardW, miniCardH, 10, 10, 'S');
+
+      const miniPadX = 14;
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7.3);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('TRANSFER PEMBAYARAN KE', miniCardX + miniPadX, miniCardY + 16);
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(15.5);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text(REKENING.nomor, miniCardX + miniPadX, miniCardY + 35);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.3);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, miniCardX + miniPadX, miniCardY + 49);
+
+      // Garis pemisah tipis sebelum link website
+      doc.setDrawColor(204, 251, 241);
+      doc.setLineWidth(0.6);
+      doc.line(miniCardX + miniPadX, miniCardY + 58, miniCardX + miniCardW - miniPadX, miniCardY + 58);
+
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(miniCardX + miniPadX + 2.5, miniCardY + 71, 2.5, 'F');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7.8);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('benyoriki.github.io/Kemeja', miniCardX + miniPadX + 11, miniCardY + 73.5);
+
       pdfGradientRect(doc, MARGIN, 138, CONTENT_W, 2.4, BLUE, TEAL2);
       const HEADER_BOTTOM = 138 + 2.4 + 24;
 
@@ -751,8 +791,8 @@ document.addEventListener('DOMContentLoaded', () => {
           1: { cellWidth: 138, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
           2: { cellWidth: 92 },
           3: { cellWidth: 55, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
-          4: { cellWidth: 51, halign: 'center', textColor: [100, 116, 139] },
-          5: { cellWidth: 147, halign: 'left' }
+          4: { cellWidth: 58, halign: 'center', textColor: [100, 116, 139], cellPadding: { top: 8, bottom: 8, left: 3, right: 3 } },
+          5: { cellWidth: 140, halign: 'left' }
         },
         didParseCell: (data) => {
           // Sembunyikan teks asli kolom status — akan digambar ulang
@@ -2026,27 +2066,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     estCurrentStageSave.disabled = true;
     const originalHtml = estCurrentStageSave.innerHTML;
-    estCurrentStageSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-    try {
-      const patch = { currentStage: newStage, updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString() };
-      // Kalau tahap MAJU, catat tanggal selesai riil untuk tahap-tahap yang baru dilewati.
-      if (newStage > oldStage){
-        const nowIso = new Date().toISOString();
-        for (let n = oldStage; n < newStage; n++){
-          const existing = estimasiDataCache?.[`stage${n}`] || {};
-          patch[`stage${n}`] = { ...existing, selesaiPadaISO: nowIso };
-        }
-      }
-      await fb.setDoc(programStatusRef(fb), patch, { merge: true });
-      await logAdminAction('edit', `Tahap aktif: "${STAGE_LABELS[oldStage]}" → "${STAGE_LABELS[newStage]}"`, 'Progres Program');
-      showToast('Tahap aktif berhasil diperbarui.', 'success');
-    } catch (err){
-      console.warn('Gagal update tahap aktif:', err.code, err.message);
-      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
-    } finally {
-      estCurrentStageSave.disabled = false;
-      estCurrentStageSave.innerHTML = originalHtml;
-    }
-  });
-
-});
+    estCurrentStageSave
