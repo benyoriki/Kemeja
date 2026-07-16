@@ -2066,4 +2066,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     estCurrentStageSave.disabled = true;
     const originalHtml = estCurrentStageSave.innerHTML;
-    estCurrentStageSave
+    estCurrentStageSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      const patch = { currentStage: newStage, updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString() };
+      // Kalau tahap MAJU, catat tanggal selesai riil untuk tahap-tahap yang baru dilewati.
+      if (newStage > oldStage){
+        const nowIso = new Date().toISOString();
+        for (let n = oldStage; n < newStage; n++){
+          const existing = estimasiDataCache?.[`stage${n}`] || {};
+          patch[`stage${n}`] = { ...existing, selesaiPadaISO: nowIso };
+        }
+      }
+      await fb.setDoc(programStatusRef(fb), patch, { merge: true });
+      await logAdminAction('edit', `Tahap aktif: "${STAGE_LABELS[oldStage]}" → "${STAGE_LABELS[newStage]}"`, 'Progres Program');
+      showToast('Tahap aktif berhasil diperbarui.', 'success');
+    } catch (err){
+      console.warn('Gagal update tahap aktif:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      estCurrentStageSave.disabled = false;
+      estCurrentStageSave.innerHTML = originalHtml;
+    }
+  });
+
+});
