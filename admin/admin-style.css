@@ -489,3 +489,177 @@ body{
 
 .estimasi-stage-actions{ display:flex; justify-content:flex-end; margin-top:12px; }
 .estimasi-stage-actions .btn{ font-size:13px; padding:9px 18px; }
+
+/* =========================================================
+   13. MENU HAMBURGER + PANEL AKSI (khusus tampilan HP/tablet kecil)
+   -------------------------------------------------
+   Di layar sempit, deretan tombol ikon header (refresh, export,
+   riwayat, dst.) diganti SATU tombol hamburger. Tombol ini membuka
+   panel geser dari kanan yang menampilkan tiap aksi sebagai baris:
+   ikon berwarna + JUDUL + KETERANGAN singkat — bukan cuma ikon polos
+   — supaya admin baru langsung paham fungsi tiap tombol tanpa perlu
+   menebak-nebak. Tombol asli di header tetap ada & tetap dipakai di
+   desktop; JS panel ini hanya "meneruskan" klik ke tombol tsb.
+========================================================= */
+
+/* Tombol hamburger disembunyikan di desktop; grup ikon header
+   disembunyikan di HP. Breakpoint 780px dipilih supaya tablet kecil
+   (potret) juga dapat pengalaman hamburger yang lega. */
+.adash-hamburger{ display:none; }
+
+@media (max-width:780px){
+  .adash-header-right .adash-btn-group,
+  .adash-header-right .adash-btn-divider{ display:none !important; }
+
+  .adash-hamburger{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:46px; height:46px; border-radius:13px; flex-shrink:0;
+    background:rgba(15,216,184,.10);
+    border:1.5px solid rgba(15,216,184,.28);
+    cursor:pointer; position:relative; transition:background .2s ease, border-color .2s ease, transform .15s ease;
+  }
+  .adash-hamburger:hover{ background:rgba(15,216,184,.16); }
+  .adash-hamburger:active{ transform:scale(.94); }
+
+  .adash-hamburger-bars{ position:relative; width:20px; height:14px; display:inline-block; }
+  .adash-hamburger-bars span{
+    position:absolute; left:0; width:100%; height:2px; border-radius:2px;
+    background:var(--aqua, #0FD8B8);
+    transition:transform .28s cubic-bezier(.2,.8,.3,1), opacity .2s ease, top .28s cubic-bezier(.2,.8,.3,1);
+  }
+  .adash-hamburger-bars span:nth-child(1){ top:0; }
+  .adash-hamburger-bars span:nth-child(2){ top:6px; }
+  .adash-hamburger-bars span:nth-child(3){ top:12px; }
+
+  /* Animasi bar jadi tanda "X" saat panel terbuka */
+  .adash-hamburger.is-open .adash-hamburger-bars span:nth-child(1){ top:6px; transform:rotate(45deg); }
+  .adash-hamburger.is-open .adash-hamburger-bars span:nth-child(2){ opacity:0; }
+  .adash-hamburger.is-open .adash-hamburger-bars span:nth-child(3){ top:6px; transform:rotate(-45deg); }
+}
+
+/* Backdrop gelap + blur di belakang panel */
+.adash-drawer-backdrop{
+  position:fixed; inset:0; z-index:940;
+  background:rgba(4,10,20,.6); backdrop-filter:blur(4px);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .28s ease, visibility .28s ease;
+}
+.adash-drawer-backdrop.active{ opacity:1; visibility:visible; pointer-events:auto; }
+
+/* Panel itu sendiri: geser masuk dari kanan, kartu kaca gelap
+   senada dengan identitas dasbor (aqua/teal di atas gradient biru gelap) */
+.adash-mobile-drawer{
+  position:fixed; top:0; right:0; bottom:0; z-index:950;
+  width:min(360px, 88vw);
+  display:flex; flex-direction:column;
+  background:
+    radial-gradient(420px 260px at 100% 0%, rgba(15,216,184,.10), transparent 60%),
+    linear-gradient(180deg, #0B1B32 0%, #071224 100%);
+  border-left:1px solid rgba(18,169,224,.22);
+  box-shadow:-18px 0 48px rgba(2,6,14,.45);
+  transform:translateX(100%);
+  transition:transform .32s cubic-bezier(.2,.8,.3,1);
+  padding:18px 14px 22px;
+  overflow-y:auto;
+}
+.adash-mobile-drawer.active{ transform:translateX(0); }
+
+@media (prefers-reduced-motion: reduce){
+  .adash-mobile-drawer{ transition:none; }
+  .adash-drawer-backdrop{ transition:none; }
+}
+
+.adash-drawer-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:2px 4px 16px; margin-bottom:10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.adash-drawer-head-title{
+  display:flex; align-items:center; gap:9px;
+  font-family:var(--font-display, inherit); font-weight:700; font-size:15px; letter-spacing:-.01em;
+  color:#fff;
+}
+.adash-drawer-head-title i{ color:var(--aqua, #0FD8B8); font-size:14px; }
+
+.adash-drawer-close{
+  width:34px; height:34px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  color:#fff; font-size:13px; cursor:pointer; transition:background .2s ease, transform .15s ease;
+}
+.adash-drawer-close:hover{ background:rgba(255,90,95,.18); border-color:rgba(255,90,95,.4); }
+.adash-drawer-close:active{ transform:scale(.92); }
+
+.adash-drawer-list{ display:flex; flex-direction:column; gap:6px; }
+
+.adash-drawer-divider{ height:1px; background:rgba(255,255,255,.08); margin:8px 2px; }
+
+/* Tiap baris aksi: ikon berwarna, judul tebal, keterangan redup singkat */
+.adash-drawer-item{
+  display:flex; align-items:center; gap:12px; width:100%;
+  padding:11px 10px; border-radius:14px; border:1px solid transparent;
+  background:transparent; text-align:left; cursor:pointer;
+  transition:background .18s ease, border-color .18s ease, transform .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.adash-drawer-item:hover, .adash-drawer-item:focus-visible{
+  background:rgba(18,169,224,.10); border-color:rgba(18,169,224,.22);
+}
+.adash-drawer-item:active{ transform:scale(.985); }
+
+.adi-icon{
+  width:38px; height:38px; min-width:38px; border-radius:11px;
+  display:flex; align-items:center; justify-content:center; font-size:15px;
+  color:#fff;
+}
+.adi-blue{ background:linear-gradient(135deg, rgba(18,169,224,.9), rgba(18,169,224,.55)); }
+.adi-green{ background:linear-gradient(135deg, rgba(28,190,120,.9), rgba(28,190,120,.55)); }
+.adi-purple{ background:linear-gradient(135deg, rgba(155,110,230,.9), rgba(155,110,230,.55)); }
+.adi-amber{ background:linear-gradient(135deg, rgba(240,180,41,.9), rgba(240,180,41,.55)); }
+.adi-teal{ background:linear-gradient(135deg, rgba(15,216,184,.9), rgba(15,216,184,.55)); }
+.adi-danger{ background:linear-gradient(135deg, rgba(255,90,95,.92), rgba(255,90,95,.6)); }
+.adi-logout{ background:linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,.08)); }
+
+.adi-text{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.adi-title{ font-size:13.5px; font-weight:700; color:#fff; line-height:1.2; }
+.adi-desc{ font-size:11.5px; color:rgba(255,255,255,.55); line-height:1.35; overflow-wrap:anywhere; }
+
+.adi-chevron{ font-size:11px; color:rgba(255,255,255,.28); flex-shrink:0; }
+
+.adash-drawer-item.is-danger .adi-title{ color:#FF8A8E; }
+.adash-drawer-item.is-danger:hover{ background:rgba(255,90,95,.10); border-color:rgba(255,90,95,.28); }
+
+.adash-drawer-item.is-logout{ margin-top:2px; }
+.adash-drawer-item.is-logout:hover{ background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.14); }
+
+/* Fokus keyboard tetap terlihat jelas di dalam panel */
+.adash-mobile-drawer :focus-visible{
+  outline:2px solid var(--aqua, #0FD8B8); outline-offset:2px; border-radius:10px;
+}
+
+/* =========================================================
+   14. POLES TAMPILAN HP — header lebih ringkas & "canggih",
+   toolbar & search lebih nyaman disentuh, tetap ringan (tanpa
+   animasi/efek berat baru, hanya tata letak & sedikit kontras).
+========================================================= */
+@media (max-width:780px){
+  .adash-header{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 14px; border-radius:16px;
+    background:linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.08);
+    margin-bottom:14px;
+  }
+  .adash-header-left{ min-width:0; }
+  .adash-header-left h3{ font-size:15.5px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  #adashClock{ font-size:11px; opacity:.65; }
+  .adash-logo-badge{ width:38px; height:38px; min-width:38px; font-size:15px; }
+  .adash-header-right{ flex-shrink:0; }
+}
+
+@media (max-width:640px){
+  .adash-toolbar{ flex-direction:column; align-items:stretch; gap:10px; }
+  .adash-search{ width:100%; }
+  .adash-search input{ font-size:14.5px; }
+}
+

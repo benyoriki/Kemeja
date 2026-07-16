@@ -104,8 +104,105 @@
             <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
             <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
           </div>
+
+          <!-- Tombol Hamburger — hanya tampil di layar HP/tablet kecil.
+               Menggantikan semua tombol ikon di atas dengan satu tombol
+               yang membuka panel menu berisi keterangan tiap aksi. -->
+          <button class="adash-hamburger" id="adashHamburgerBtn" type="button"
+                  aria-label="Buka menu aksi dasbor" aria-expanded="false" aria-controls="adashMobileDrawer">
+            <span class="adash-hamburger-bars"><span></span><span></span><span></span></span>
+          </button>
         </div>
       </div>
+
+      <!-- ===================================================== -->
+      <!-- PANEL MENU AKSI (khusus HP) — versi hamburger dari semua
+           tombol header di atas, tapi tiap item dikasih judul +
+           keterangan singkat, bukan cuma ikon polos. -->
+      <!-- ===================================================== -->
+      <div class="adash-drawer-backdrop" id="adashDrawerBackdrop"></div>
+      <aside class="adash-mobile-drawer" id="adashMobileDrawer" aria-hidden="true">
+        <div class="adash-drawer-head">
+          <div class="adash-drawer-head-title"><i class="fa-solid fa-sliders"></i> Menu Aksi Dasbor</div>
+          <button class="adash-drawer-close" id="adashDrawerClose" type="button" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <nav class="adash-drawer-list">
+          <button class="adash-drawer-item" type="button" data-target="adminRefreshBtn">
+            <span class="adi-icon adi-blue"><i class="fa-solid fa-rotate"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Segarkan Data</span>
+              <span class="adi-desc">Muat ulang data peserta &amp; pembayaran terbaru dari server</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="adminExportBtn">
+            <span class="adi-icon adi-green"><i class="fa-solid fa-file-arrow-down"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Export ke CSV</span>
+              <span class="adi-desc">Unduh seluruh data peserta dalam format spreadsheet (.csv)</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="adminExportJpgBtn">
+            <span class="adi-icon adi-purple"><i class="fa-solid fa-image"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Unduh Daftar (JPG)</span>
+              <span class="adi-desc">Gambar daftar peserta, siap dikirim ke grup WhatsApp</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="adminHistoryBtn">
+            <span class="adi-icon adi-amber"><i class="fa-solid fa-clock-rotate-left"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Riwayat Aktivitas</span>
+              <span class="adi-desc">Lihat log siapa mengubah data apa, dan kapan</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="estimasiBtn">
+            <span class="adi-icon adi-teal"><i class="fa-solid fa-hourglass-half"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Estimasi &amp; Progres</span>
+              <span class="adi-desc">Atur tahap aktif program &amp; estimasi waktu tiap tahap</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="adminManageChatBtn">
+            <span class="adi-icon adi-blue"><i class="fa-solid fa-thumbtack"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Kelola Chat Grup</span>
+              <span class="adi-desc">Sematkan pesan penting atau hapus pesan tertentu</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <div class="adash-drawer-divider" role="separator"></div>
+
+          <button class="adash-drawer-item is-danger" type="button" data-target="adminResetChatBtn">
+            <span class="adi-icon adi-danger"><i class="fa-solid fa-comment-slash"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Reset Chat</span>
+              <span class="adi-desc">Hapus permanen semua pesan di grup chat peserta</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item is-logout" type="button" data-target="adminLogoutBtn">
+            <span class="adi-icon adi-logout"><i class="fa-solid fa-right-from-bracket"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Keluar</span>
+              <span class="adi-desc">Keluar dari sesi dasbor admin ini</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+        </nav>
+      </aside>
 
       <div class="adash-stats">
         <div class="adash-stat">
@@ -443,5 +540,62 @@
 </script>
 
 <script src="admin-script.js?v=2"></script>
+
+<!-- Kontrol panel menu hamburger (khusus tampilan HP). Berdiri sendiri,
+     tidak menyentuh logika admin-script.js — cukup "meneruskan" klik
+     ke tombol asli yang sudah ada di header, jadi semua fungsi lama
+     (refresh, export, dsb.) tetap jalan persis seperti sebelumnya. -->
+<script>
+(function(){
+  const hamburger = document.getElementById('adashHamburgerBtn');
+  const drawer     = document.getElementById('adashMobileDrawer');
+  const backdrop   = document.getElementById('adashDrawerBackdrop');
+  const closeBtn   = document.getElementById('adashDrawerClose');
+  if (!hamburger || !drawer || !backdrop) return;
+
+  let lastFocused = null;
+
+  function openDrawer(){
+    lastFocused = document.activeElement;
+    drawer.classList.add('active');
+    backdrop.classList.add('active');
+    hamburger.classList.add('is-open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    const firstItem = drawer.querySelector('.adash-drawer-item, .adash-drawer-close');
+    if (firstItem) firstItem.focus({ preventScroll:true });
+  }
+
+  function closeDrawer(){
+    drawer.classList.remove('active');
+    backdrop.classList.remove('active');
+    hamburger.classList.remove('is-open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus({ preventScroll:true });
+  }
+
+  hamburger.addEventListener('click', () => {
+    drawer.classList.contains('active') ? closeDrawer() : openDrawer();
+  });
+  closeBtn && closeBtn.addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('active')) closeDrawer();
+  });
+
+  // Tiap item di drawer cuma "mengklik" tombol asli yang sepadan di header,
+  // supaya semua handler & logika di admin-script.js tetap dipakai apa adanya.
+  drawer.querySelectorAll('.adash-drawer-item[data-target]').forEach((item) => {
+    item.addEventListener('click', () => {
+      const target = document.getElementById(item.getAttribute('data-target'));
+      closeDrawer();
+      if (target) setTimeout(() => target.click(), 220);
+    });
+  });
+})();
+</script>
 </body>
 </html>
