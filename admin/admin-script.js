@@ -634,6 +634,20 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
 
+  // Lencana bulat kecil bertanda centang — sentuhan "istimewa" khusus untuk
+  // status LUNAS, supaya beda dari sekadar teks/pill polos.
+  function jpgCheckBadge(ctx, cx, cy, r, bg, fg){
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = fg; ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.45, cy);
+    ctx.lineTo(cx - r * 0.1, cy + r * 0.4);
+    ctx.lineTo(cx + r * 0.5, cy - r * 0.45);
+    ctx.stroke();
+  }
+
   async function exportPesertaAsJpg(){
     if (!pesertaData.length){
       showToast('Belum ada data peserta untuk diunduh.', 'error');
@@ -657,43 +671,49 @@ document.addEventListener('DOMContentLoaded', () => {
       const TABLE_HEAD_H = 64;
       const ROW_H = 76;
       const FOOTER_H = 150;
+      const PAYMENT_CARD_H = 132;   // tinggi kartu info rekening transfer
+      const PAYMENT_BLOCK_H = 40 + PAYMENT_CARD_H + 34; // margin atas + kartu + margin bawah
       const COLW = { no:56, nama:266, bordir:206, ukuran:96, lengan:108 };
       COLW.status = (W - PAD * 2) - COLW.no - COLW.nama - COLW.bordir - COLW.ukuran - COLW.lengan;
       const tableH = TABLE_HEAD_H + rows.length * ROW_H;
-      const H = HEADER_H + tableH + FOOTER_H;
+      const H = HEADER_H + tableH + PAYMENT_BLOCK_H + FOOTER_H;
+
+      // Data rekening pembayaran — tampil sebagai kartu info di bawah tabel,
+      // supaya peserta yang menerima gambar ini langsung tahu ke mana harus
+      // transfer tanpa perlu tanya lagi di chat.
+      const REKENING = { bank: 'Bank BCA', nomor: '0830142452', atasNama: 'KAMIL MUHAMMAD NUR' };
 
       const canvas = document.createElement('canvas');
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // ===== Latar belakang: gradient navy khas brand + glow lembut =====
-      const bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, '#0B2545');
-      bg.addColorStop(0.45, '#0E3A66');
-      bg.addColorStop(1, '#071022');
-      ctx.fillStyle = bg;
+      // ===== Latar belakang: PUTIH BERSIH — supaya nama peserta jauh lebih
+      // kebaca ketimbang versi gelap sebelumnya. Glow brand tetap ada di
+      // pojok tapi dibuat SANGAT tipis, sekadar sentuhan "canggih" tanpa
+      // mengganggu kontras teks. =====
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, W, H);
-      jpgGlow(ctx, W - 60, 40, 360, 'rgba(18,169,224,0.30)');
-      jpgGlow(ctx, 40, H - 80, 320, 'rgba(15,216,184,0.16)');
+      jpgGlow(ctx, W - 40, 10, 340, 'rgba(18,169,224,0.07)');
+      jpgGlow(ctx, 20, H - 50, 300, 'rgba(15,216,184,0.06)');
 
       // ===== Header =====
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillStyle = '#475569';
       ctx.font = '600 24px Outfit, sans-serif';
       ctx.fillText('PT. LOKON PRIMA — DISTRIBUTOR AIR MINUM', PAD, 76);
 
-      ctx.fillStyle = 'rgba(15,216,184,0.16)';
+      ctx.fillStyle = '#CCFBF1';
       jpgRoundedRect(ctx, PAD, 94, 258, 40, 20); ctx.fill();
-      ctx.fillStyle = '#0FD8B8';
+      ctx.fillStyle = '#0D9488';
       ctx.beginPath(); ctx.arc(PAD + 22, 114, 5, 0, Math.PI * 2); ctx.fill();
       ctx.font = '700 14px "JetBrains Mono", monospace';
       ctx.fillText('DAFTAR PESERTA RESMI', PAD + 38, 119);
 
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = '#0B2545';
       ctx.font = '800 56px Outfit, sans-serif';
       ctx.fillText('Kemeja Kerja 2026', PAD, 202);
 
       const { hariTanggal, jam } = formatTanggalJamIndo(new Date());
-      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.fillStyle = '#64748B';
       ctx.font = '500 24px Inter, sans-serif';
       ctx.fillText(`${hariTanggal}  •  Diperbarui pukul ${jam}`, PAD, 242);
 
@@ -702,95 +722,207 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.fillStyle = lineGrad;
       ctx.fillRect(PAD, 266, W - PAD * 2, 3);
 
-      // ===== Kartu tabel =====
+      // ===== Kartu tabel — putih dengan garis tepi tipis + bayangan lembut,
+      // supaya tetap terlihat sebagai "kartu" walau latarnya sudah putih =====
       const tableX = PAD, tableY = HEADER_H, tableW = W - PAD * 2;
-      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.save();
+      ctx.shadowColor = 'rgba(15,23,42,0.10)';
+      ctx.shadowBlur = 26;
+      ctx.shadowOffsetY = 10;
+      ctx.fillStyle = '#FFFFFF';
       jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 1;
+      ctx.restore();
+      ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 1;
       jpgRoundedRect(ctx, tableX, tableY, tableW, tableH, 22); ctx.stroke();
 
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillStyle = '#F8FAFC';
       jpgRoundedRect(ctx, tableX, tableY, tableW, TABLE_HEAD_H, { tl:22, tr:22, br:0, bl:0 }); ctx.fill();
+      ctx.strokeStyle = '#E2E8F0';
+      ctx.beginPath();
+      ctx.moveTo(tableX, tableY + TABLE_HEAD_H);
+      ctx.lineTo(tableX + tableW, tableY + TABLE_HEAD_H);
+      ctx.stroke();
 
       let cx = tableX + 24;
       ctx.font = '700 15px "JetBrains Mono", monospace';
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillStyle = '#64748B';
       [['NO', COLW.no], ['NAMA PESERTA', COLW.nama], ['NAMA BORDIR', COLW.bordir],
        ['UKURAN', COLW.ukuran], ['LENGAN', COLW.lengan], ['STATUS PEMBAYARAN', COLW.status]]
         .forEach(([label, w]) => { ctx.fillText(label, cx, tableY + 40); cx += w; });
 
       rows.forEach((p, i) => {
         const y = tableY + TABLE_HEAD_H + i * ROW_H;
+        const status = p.pembayaran?.status || 'belum_dp';
+        const dibayar = p.pembayaran?.totalDibayar || 0;
+        const isLunas = status === 'lunas';
+        const isDp = !isLunas && dibayar > 0;
+
+        // Warna aksen per status — merah untuk "Belum DP" dibuat paling
+        // menonjol supaya langsung kelihatan siapa yang perlu ditagih.
+        const accent = isLunas ? '#16A34A' : isDp ? '#D97706' : '#DC2626';
+
         if (i % 2 === 1){
-          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          ctx.fillStyle = '#F8FAFC';
           ctx.fillRect(tableX, y, tableW, ROW_H);
         }
+        // Garis aksen tipis di kiri tiap baris sesuai status pembayaran —
+        // bantu mata memindai daftar panjang tanpa perlu baca satu-satu.
+        ctx.fillStyle = accent;
+        ctx.fillRect(tableX, y, 4, ROW_H);
+
         let x = tableX + 24;
         const midY = y + ROW_H / 2 + 6;
 
         ctx.font = '600 17px Inter, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = '#94A3B8';
         ctx.fillText(String(i + 1), x, midY);
         x += COLW.no;
 
-        ctx.font = '700 18px Outfit, sans-serif';
-        ctx.fillStyle = '#FFFFFF';
+        // Nama peserta: hitam pekat & extra-bold — elemen paling penting
+        // di kartu, jadi harus paling menonjol di antara semua kolom.
+        ctx.font = '800 18px Outfit, sans-serif';
+        ctx.fillStyle = '#0F172A';
         ctx.fillText(jpgTruncate(ctx, p.nama || '-', COLW.nama - 20), x, midY);
         x += COLW.nama;
 
         ctx.font = '500 17px Inter, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.78)';
+        ctx.fillStyle = '#475569';
         ctx.fillText(jpgTruncate(ctx, p.namaBordir || '-', COLW.bordir - 20), x, midY);
         x += COLW.bordir;
 
         ctx.font = '700 17px "JetBrains Mono", monospace';
-        ctx.fillStyle = '#12A9E0';
+        ctx.fillStyle = '#0369A1';
         ctx.fillText(p.ukuranKemeja || '-', x, midY);
         x += COLW.ukuran;
 
         ctx.font = '500 16px Inter, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillStyle = '#64748B';
         ctx.fillText(p.jenis === 'Lengan Panjang' ? 'Panjang' : 'Pendek', x, midY);
         x += COLW.lengan;
 
-        const status = p.pembayaran?.status || 'belum_dp';
-        const dibayar = p.pembayaran?.totalDibayar || 0;
         let statusText, statusFg, statusBg;
-        if (status === 'lunas'){
-          statusText = 'LUNAS'; statusFg = '#0FD8B8'; statusBg = 'rgba(15,216,184,0.16)';
-        } else if (dibayar > 0){
-          statusText = `DP ${formatRupiah(dibayar)}`; statusFg = '#F2C14E'; statusBg = 'rgba(242,193,78,0.16)';
+        if (isLunas){
+          statusText = 'LUNAS'; statusFg = '#15803D'; statusBg = '#DCFCE7';
+        } else if (isDp){
+          statusText = `DP ${formatRupiah(dibayar)}`; statusFg = '#B45309'; statusBg = '#FEF3C7';
         } else {
-          statusText = 'Belum DP'; statusFg = 'rgba(255,255,255,0.55)'; statusBg = 'rgba(255,255,255,0.07)';
+          // "Belum DP" sengaja dibuat MERAH & tegas — beda jelas dari status
+          // lain supaya langsung ketara siapa yang belum bayar sama sekali.
+          statusText = 'Belum DP'; statusFg = '#DC2626'; statusBg = '#FEE2E2';
         }
+
         ctx.font = '700 16px "JetBrains Mono", monospace';
-        const badgeW = Math.min(ctx.measureText(statusText).width + 28, COLW.status - 16);
+        const badgeExtra = isLunas ? 28 : 0; // ruang tambahan untuk lencana centang
+        const badgeW = Math.min(ctx.measureText(statusText).width + 28 + badgeExtra, COLW.status - 16);
+        const badgeY = y + ROW_H / 2 - 18;
         ctx.fillStyle = statusBg;
-        jpgRoundedRect(ctx, x, y + ROW_H / 2 - 18, badgeW, 36, 18); ctx.fill();
-        ctx.fillStyle = statusFg;
-        ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 24), x + 14, midY);
+        jpgRoundedRect(ctx, x, badgeY, badgeW, 36, 18); ctx.fill();
+
+        if (isLunas){
+          // Sentuhan "istimewa" khusus peserta lunas: garis tepi hijau tipis
+          // + lencana bulat bertanda centang di dalam pill, bukan cuma teks polos.
+          ctx.strokeStyle = 'rgba(21,128,61,0.35)'; ctx.lineWidth = 1.4;
+          jpgRoundedRect(ctx, x, badgeY, badgeW, 36, 18); ctx.stroke();
+          jpgCheckBadge(ctx, x + 18, badgeY + 18, 9, '#16A34A', '#FFFFFF');
+          ctx.fillStyle = statusFg;
+          ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 46), x + 32, midY);
+        } else {
+          ctx.fillStyle = statusFg;
+          ctx.fillText(jpgTruncate(ctx, statusText, badgeW - 24), x + 14, midY);
+        }
       });
+
+      // =========================================================
+      // KARTU INFO REKENING TRANSFER — tampil menonjol di bawah tabel,
+      // supaya siapa pun yang menerima gambar ini langsung tahu ke mana
+      // harus transfer, tanpa perlu tanya lagi di chat grup.
+      // =========================================================
+      const cardX = tableX, cardY = tableY + tableH + 40, cardW = tableW, cardH = PAYMENT_CARD_H;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(15,23,42,0.10)';
+      ctx.shadowBlur = 22;
+      ctx.shadowOffsetY = 8;
+      const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+      cardGrad.addColorStop(0, '#EFFCF9'); cardGrad.addColorStop(1, '#EAF6FD');
+      ctx.fillStyle = cardGrad;
+      jpgRoundedRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(18,169,224,0.28)'; ctx.lineWidth = 1.4;
+      jpgRoundedRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.stroke();
+
+      // Ikon kartu/bank di kiri, kotak gradient teal→biru khas brand
+      const iconSize = 64, iconX = cardX + 22, iconY = cardY + (cardH - iconSize) / 2;
+      const iconGrad = ctx.createLinearGradient(iconX, iconY, iconX + iconSize, iconY + iconSize);
+      iconGrad.addColorStop(0, '#12A9E0'); iconGrad.addColorStop(1, '#0FD8B8');
+      ctx.fillStyle = iconGrad;
+      jpgRoundedRect(ctx, iconX, iconY, iconSize, iconSize, 16); ctx.fill();
+      // Piktogram kartu bank sederhana (strip + chip) di dalam ikon
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      jpgRoundedRect(ctx, iconX + 10, iconY + 16, iconSize - 20, iconSize - 32, 5); ctx.fill();
+      ctx.fillStyle = iconGrad;
+      ctx.fillRect(iconX + 10, iconY + 24, iconSize - 20, 7);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      jpgRoundedRect(ctx, iconX + 14, iconY + 38, 14, 10, 3); ctx.fill();
+
+      // Lencana kecil "BCA" di pojok kanan atas kartu — kesan logo bank
+      const bcaW = 68, bcaH = 30, bcaX = cardX + cardW - bcaW - 20, bcaY = cardY + 18;
+      ctx.fillStyle = '#12A9E0';
+      jpgRoundedRect(ctx, bcaX, bcaY, bcaW, bcaH, 9); ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '800 14px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('BCA', bcaX + bcaW / 2, bcaY + bcaH / 2 + 5);
+      ctx.textAlign = 'left';
+
+      // Teks: label kecil, nomor rekening besar & tebal (paling penting,
+      // jadi elemen paling menonjol di kartu), lalu bank + atas nama.
+      const textX = iconX + iconSize + 22;
+      ctx.font = '700 13px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#0D9488';
+      ctx.fillText('TRANSFER PEMBAYARAN KE REKENING', textX, cardY + 32);
+
+      ctx.font = '800 30px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#0B2545';
+      ctx.fillText(REKENING.nomor, textX, cardY + 68);
+
+      ctx.font = '600 16px Inter, sans-serif';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, textX, cardY + 96);
 
       // ===== Footer: ringkasan + branding =====
       const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
       const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
-      const footerY = tableY + tableH + 54;
+      const footerY = cardY + cardH + 54;
 
       ctx.font = '700 22px Outfit, sans-serif';
-      ctx.fillStyle = '#FFFFFF';
+      ctx.fillStyle = '#0B2545';
       const totalLabel = `Total ${rows.length} Peserta`;
       ctx.fillText(totalLabel, PAD, footerY);
       const totalLabelW = ctx.measureText(totalLabel).width;
       ctx.font = '500 20px Inter, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillStyle = '#64748B';
       ctx.fillText(`•  ${lunasCount} Lunas   •  ${dpCount} DP Terbayar`, PAD + totalLabelW + 90, footerY);
 
-      ctx.font = '600 17px "JetBrains Mono", monospace';
-      ctx.fillStyle = 'rgba(18,169,224,0.9)';
-      ctx.fillText('benyoriki.github.io/Kemeja', PAD, footerY + 40);
+      // Tautan website ditampilkan sebagai pil/tombol kecil supaya lebih
+      // menarik & terlihat "bisa diklik", bukan cuma teks polos.
+      const linkText = 'benyoriki.github.io/Kemeja';
+      ctx.font = '700 16px "JetBrains Mono", monospace';
+      const linkTextW = ctx.measureText(linkText).width;
+      const linkPadX = 16, linkDot = 10;
+      const linkW = linkDot + 10 + linkTextW + linkPadX * 2;
+      const linkH = 34, linkX = PAD, linkY = footerY + 20;
+      ctx.fillStyle = '#E6F7F4';
+      jpgRoundedRect(ctx, linkX, linkY, linkW, linkH, 17); ctx.fill();
+      ctx.strokeStyle = 'rgba(13,148,136,0.3)'; ctx.lineWidth = 1.2;
+      jpgRoundedRect(ctx, linkX, linkY, linkW, linkH, 17); ctx.stroke();
+      ctx.fillStyle = '#0D9488';
+      ctx.beginPath(); ctx.arc(linkX + linkPadX + linkDot / 2, linkY + linkH / 2, linkDot / 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillText(linkText, linkX + linkPadX + linkDot + 10, linkY + linkH / 2 + 5);
+
       ctx.font = '400 15px Inter, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.fillText('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', PAD, footerY + 68);
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillText('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', PAD, linkY + linkH + 30);
 
       canvas.toBlob((blob) => {
         if (!blob){ showToast('Gagal membuat gambar. Coba lagi.', 'error'); return; }
