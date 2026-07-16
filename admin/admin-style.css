@@ -663,3 +663,100 @@ body{
   .adash-search input{ font-size:14.5px; }
 }
 
+/* =========================================================
+   15. UPGRADE VISUAL DASBOR — 6 perbaikan sekaligus:
+   (1) progress bar di kartu "Dana Terkumpul", (2) warna kartu
+   "Cicilan" diselaraskan ke keluarga teal/biru, (3) teks sekunder
+   dinaikkan kontrasnya, (4) chip filter dapat transisi halus +
+   badge angka, (5) baris peserta dikelompokkan 2 baris supaya
+   lebih lega, (6) tekstur grid/glow tipis di SEMUA kartu statistik
+   (bukan cuma hero), biar terasa senada "command center".
+========================================================= */
+
+/* --- (1) Progress bar hero "Dana Terkumpul" --- */
+.adash-hero-progress{ margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+.adash-hero-progress-track{
+  width:100%; height:7px; border-radius:99px;
+  background:rgba(255,255,255,.08);
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.06);
+}
+.adash-hero-progress-fill{
+  height:100%; border-radius:99px;
+  background:linear-gradient(90deg, #12A9E0, #0FD8B8);
+  box-shadow:0 0 10px rgba(15,216,184,.55);
+  transition:width .7s cubic-bezier(.2,.8,.3,1);
+  width:0%;
+}
+.adash-hero-progress-label{
+  font-size:11.5px; font-weight:600; letter-spacing:.01em;
+  color:rgba(255,255,255,.62);
+}
+
+/* --- (2) Selaraskan warna ikon "Cicilan 2x Jalan" ke keluarga
+   teal/biru brand, supaya tidak lagi terasa "nyasar" warna ungu
+   pekat sendirian di antara kartu-kartu lain. --- */
+.admin-box .adash-stat-icon.ic-purple{
+  background:linear-gradient(135deg, rgba(99,140,230,.92), rgba(56,196,214,.62)) !important;
+}
+
+/* --- (3) Kontras teks sekunder dinaikkan supaya lebih kebaca,
+   terutama untuk dipakai di luar ruangan / siang hari. --- */
+.admin-box .adash-stat-txt p{ color:rgba(255,255,255,.58) !important; }
+.admin-box .admin-row-head span{ color:rgba(255,255,255,.60) !important; }
+.admin-box .admin-row-meta span{ color:rgba(255,255,255,.68) !important; }
+.admin-box .admin-row-meta i{ opacity:.8; }
+
+/* --- (4) Chip filter: transisi lebih halus + badge jumlah data --- */
+.admin-box .adash-chip{
+  transition:background .25s cubic-bezier(.2,.8,.3,1), color .25s ease,
+             border-color .25s ease, transform .18s cubic-bezier(.2,.8,.3,1),
+             box-shadow .25s ease;
+  display:inline-flex; align-items:center; gap:7px;
+}
+.admin-box .adash-chip:hover{ transform:translateY(-1px); }
+.admin-box .adash-chip:active{ transform:translateY(0) scale(.97); }
+.admin-box .adash-chip.active{
+  box-shadow:0 4px 14px rgba(15,216,184,.28);
+}
+.adash-chip-count{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:19px; height:19px; padding:0 5px; border-radius:99px;
+  font-size:10.5px; font-weight:700; font-family:'JetBrains Mono', monospace;
+  background:rgba(255,255,255,.14); color:rgba(255,255,255,.75);
+  transition:background .25s ease, color .25s ease;
+}
+.adash-chip.active .adash-chip-count{
+  background:rgba(11,37,69,.22); color:#0B2545;
+}
+
+/* --- (5) Baris peserta: kelompokkan meta jadi 2 baris lebih lega,
+   bukan satu baris padat berjejer seperti sebelumnya. --- */
+.admin-box .admin-row-meta{
+  display:flex; flex-direction:column; gap:8px; flex-wrap:nowrap;
+}
+.admin-box .admin-row-meta-group{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px;
+}
+.admin-box .admin-row-meta-group:first-child{
+  padding-bottom:8px; border-bottom:1px dashed rgba(255,255,255,.09);
+}
+
+/* --- (6) Tekstur grid/glow tipis di SEMUA kartu statistik, sama
+   seperti nuansa "data command center" yang tadinya hanya ada di
+   kartu hero "Dana Terkumpul". --- */
+.admin-box .adash-stat{
+  position:relative; isolation:isolate;
+}
+.admin-box .adash-stat::after{
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  opacity:.5;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 22px);
+  -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.9), transparent 85%);
+  mask-image:linear-gradient(180deg, rgba(0,0,0,.9), transparent 85%);
+}
+.admin-box .adash-stat-icon, .admin-box .adash-stat-txt{ position:relative; z-index:1; }
+
+

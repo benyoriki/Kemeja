@@ -222,9 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const adashClock = document.getElementById('adashClock');
   const adashTotal = document.getElementById('adashTotal');
   const adashPendapatan = document.getElementById('adashPendapatan');
+  const adashPendapatanFill = document.getElementById('adashPendapatanFill');
+  const adashPendapatanPct = document.getElementById('adashPendapatanPct');
   const adashMenunggu = document.getElementById('adashMenunggu');
   const adashCicilan = document.getElementById('adashCicilan');
   const adashLunas = document.getElementById('adashLunas');
+  const chipCountSemua = document.getElementById('chipCountSemua');
+  const chipCountBelumDp = document.getElementById('chipCountBelumDp');
+  const chipCountDp = document.getElementById('chipCountDp');
+  const chipCountCicilan = document.getElementById('chipCountCicilan');
+  const chipCountLunas = document.getElementById('chipCountLunas');
 
   // ---- Riwayat Aktivitas Admin ----
   const adminHistoryBtn = document.getElementById('adminHistoryBtn');
@@ -740,12 +747,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 28, halign: 'center', textColor: [148, 163, 184], fontStyle: 'bold' },
-          1: { cellWidth: 126, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
-          2: { cellWidth: 108 },
-          3: { cellWidth: 52, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
-          4: { cellWidth: 60, halign: 'center', textColor: [100, 116, 139] },
-          5: { cellWidth: 141, halign: 'left' }
+          0: { cellWidth: 24, halign: 'center', textColor: [148, 163, 184], fontStyle: 'bold' },
+          1: { cellWidth: 130, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
+          2: { cellWidth: 92 },
+          3: { cellWidth: 60, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
+          4: { cellWidth: 54, halign: 'center', textColor: [100, 116, 139] },
+          5: { cellWidth: 155, halign: 'left' }
         },
         didParseCell: (data) => {
           // Sembunyikan teks asli kolom status — akan digambar ulang
@@ -1127,14 +1134,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- Statistik dasbor (dihitung dari SELURUH data) ----
     const total = pesertaData.length;
     const menunggu = pesertaData.filter(p => (p.pembayaran?.status || 'belum_dp') === 'belum_dp').length;
+    const dpTerbayar = pesertaData.filter(p => p.pembayaran?.status === 'dp').length;
     const cicilanJalan = pesertaData.filter(p => ['dp','cicilan'].includes(p.pembayaran?.status)).length;
+    const cicilanStatusOnly = pesertaData.filter(p => p.pembayaran?.status === 'cicilan').length;
     const lunas = pesertaData.filter(p => p.pembayaran?.status === 'lunas').length;
     const pendapatan = pesertaData.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
+    const totalPesananSeluruh = pesertaData.reduce((sum, p) => sum + (p.total || 0), 0);
     if (adashTotal) animateStatNumber(adashTotal, total);
     if (adashMenunggu) animateStatNumber(adashMenunggu, menunggu);
     if (adashCicilan) animateStatNumber(adashCicilan, cicilanJalan);
     if (adashLunas) animateStatNumber(adashLunas, lunas);
     if (adashPendapatan) adashPendapatan.textContent = formatRupiah(pendapatan);
+
+    // Progress bar "Dana Terkumpul": persentase dana yang sudah masuk
+    // dibanding TOTAL NILAI seluruh pesanan (bukan target sembarangan),
+    // supaya bendahara langsung tahu seberapa dekat pengumpulan dana
+    // sudah selesai tanpa perlu menghitung manual.
+    if (adashPendapatanFill && adashPendapatanPct){
+      const pct = totalPesananSeluruh > 0 ? Math.min(100, Math.round((pendapatan / totalPesananSeluruh) * 100)) : 0;
+      adashPendapatanFill.style.width = `${pct}%`;
+      adashPendapatanPct.textContent = totalPesananSeluruh > 0
+        ? `${pct}% dari total ${formatRupiah(totalPesananSeluruh)} pesanan`
+        : 'Belum ada pesanan tercatat';
+    }
+
+    // Badge angka kecil di tiap chip filter — supaya admin langsung
+    // tahu isi tiap kategori tanpa perlu tap satu-satu untuk mengecek.
+    if (chipCountSemua) chipCountSemua.textContent = total;
+    if (chipCountBelumDp) chipCountBelumDp.textContent = menunggu;
+    if (chipCountDp) chipCountDp.textContent = dpTerbayar;
+    if (chipCountCicilan) chipCountCicilan.textContent = cicilanStatusOnly;
+    if (chipCountLunas) chipCountLunas.textContent = lunas;
 
     // ---- Filter + pencarian ----
     let list = pesertaData.slice();
@@ -1183,11 +1213,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
         </div>
         <div class="admin-row-meta">
-          <span class="admin-code-chip"><i class="fa-solid fa-hashtag"></i>${escapeHtml(p.kodeUnik || '-')}</span>
-          <span><i class="fa-solid fa-shirt"></i> ${escapeHtml(p.jenis || '-')} • ${escapeHtml(p.ukuranKemeja || '-')}</span>
-          <span><i class="fa-solid fa-cubes"></i> ${p.jumlah || 1} pcs</span>
-          <span><i class="fa-solid fa-wallet"></i> ${isCicilan ? '2x Cicilan' : 'Tunai'}</span>
-          <span class="admin-row-total"><i class="fa-solid fa-tag"></i> ${formatRupiah(p.total || 0)}</span>
+          <div class="admin-row-meta-group">
+            <span class="admin-code-chip"><i class="fa-solid fa-hashtag"></i>${escapeHtml(p.kodeUnik || '-')}</span>
+            <span><i class="fa-solid fa-shirt"></i> ${escapeHtml(p.jenis || '-')} • ${escapeHtml(p.ukuranKemeja || '-')}</span>
+          </div>
+          <div class="admin-row-meta-group">
+            <span><i class="fa-solid fa-cubes"></i> ${p.jumlah || 1} pcs</span>
+            <span><i class="fa-solid fa-wallet"></i> ${isCicilan ? '2x Cicilan' : 'Tunai'}</span>
+            <span class="admin-row-total"><i class="fa-solid fa-tag"></i> ${formatRupiah(p.total || 0)}</span>
+          </div>
         </div>
         ${isCicilan ? `
           <div class="admin-row-progress">

@@ -217,7 +217,13 @@
         </div>
         <div class="adash-stat">
           <div class="adash-stat-icon ic-green"><i class="fa-solid fa-sack-dollar"></i></div>
-          <div class="adash-stat-txt"><span id="adashPendapatan">Rp0</span><p>Dana Terkumpul</p></div>
+          <div class="adash-stat-txt">
+            <span id="adashPendapatan">Rp0</span><p>Dana Terkumpul</p>
+            <div class="adash-hero-progress">
+              <div class="adash-hero-progress-track"><div class="adash-hero-progress-fill" id="adashPendapatanFill" style="width:0%"></div></div>
+              <span class="adash-hero-progress-label" id="adashPendapatanPct">0% dari total pesanan</span>
+            </div>
+          </div>
         </div>
         <div class="adash-stat">
           <div class="adash-stat-icon ic-amber"><i class="fa-solid fa-hourglass-half"></i></div>
@@ -239,11 +245,11 @@
           <input type="text" id="adminSearch" placeholder="Cari nama, WhatsApp, atau departemen...">
         </div>
         <div class="adash-filters" id="adminFilters">
-          <button class="adash-chip active" data-filter="semua">Semua</button>
-          <button class="adash-chip" data-filter="belum_dp">Menunggu DP</button>
-          <button class="adash-chip" data-filter="dp">DP Terbayar</button>
-          <button class="adash-chip" data-filter="cicilan">Cicilan 2x</button>
-          <button class="adash-chip" data-filter="lunas">Lunas</button>
+          <button class="adash-chip active" data-filter="semua">Semua <span class="adash-chip-count" id="chipCountSemua">0</span></button>
+          <button class="adash-chip" data-filter="belum_dp">Menunggu DP <span class="adash-chip-count" id="chipCountBelumDp">0</span></button>
+          <button class="adash-chip" data-filter="dp">DP Terbayar <span class="adash-chip-count" id="chipCountDp">0</span></button>
+          <button class="adash-chip" data-filter="cicilan">Cicilan 2x <span class="adash-chip-count" id="chipCountCicilan">0</span></button>
+          <button class="adash-chip" data-filter="lunas">Lunas <span class="adash-chip-count" id="chipCountLunas">0</span></button>
         </div>
       </div>
 
