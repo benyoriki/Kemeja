@@ -106,7 +106,6 @@
           </div>
           <div class="adash-btn-divider" aria-hidden="true"></div>
           <div class="adash-btn-group">
-            <button class="adash-icon-btn" id="adminManageChatBtn" type="button" title="Kelola & sematkan pesan chat grup"><i class="fa-solid fa-thumbtack"></i></button>
             <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
             <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
           </div>
@@ -175,15 +174,6 @@
             <span class="adi-text">
               <span class="adi-title">Estimasi &amp; Progres</span>
               <span class="adi-desc">Atur tahap aktif program &amp; estimasi waktu tiap tahap</span>
-            </span>
-            <i class="fa-solid fa-chevron-right adi-chevron"></i>
-          </button>
-
-          <button class="adash-drawer-item" type="button" data-target="adminManageChatBtn">
-            <span class="adi-icon adi-blue"><i class="fa-solid fa-thumbtack"></i></span>
-            <span class="adi-text">
-              <span class="adi-title">Kelola Chat Grup</span>
-              <span class="adi-desc">Sematkan pesan penting atau hapus pesan tertentu</span>
             </span>
             <i class="fa-solid fa-chevron-right adi-chevron"></i>
           </button>
@@ -427,24 +417,6 @@
     </div>
     <div class="admin-history-list" id="adminHistoryList"><!-- diisi via JS --></div>
     <p class="adash-empty" id="adminHistoryEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Belum ada riwayat aktivitas.</p>
-  </div>
-</div>
-
-<!-- ===================================================== -->
-<!-- ADMIN: KELOLA CHAT GRUP (sematkan pesan penting / hapus
-     pesan individual — pelengkap "Reset Chat" yang menghapus semua) -->
-<!-- ===================================================== -->
-<div class="admin-overlay" id="manageChatOverlay">
-  <div class="admin-box history-box">
-    <button class="admin-close" id="manageChatClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-    <h3 class="addpeserta-title"><i class="fa-solid fa-thumbtack"></i> Kelola Chat Grup</h3>
-    <p class="addpeserta-desc">Sematkan 1 pesan penting (mis. pengumuman jadwal) agar selalu tampil di atas chat peserta, atau hapus pesan tertentu tanpa harus reset semua.</p>
-    <div class="adash-search" style="margin-bottom:14px;">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="manageChatSearch" placeholder="Cari isi pesan atau nama pengirim...">
-    </div>
-    <div class="admin-history-list" id="manageChatList"><!-- diisi via JS --></div>
-    <p class="adash-empty" id="manageChatEmpty" style="display:none;"><i class="fa-solid fa-inbox"></i> Belum ada pesan chat.</p>
   </div>
 </div>
 

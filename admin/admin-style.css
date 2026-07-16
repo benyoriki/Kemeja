@@ -345,29 +345,6 @@ body{
 }
 
 /* =========================================================
-   8b. KELOLA CHAT — item pesan + tombol sematkan/hapus
-========================================================= */
-.chatmng-item{
-  display:flex; align-items:flex-start; gap:10px; padding:11px 12px; border-radius:12px; margin-bottom:8px;
-  border:1px solid var(--border); transition:background .2s ease, border-color .2s ease;
-}
-.chatmng-item:hover{ background:rgba(18,169,224,.06); border-color:rgba(18,169,224,.28); }
-.chatmng-item.is-pinned{ background:rgba(240,180,41,.1); border-color:rgba(240,180,41,.4); }
-.chatmng-body{ flex:1; min-width:0; }
-.chatmng-top{ display:flex; align-items:center; gap:8px; margin-bottom:3px; }
-.chatmng-name{ font-size:12.5px; font-weight:800; }
-.chatmng-time{ font-size:10.5px; opacity:.55; }
-.chatmng-text{ font-size:12.5px; opacity:.85; white-space:pre-wrap; word-break:break-word; }
-.chatmng-actions{ display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
-.chatmng-btn{
-  width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center;
-  font-size:12px; background:var(--white); border:1px solid var(--border); transition:var(--transition);
-}
-.chatmng-btn:hover{ transform:scale(1.08); }
-.chatmng-btn.pin-btn.active{ background:#F0B429; color:#04213A; border-color:#F0B429; }
-.chatmng-btn.del-btn:hover{ background:#FF5A5F; color:#fff; border-color:#FF5A5F; }
-
-/* =========================================================
    9. MODAL KONFIRMASI GENERIK & TAMBAH PESERTA — entrance spring
 ========================================================= */
 .confirm-overlay .confirm-box{
