@@ -47,12 +47,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Font Awesome (dimuat non-blocking supaya tidak menunda render pertama halaman) -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
-<!-- Stylesheet: style.css = fungsi sistem/layout, particles.css = efek visual/partikel -->
-<link rel="stylesheet" href="style.css?v=22">
-<link rel="stylesheet" href="particles.css?v=5">
+<!-- Stylesheet: style.min.css = fungsi sistem/layout (minified), particles.min.css = efek visual/partikel (minified) -->
+<link rel="stylesheet" href="style.min.css?v=23">
+<link rel="stylesheet" href="particles.min.css?v=6">
 </head>
 <body>
 
@@ -1585,8 +1586,8 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.js?v=27"></script>
-<script src="particles.js?v=4"></script>
+<script src="script.min.js?v=28" defer></script>
+<script src="particles.min.js?v=5" defer></script>
 </body>
 </html>
 
