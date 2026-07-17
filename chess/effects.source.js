@@ -1,0 +1,668 @@
+/* =========================================================
+   EFFECTS.JS — Papan & Bidak Catur 3D + Semua Efek Visual
+   -------------------------------------------------
+   CATATAN DESAIN: Bidak & papan dibuat PROSEDURAL (digabung
+   dari bentuk geometri primitif: silinder, bola, kerucut,
+   torus) langsung lewat kode Three.js — BUKAN memuat file
+   model .glb. Ini disengaja: file model 3D biner (.glb) tidak
+   bisa dihasilkan lewat kode teks, dan menaruh file .glb
+   kosong/rusak di repo hanya akan membuat papan gagal tampil
+   sama sekali. Pendekatan prosedural ini menjamin papan &
+   bidak 3D SUNGGUHAN langsung tampil di semua browser tanpa
+   perlu meng-hosting file model tambahan.
+
+   Ingin ganti ke model .glb buatan sendiri nanti? Tinggal
+   taruh file di chess/assets/ lalu ganti fungsi createPiece()
+   di bawah dengan GLTFLoader — arsitektur sudah disiapkan
+   supaya penggantian itu mudah (lihat komentar di createPiece).
+========================================================= */
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const FILES = ['a','b','c','d','e','f','g','h'];
+const SQUARE_SIZE = 1;
+const BOARD_HALF = (SQUARE_SIZE * 8) / 2;
+
+function squareToXZ(square){
+  const file = FILES.indexOf(square[0]);
+  const rank = parseInt(square[1], 10) - 1;
+  const x = (file - 3.5) * SQUARE_SIZE;
+  const z = (3.5 - rank) * SQUARE_SIZE;
+  return { x, z };
+}
+
+function easeInOutQuad(t){ return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; }
+function easeOutBack(t){ const c1=1.70158, c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
+
+export class Chess3DScene{
+  constructor(container, opts = {}){
+    this.container = container;
+    this.onSquareClick = opts.onSquareClick || (() => {});
+    this.orientation = 'w'; // sisi kamera menghadap warna ini di bawah
+    this.squareMeshes = new Map();   // square -> mesh petak
+    this.pieceMeshes = new Map();    // square -> group bidak
+    this.highlightGroup = null;
+    this.checkRing = null;
+    this._tweens = [];
+    this._raf = null;
+    this.quality = { bloom: true, shadows: true };
+  }
+
+  async init(){
+    const el = this.container;
+    const w = el.clientWidth, h = el.clientHeight;
+
+    // --- Deteksi perangkat: turunkan beban render di HP/tablet, tetap penuh di PC ---
+    const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+    const lowCores = (navigator.hardwareConcurrency || 4) <= 4;
+    this._lite = isCoarse || lowCores;
+    const dprCap = this._lite ? 1.5 : 2;
+    const shadowSize = this._lite ? 1024 : 2048;
+
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x0d1526);
+    this.scene.fog = new THREE.FogExp2(0x0d1526, 0.028);
+
+    this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
+    this._setCameraForOrientation('w', true);
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: !this._lite, alpha: false, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
+    this.renderer.setSize(w, h);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = this._lite ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
+    el.appendChild(this.renderer.domElement);
+
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.minDistance = 4.2;
+    this.controls.maxDistance = 26;
+    this.controls.minPolarAngle = 0.35;
+    this.controls.maxPolarAngle = 1.15;
+    this.controls.enablePan = false;
+    this.controls.target.set(0, 0, 0);
+
+    this._setupLights(shadowSize);
+    this._setupBoard();
+    this._setupAmbientParticles();
+    this._setupComposer(w, h);
+    this._setupRaycast();
+
+    window.addEventListener('resize', () => this.resize());
+    this._animate();
+  }
+
+  _setupLights(shadowSize = 2048){
+    const hemi = new THREE.HemisphereLight(0xd8ecff, 0x3d4b72, 1.25);
+    this.scene.add(hemi);
+
+    const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+    sun.position.set(6, 10, 4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(shadowSize, shadowSize);
+    sun.shadow.camera.left = -7; sun.shadow.camera.right = 7;
+    sun.shadow.camera.top = 7; sun.shadow.camera.bottom = -7;
+    sun.shadow.bias = -0.0015;
+    this.scene.add(sun);
+    this.sun = sun;
+
+    const fill = new THREE.AmbientLight(0x8a97c4, 0.75);
+    this.scene.add(fill);
+
+    const cyan = new THREE.PointLight(0x17e6e6, 6, 14, 2);
+    cyan.position.set(-6, 3.2, -6);
+    this.scene.add(cyan);
+
+    const violet = new THREE.PointLight(0x9b5cff, 6, 14, 2);
+    violet.position.set(6, 3.2, 6);
+    this.scene.add(violet);
+
+    this._cyanLight = cyan; this._violetLight = violet;
+  }
+
+  _setupBoard(){
+    const boardGroup = new THREE.Group();
+
+    // Alas / dasar panggung
+    const baseGeo = new THREE.CylinderGeometry(6.4, 6.7, 0.5, 48);
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x161d30, metalness: 0.55, roughness: 0.38 });
+    const base = new THREE.Mesh(baseGeo, baseMat);
+    base.position.y = -0.42;
+    base.receiveShadow = true;
+    boardGroup.add(base);
+
+    // Cincin neon di tepi alas (elemen ciri khas — energy ring)
+    const ringGeo = new THREE.TorusGeometry(6.55, 0.035, 12, 96);
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0x17e6e6, emissive: 0x17e6e6, emissiveIntensity: 2.2, metalness: 0.2, roughness: 0.3 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = -0.16;
+    boardGroup.add(ring);
+    this._energyRing = ring;
+
+    // Bingkai papan
+    const frameGeo = new THREE.BoxGeometry(9.2, 0.32, 9.2);
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x232c46, metalness: 0.5, roughness: 0.42 });
+    const frame = new THREE.Mesh(frameGeo, frameMat);
+    frame.position.y = -0.16;
+    frame.receiveShadow = true;
+    frame.castShadow = true;
+    boardGroup.add(frame);
+
+    // 64 petak
+    const lightMat = new THREE.MeshStandardMaterial({ color: 0x4a6087, metalness: 0.2, roughness: 0.48 });
+    const darkMat  = new THREE.MeshStandardMaterial({ color: 0x1a2338, metalness: 0.3, roughness: 0.42 });
+    const squareGeo = new THREE.BoxGeometry(SQUARE_SIZE * 0.97, 0.12, SQUARE_SIZE * 0.97);
+
+    for (let f = 0; f < 8; f++){
+      for (let r = 0; r < 8; r++){
+        const square = FILES[f] + (r + 1);
+        const isLight = (f + r) % 2 === 1;
+        const mesh = new THREE.Mesh(squareGeo, isLight ? lightMat : darkMat);
+        const { x, z } = squareToXZ(square);
+        mesh.position.set(x, 0, z);
+        mesh.receiveShadow = true;
+        mesh.userData.square = square;
+        mesh.userData.baseY = 0;
+        boardGroup.add(mesh);
+        this.squareMeshes.set(square, mesh);
+      }
+    }
+
+    this.boardGroup = boardGroup;
+    this.scene.add(boardGroup);
+
+    this.pieceLayer = new THREE.Group();
+    this.scene.add(this.pieceLayer);
+
+    this.highlightGroup = new THREE.Group();
+    this.scene.add(this.highlightGroup);
+  }
+
+  _setupAmbientParticles(){
+    const COUNT = 140;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(COUNT * 3);
+    const speeds = new Float32Array(COUNT);
+    for (let i = 0; i < COUNT; i++){
+      positions[i*3]     = (Math.random() - 0.5) * 14;
+      positions[i*3 + 1] = Math.random() * 5 + 0.5;
+      positions[i*3 + 2] = (Math.random() - 0.5) * 14;
+      speeds[i] = 0.05 + Math.random() * 0.12;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      color: 0x8fd9ff, size: 0.028, transparent: true, opacity: 0.45,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const points = new THREE.Points(geo, mat);
+    this.scene.add(points);
+    this._ambientParticles = { points, speeds, positions };
+  }
+
+  _setupComposer(w, h){
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    const bloomScale = this._lite ? 0.6 : 1;
+    this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w * bloomScale, h * bloomScale), 0.4, 0.4, 0.62);
+    this.composer.addPass(this.bloomPass);
+    this.composer.addPass(new OutputPass());
+  }
+
+  _setupRaycast(){
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
+    let downX = 0, downY = 0;
+    const dom = this.renderer.domElement;
+
+    dom.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
+    dom.addEventListener('pointerup', (e) => {
+      const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+      if (moved > 6) return; // itu drag kamera, bukan klik petak
+      const rect = dom.getBoundingClientRect();
+      this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      const targets = [...this.squareMeshes.values()];
+      const hits = this.raycaster.intersectObjects(targets, false);
+      if (hits.length) this.onSquareClick(hits[0].object.userData.square);
+    });
+  }
+
+  _setCameraForOrientation(color, instant){
+    const aspect = this.container.clientWidth / Math.max(1, this.container.clientHeight);
+    // Layar sempit/portrait (HP) butuh jarak kamera lebih jauh supaya papan
+    // tidak terpotong di kiri-kanan; layar lebar (PC/tablet) tetap dekat.
+    const dist = aspect < 0.55 ? 12.5 : aspect < 0.8 ? 10.5 : 8.4;
+    const height = aspect < 0.55 ? 10.8 : aspect < 0.8 ? 9.2 : 7.6;
+    const pos = color === 'w' ? { x: 0, y: height, z: dist } : { x: 0, y: height, z: -dist };
+    if (instant || !this.camera){
+      this.camera && this.camera.position.set(pos.x, pos.y, pos.z);
+      this.camera && this.camera.lookAt(0, 0, 0);
+      return;
+    }
+    const start = this.camera.position.clone();
+    this._tweenValue(0, 1, 900, easeInOutQuad, (t) => {
+      this.camera.position.lerpVectors(start, new THREE.Vector3(pos.x, pos.y, pos.z), t);
+      this.camera.lookAt(0, 0, 0);
+    });
+  }
+
+  setOrientation(color){
+    this.orientation = color;
+    this._setCameraForOrientation(color, false);
+  }
+
+  /** Dolly kamera masuk/keluar sepanjang garis pandang saat ini (dipakai tombol zoom di dock). */
+  zoomBy(factor){
+    const cam = this.camera, target = this.controls.target;
+    const dir = new THREE.Vector3().subVectors(cam.position, target);
+    const dist = dir.length();
+    const newDist = Math.min(this.controls.maxDistance, Math.max(this.controls.minDistance, dist * factor));
+    dir.setLength(newDist);
+    const from = cam.position.clone();
+    const to = new THREE.Vector3().addVectors(target, dir);
+    this._tweenValue(0, 1, 260, easeInOutQuad, (t) => {
+      cam.position.lerpVectors(from, to, t);
+    });
+  }
+  zoomIn(){ this.zoomBy(0.82); }
+  zoomOut(){ this.zoomBy(1.22); }
+
+  /* ---------------- Bidak (dibuat prosedural) ---------------- */
+
+  /**
+   * Bangun mesh satu bidak. GANTI FUNGSI INI dengan GLTFLoader
+   * bila suatu saat Anda punya file assets/pieces.glb sendiri —
+   * cukup return sebuah THREE.Group berisi model yang dimuat.
+   */
+  createPiece(type, color){
+    const isWhite = color === 'w';
+    const mat = new THREE.MeshStandardMaterial({
+      color: isWhite ? 0xEDEFF3 : 0x717CAD,
+      metalness: isWhite ? 0.08 : 0.22,
+      roughness: isWhite ? 0.48 : 0.46,
+      emissive: isWhite ? 0x0d1520 : 0x3a2570,
+      emissiveIntensity: isWhite ? 0.04 : 0.42
+    });
+    const group = new THREE.Group();
+    const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
+
+    const base = add(new THREE.CylinderGeometry(0.24, 0.28, 0.1, 24), 0.05);
+    add(new THREE.CylinderGeometry(0.16, 0.22, 0.14, 24), 0.16);
+
+    switch (type){
+      case 'p': // pion
+        add(new THREE.SphereGeometry(0.15, 20, 16), 0.36);
+        break;
+      case 'r': // benteng
+        add(new THREE.CylinderGeometry(0.19, 0.19, 0.42, 20), 0.42);
+        { const crown = add(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 8), 0.66); crown.rotation.y = Math.PI/8; }
+        break;
+      case 'n': { // kuda (stilisasi kepala L)
+        add(new THREE.CylinderGeometry(0.16, 0.2, 0.4, 18), 0.4);
+        const head = add(new THREE.BoxGeometry(0.16, 0.28, 0.34), 0.66);
+        head.position.z = 0.06;
+        head.rotation.x = -0.25;
+        const nose = add(new THREE.BoxGeometry(0.12, 0.14, 0.18), 0.68);
+        nose.position.z = 0.2;
+        break;
+      }
+      case 'b': // gajah/uskup
+        add(new THREE.ConeGeometry(0.19, 0.5, 22), 0.5);
+        add(new THREE.SphereGeometry(0.09, 16, 12), 0.82);
+        break;
+      case 'q': // menteri
+        add(new THREE.CylinderGeometry(0.1, 0.22, 0.58, 22), 0.55);
+        add(new THREE.TorusGeometry(0.19, 0.045, 10, 24), 0.86);
+        add(new THREE.SphereGeometry(0.09, 16, 12), 0.98);
+        break;
+      case 'k': // raja
+        add(new THREE.CylinderGeometry(0.1, 0.22, 0.62, 22), 0.57);
+        add(new THREE.TorusGeometry(0.2, 0.04, 10, 24), 0.9);
+        add(new THREE.BoxGeometry(0.06, 0.2, 0.06), 1.06);
+        add(new THREE.BoxGeometry(0.16, 0.06, 0.06), 1.03);
+        break;
+    }
+
+    group.userData.type = type;
+    group.userData.color = color;
+    group.scale.setScalar(0.92);
+    return group;
+  }
+
+  /** Set seluruh posisi papan dari array chess.js board() (8x8, baris a8..h1). */
+  setPosition(boardArray){
+    this.pieceLayer.clear();
+    this.pieceMeshes.clear();
+    for (let r = 0; r < 8; r++){
+      for (let f = 0; f < 8; f++){
+        const cell = boardArray[r][f];
+        if (!cell) continue;
+        const file = FILES[f];
+        const rank = 8 - r;
+        const square = file + rank;
+        const piece = this.createPiece(cell.type, cell.color);
+        const { x, z } = squareToXZ(square);
+        piece.position.set(x, 0.12, z);
+        this.pieceLayer.add(piece);
+        this.pieceMeshes.set(square, piece);
+      }
+    }
+  }
+
+  /**
+   * Animasikan satu langkah secara visual (dipanggil SETELAH chess.js
+   * memvalidasi langkah). Mengembalikan Promise yang selesai saat animasi beres.
+   */
+  async animateMove({ from, to, captured, promotion, color }){
+    const moving = this.pieceMeshes.get(from);
+    if (!moving) return;
+
+    // Bidak lawan yang tertangkap di petak tujuan: animasikan hancur/terpental dulu.
+    const victim = this.pieceMeshes.get(to);
+    if (victim && captured){
+      await this._animateCapture(victim, to);
+      this.pieceMeshes.delete(to);
+    }
+
+    const startXZ = squareToXZ(from);
+    const endXZ = squareToXZ(to);
+    const startPos = moving.position.clone();
+    const arcHeight = 0.55;
+
+    await new Promise((resolve) => {
+      this._tweenValue(0, 1, 380, easeInOutQuad, (t) => {
+        moving.position.x = startXZ.x + (endXZ.x - startXZ.x) * t;
+        moving.position.z = startXZ.z + (endXZ.z - startXZ.z) * t;
+        moving.position.y = startPos.y + Math.sin(Math.PI * t) * arcHeight;
+        moving.rotation.y = Math.sin(Math.PI * t) * 0.15;
+      }, () => {
+        moving.position.set(endXZ.x, 0.12, endXZ.z);
+        moving.rotation.y = 0;
+        resolve();
+      });
+      this._emitTrailParticles(startXZ, endXZ);
+    });
+
+    this.pieceMeshes.delete(from);
+    this.pieceMeshes.set(to, moving);
+
+    // Promosi: ganti mesh pion jadi bidak baru dengan kilatan cahaya.
+    if (promotion){
+      this.pieceLayer.remove(moving);
+      const promoted = this.createPiece(promotion, color);
+      promoted.position.set(endXZ.x, 0.12, endXZ.z);
+      promoted.scale.setScalar(0.01);
+      this.pieceLayer.add(promoted);
+      this.pieceMeshes.set(to, promoted);
+      this._emitBurst(endXZ, 0xF2C14E, 26);
+      await new Promise((resolve) => {
+        this._tweenValue(0, 1, 420, easeOutBack, (t) => {
+          promoted.scale.setScalar(0.01 + 0.91 * t);
+        }, resolve);
+      });
+    }
+  }
+
+  async _animateCapture(victimMesh, square){
+    const xz = squareToXZ(square);
+    this._emitBurst(xz, 0xff4361, 30);
+    await new Promise((resolve) => {
+      const startY = victimMesh.position.y;
+      this._tweenValue(0, 1, 300, easeInOutQuad, (t) => {
+        victimMesh.position.y = startY + t * 1.1;
+        victimMesh.scale.setScalar(1 - t);
+        victimMesh.rotation.y += 0.25;
+      }, () => {
+        this.pieceLayer.remove(victimMesh);
+        resolve();
+      });
+    });
+  }
+
+  /* ---------------- Highlight & indikator ---------------- */
+
+  clearHighlights(){
+    while (this.highlightGroup.children.length) this.highlightGroup.remove(this.highlightGroup.children[0]);
+  }
+
+  highlightSelected(square){
+    this.clearHighlights();
+    if (!square) return;
+    const { x, z } = squareToXZ(square);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.42, 0.48, 32),
+      new THREE.MeshBasicMaterial({ color: 0x17e6e6, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.14, z);
+    this.highlightGroup.add(ring);
+  }
+
+  showLegalMoves(moves){
+    moves.forEach(m => {
+      const { x, z } = squareToXZ(m.to);
+      let mesh;
+      if (m.captured){
+        mesh = new THREE.Mesh(
+          new THREE.RingGeometry(0.38, 0.46, 28),
+          new THREE.MeshBasicMaterial({ color: 0xff4361, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+        );
+      } else {
+        mesh = new THREE.Mesh(
+          new THREE.CircleGeometry(0.13, 24),
+          new THREE.MeshBasicMaterial({ color: 0x17e6e6, transparent: true, opacity: 0.65 })
+        );
+      }
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(x, 0.14, z);
+      this.highlightGroup.add(mesh);
+    });
+  }
+
+  showLastMove(from, to){
+    [from, to].forEach(sq => {
+      const { x, z } = squareToXZ(sq);
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.97, 0.97),
+        new THREE.MeshBasicMaterial({ color: 0xF2C14E, transparent: true, opacity: 0.22, side: THREE.DoubleSide })
+      );
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(x, 0.13, z);
+      this.highlightGroup.add(mesh);
+    });
+  }
+
+  showCheck(square){
+    this.clearCheck();
+    if (!square) return;
+    const { x, z } = squareToXZ(square);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.3, 0.5, 32),
+      new THREE.MeshBasicMaterial({ color: 0xff2244, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.15, z);
+    this.scene.add(ring);
+    this.checkRing = ring;
+  }
+
+  clearCheck(){
+    if (this.checkRing){ this.scene.remove(this.checkRing); this.checkRing = null; }
+  }
+
+  /* ---------------- Partikel efek ---------------- */
+
+  _emitBurst(xz, color, count = 24){
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const velocities = [];
+    for (let i = 0; i < count; i++){
+      positions[i*3] = xz.x; positions[i*3+1] = 0.3; positions[i*3+2] = xz.z;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.02 + Math.random() * 0.05;
+      velocities.push({
+        x: Math.cos(angle) * speed,
+        y: 0.04 + Math.random() * 0.08,
+        z: Math.sin(angle) * speed
+      });
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color, size: 0.09, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+    const points = new THREE.Points(geo, mat);
+    this.scene.add(points);
+
+    const start = performance.now();
+    const duration = 650;
+    const step = () => {
+      const t = (performance.now() - start) / duration;
+      if (t >= 1){ this.scene.remove(points); geo.dispose(); mat.dispose(); return; }
+      const pos = geo.attributes.position;
+      for (let i = 0; i < count; i++){
+        pos.array[i*3]   += velocities[i].x;
+        pos.array[i*3+1] += velocities[i].y;
+        pos.array[i*3+2] += velocities[i].z;
+        velocities[i].y -= 0.0025; // gravitasi ringan
+      }
+      pos.needsUpdate = true;
+      mat.opacity = 1 - t;
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  _emitTrailParticles(startXZ, endXZ){
+    const count = 8;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++){
+      const t = i / count;
+      positions[i*3]   = startXZ.x + (endXZ.x - startXZ.x) * t;
+      positions[i*3+1] = 0.15;
+      positions[i*3+2] = startXZ.z + (endXZ.z - startXZ.z) * t;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({ color: 0x8fe9ff, size: 0.06, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
+    const points = new THREE.Points(geo, mat);
+    this.scene.add(points);
+    const start = performance.now();
+    const step = () => {
+      const t = (performance.now() - start) / 400;
+      if (t >= 1){ this.scene.remove(points); geo.dispose(); mat.dispose(); return; }
+      mat.opacity = 0.7 * (1 - t);
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /** Confetti kemenangan — hujan partikel tiga warna dari atas papan. */
+  celebrateVictory(){
+    const COUNT = 220;
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(COUNT * 3);
+    const velocities = [];
+    const colors = new Float32Array(COUNT * 3);
+    const palette = [new THREE.Color(0x17e6e6), new THREE.Color(0x9b5cff), new THREE.Color(0xF2C14E)];
+    for (let i = 0; i < COUNT; i++){
+      positions[i*3]   = (Math.random() - 0.5) * 8;
+      positions[i*3+1] = 5 + Math.random() * 3;
+      positions[i*3+2] = (Math.random() - 0.5) * 8;
+      velocities.push({ x: (Math.random()-0.5)*0.02, y: -(0.03 + Math.random()*0.04), z: (Math.random()-0.5)*0.02, spin: Math.random()*0.2 });
+      const c = palette[i % 3];
+      colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.11, vertexColors: true, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+    const points = new THREE.Points(geo, mat);
+    this.scene.add(points);
+
+    const start = performance.now();
+    const duration = 3200;
+    const step = () => {
+      const t = (performance.now() - start) / duration;
+      if (t >= 1){ this.scene.remove(points); geo.dispose(); mat.dispose(); return; }
+      const pos = geo.attributes.position;
+      for (let i = 0; i < COUNT; i++){
+        pos.array[i*3]   += velocities[i].x;
+        pos.array[i*3+1] += velocities[i].y;
+        pos.array[i*3+2] += velocities[i].z;
+      }
+      pos.needsUpdate = true;
+      mat.opacity = t < 0.8 ? 1 : 1 - (t - 0.8) / 0.2;
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* ---------------- Kualitas / performa ---------------- */
+
+  setBloom(enabled){ this.quality.bloom = enabled; if (this.bloomPass) this.bloomPass.enabled = enabled; }
+  setShadows(enabled){
+    this.quality.shadows = enabled;
+    this.renderer.shadowMap.enabled = enabled;
+    if (this.sun) this.sun.castShadow = enabled;
+  }
+
+  /* ---------------- Util tween & loop ---------------- */
+
+  _tweenValue(from, to, durationMs, ease, onUpdate, onComplete){
+    const start = performance.now();
+    const tick = (now) => {
+      const raw = Math.min(1, (now - start) / durationMs);
+      const t = ease(raw);
+      onUpdate(from + (to - from) * t);
+      if (raw < 1) requestAnimationFrame(tick);
+      else onComplete && onComplete();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  resize(){
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    if (!w || !h) return;
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h);
+    this.composer.setSize(w, h);
+  }
+
+  _animate(){
+    this._raf = requestAnimationFrame(() => this._animate());
+    this.controls.update();
+
+    // Partikel ambient melayang pelan ke atas lalu reset
+    const ap = this._ambientParticles;
+    const pos = ap.points.geometry.attributes.position;
+    for (let i = 0; i < ap.speeds.length; i++){
+      pos.array[i*3 + 1] += ap.speeds[i] * 0.01;
+      if (pos.array[i*3 + 1] > 5.5) pos.array[i*3 + 1] = 0.3;
+    }
+    pos.needsUpdate = true;
+
+    const t = performance.now() * 0.001;
+    if (this._energyRing) this._energyRing.material.emissiveIntensity = 1.8 + Math.sin(t * 2) * 0.5;
+    if (this.checkRing) this.checkRing.material.opacity = 0.5 + Math.sin(t * 8) * 0.35;
+    if (this._cyanLight) this._cyanLight.intensity = 5 + Math.sin(t * 1.3) * 1.2;
+    if (this._violetLight) this._violetLight.intensity = 5 + Math.cos(t * 1.1) * 1.2;
+
+    if (this.quality.bloom) this.composer.render();
+    else this.renderer.render(this.scene, this.camera);
+  }
+
+  dispose(){
+    cancelAnimationFrame(this._raf);
+    window.removeEventListener('resize', this.resize);
+    this.renderer && this.renderer.dispose();
+  }
+}
