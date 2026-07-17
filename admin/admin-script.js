@@ -663,6 +663,9 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const { jsPDF } = window.jspdf;
       const rows = [...pesertaData].sort((a, b) => (a._ms || 0) - (b._ms || 0));
+      const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
+      const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
+      const totalTerkumpul = rows.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
 
       const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const PAGE_W = doc.internal.pageSize.getWidth();
@@ -746,7 +749,65 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.text('benyoriki.github.io/Kemeja', miniCardX + miniPadX + 11, miniCardY + 73.5);
 
       pdfGradientRect(doc, MARGIN, 138, CONTENT_W, 2.4, BLUE, TEAL2);
-      const HEADER_BOTTOM = 138 + 2.4 + 24;
+
+      /* ===== BANNER "TOTAL UANG TERKUMPUL" (full-width, di bawah header) —
+         info paling dicari duluan: berapa dana yang sudah masuk sejauh ini.
+         Latar navy solid + garis emas tipis kasih kesan premium/mewah. ===== */
+      const bannerY = 158, bannerH = 66;
+      doc.setFillColor(navyR, navyG, navyB);
+      doc.roundedRect(MARGIN, bannerY, CONTENT_W, bannerH, 12, 12, 'F');
+      pdfGradientRect(doc, MARGIN + 12, bannerY + bannerH - 3, CONTENT_W - 24, 1.6, TEAL2, BLUE);
+
+      // Ikon koin (dua lingkaran bertumpuk) dalam kotak teal.
+      const bIconSize = 40, bIconX = MARGIN + 16, bIconY = bannerY + (bannerH - bIconSize) / 2;
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.roundedRect(bIconX, bIconY, bIconSize, bIconSize, 9, 9, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.circle(bIconX + bIconSize/2 - 5, bIconY + bIconSize/2 + 3, 8, 'F');
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(bIconX + bIconSize/2 - 5, bIconY + bIconSize/2 + 3, 8, 'S');
+      doc.setFillColor(255, 255, 255);
+      doc.circle(bIconX + bIconSize/2 + 6, bIconY + bIconSize/2 - 5, 8, 'F');
+      doc.setDrawColor(tealR, tealG, tealB);
+      doc.setLineWidth(1);
+      doc.circle(bIconX + bIconSize/2 + 6, bIconY + bIconSize/2 - 5, 8, 'S');
+
+      const bTextX = bIconX + bIconSize + 16;
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(204, 251, 241);
+      doc.text('TOTAL UANG TERKUMPUL', bTextX, bannerY + 24);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(21);
+      doc.setTextColor(255, 255, 255);
+      doc.text(formatRupiah(totalTerkumpul), bTextX, bannerY + 49);
+
+      // Garis pemisah vertikal + ringkasan cepat lunas/DP di sisi kanan banner.
+      const divX = MARGIN + CONTENT_W - 168;
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.6);
+      doc.line(divX, bannerY + 14, divX, bannerY + bannerH - 14);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(lunasCount), divX + 20, bannerY + 28);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(204, 251, 241);
+      doc.text('LUNAS', divX + 20, bannerY + 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(15);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(dpCount), divX + 82, bannerY + 28);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(204, 251, 241);
+      doc.text('DP BERJALAN', divX + 82, bannerY + 40);
+
+      const HEADER_BOTTOM = bannerY + bannerH + 26;
 
       /* ===== TABEL PESERTA ===== */
       const STATUS_COLORS = {
@@ -856,9 +917,10 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       /* =========================================================
-         KARTU INFO REKENING TRANSFER + RINGKASAN + BRANDING —
-         tampil menonjol di bawah tabel, pindah ke halaman baru
-         otomatis kalau ruang yang tersisa tidak cukup.
+         KARTU "TOTAL UANG TERKUMPUL" (penutup) — menggantikan kartu
+         rekening yang dulu ada di sini (sudah dipindah & cukup
+         ditampilkan sekali di banner atas, jadi tidak perlu diulang).
+         Latar gradasi navy → teal untuk kesan premium di akhir dokumen.
       ========================================================= */
       const CARD_H = 78, CARD_GAP = 26, SUMMARY_BLOCK_H = 100;
       let finalY = doc.lastAutoTable.finalY + CARD_GAP;
@@ -867,46 +929,34 @@ document.addEventListener('DOMContentLoaded', () => {
         finalY = 56;
       }
 
-      doc.setFillColor(239, 252, 249);
+      doc.setFillColor(navyR, navyG, navyB);
       doc.roundedRect(MARGIN, finalY, CONTENT_W, CARD_H, 12, 12, 'F');
-      doc.setDrawColor(18, 169, 224);
+      pdfGradientRect(doc, MARGIN + 12, finalY + 5, CONTENT_W - 24, 2, TEAL2, BLUE);
+      doc.setDrawColor(navyR, navyG, navyB);
       doc.setLineWidth(0.8);
       doc.roundedRect(MARGIN, finalY, CONTENT_W, CARD_H, 12, 12, 'S');
 
-      const iconSize = 38, iconX = MARGIN + 16, iconY = finalY + (CARD_H - iconSize) / 2;
-      doc.setFillColor(18, 169, 224);
-      doc.roundedRect(iconX, iconY, iconSize, iconSize, 8, 8, 'F');
+      const iconSize = 42, iconX = MARGIN + 18, iconY = finalY + (CARD_H - iconSize) / 2;
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(iconX + 6, iconY + 10, iconSize - 12, iconSize - 20, 3, 3, 'F');
-      doc.setFillColor(18, 169, 224);
-      doc.rect(iconX + 6, iconY + 14, iconSize - 12, 4, 'F');
+      doc.circle(iconX + iconSize/2 - 6, iconY + iconSize/2 + 4, 9, 'F');
+      doc.circle(iconX + iconSize/2 + 7, iconY + iconSize/2 - 6, 9, 'F');
 
-      const textX = iconX + iconSize + 18;
+      const textX = iconX + iconSize + 20;
       doc.setFont('courier', 'bold');
-      doc.setFontSize(8.6);
-      doc.setTextColor(tealR, tealG, tealB);
-      doc.text('TRANSFER PEMBAYARAN KE REKENING', textX, finalY + 22);
+      doc.setFontSize(8.8);
+      doc.setTextColor(224, 253, 246);
+      doc.text('TOTAL UANG TERKUMPUL', textX, finalY + 26);
 
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(17);
-      doc.setTextColor(navyR, navyG, navyB);
-      doc.text(REKENING.nomor, textX, finalY + 44);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(23);
+      doc.setTextColor(255, 255, 255);
+      doc.text(formatRupiah(totalTerkumpul), textX, finalY + 55);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9.5);
-      doc.setTextColor(slateR, slateG, slateB);
-      doc.text(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, textX, finalY + 60);
-
-      const bcaW = 40, bcaH = 18, bcaX = MARGIN + CONTENT_W - bcaW - 16, bcaY = finalY + 14;
-      doc.setFillColor(18, 169, 224);
-      doc.roundedRect(bcaX, bcaY, bcaW, bcaH, 5, 5, 'F');
-      doc.setFont('courier', 'bold');
       doc.setFontSize(9);
-      doc.setTextColor(255, 255, 255);
-      doc.text('BCA', bcaX + bcaW / 2, bcaY + bcaH / 2 + 3, { align: 'center' });
+      doc.setTextColor(224, 253, 246);
+      doc.text(`per ${hariTanggal}, ${jam} WIB`, MARGIN + CONTENT_W - 16, finalY + CARD_H - 14, { align: 'right' });
 
-      const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
-      const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
       const sumY = finalY + CARD_H + 34;
 
       doc.setFont('helvetica', 'bold');
