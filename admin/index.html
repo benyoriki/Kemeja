@@ -12,21 +12,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Font Awesome (non-blocking, tidak menunda render pertama) -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
 <!-- jsPDF + AutoTable: dipakai untuk membuat file PDF "Daftar Peserta"
      (vektor, jadi teks selalu tajam walau datanya ratusan baris — beda
      dengan versi JPG lama yang bisa buram kalau daftarnya kepanjangan). -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 
-<!-- Pakai ulang design system situs publik (variabel warna, tipografi,
-     komponen admin-*/adash-* sudah didefinisikan lengkap di sana) +
-     lapisan CSS khusus halaman ini supaya tampil sebagai HALAMAN PENUH,
-     bukan modal kotak seperti sebelumnya. -->
-<link rel="stylesheet" href="../style.css?v=22">
-<link rel="stylesheet" href="admin-style.min.css?v=3">
+<!-- v3: Dasbor admin sekarang MANDIRI SEPENUHNYA — semua token warna,
+     tipografi, dan komponen (tombol, form, badge, dst) didefinisikan
+     di admin-style.css sendiri. Tidak lagi memuat ../style.css milik
+     situs publik, jadi dasbor tidak akan lagi rusak/berubah tak terduga
+     tiap kali CSS landing page diedit, dan halaman ini juga lebih ringan
+     (tidak memuat 148KB CSS landing page yang tidak relevan untuknya). -->
+<link rel="stylesheet" href="admin-style.css?v=3">
 </head>
 <body>
 
@@ -523,7 +525,7 @@
 })();
 </script>
 
-<script src="admin-script.min.js?v=3"></script>
+<script src="admin-script.js?v=3"></script>
 
 <!-- Kontrol panel menu hamburger (khusus tampilan HP). Berdiri sendiri,
      tidak menyentuh logika admin-script.js — cukup "meneruskan" klik
