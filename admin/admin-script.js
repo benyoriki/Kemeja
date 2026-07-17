@@ -713,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
          langsung terlihat begitu PDF dibuka, tanpa perlu ke halaman
          terakhir. Kartu lengkap (dengan ringkasan & logo BCA) tetap
          dipertahankan di bawah tabel sebagai rujukan detail. ===== */
-      const miniCardW = 205, miniCardH = 84, miniCardX = MARGIN + CONTENT_W - miniCardW, miniCardY = 40;
+      const miniCardW = 205, miniCardH = 100, miniCardX = MARGIN + CONTENT_W - miniCardW, miniCardY = 36;
       doc.setFillColor(239, 252, 249);
       doc.roundedRect(miniCardX, miniCardY, miniCardW, miniCardH, 10, 10, 'F');
       doc.setDrawColor(18, 169, 224);
@@ -724,29 +724,34 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFont('courier', 'bold');
       doc.setFontSize(7.3);
       doc.setTextColor(tealR, tealG, tealB);
-      doc.text('TRANSFER PEMBAYARAN KE', miniCardX + miniPadX, miniCardY + 16);
+      doc.text('TRANSFER PEMBAYARAN KE', miniCardX + miniPadX, miniCardY + 15);
 
       doc.setFont('courier', 'bold');
       doc.setFontSize(15.5);
       doc.setTextColor(navyR, navyG, navyB);
-      doc.text(REKENING.nomor, miniCardX + miniPadX, miniCardY + 35);
+      doc.text(REKENING.nomor, miniCardX + miniPadX, miniCardY + 34);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.3);
       doc.setTextColor(slateR, slateG, slateB);
-      doc.text(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, miniCardX + miniPadX, miniCardY + 49);
+      doc.text(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, miniCardX + miniPadX, miniCardY + 48);
 
       // Garis pemisah tipis sebelum link website
       doc.setDrawColor(204, 251, 241);
       doc.setLineWidth(0.6);
-      doc.line(miniCardX + miniPadX, miniCardY + 58, miniCardX + miniCardW - miniPadX, miniCardY + 58);
+      doc.line(miniCardX + miniPadX, miniCardY + 57, miniCardX + miniCardW - miniPadX, miniCardY + 57);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('WEBSITE PENDAFTARAN RESMI', miniCardX + miniPadX, miniCardY + 70);
 
       doc.setFillColor(tealR, tealG, tealB);
-      doc.circle(miniCardX + miniPadX + 2.5, miniCardY + 71, 2.5, 'F');
+      doc.circle(miniCardX + miniPadX + 3, miniCardY + 87, 3, 'F');
       doc.setFont('courier', 'bold');
-      doc.setFontSize(7.8);
-      doc.setTextColor(tealR, tealG, tealB);
-      doc.text('benyoriki.github.io/Kemeja', miniCardX + miniPadX + 11, miniCardY + 73.5);
+      doc.setFontSize(9.5);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text('benyoriki.github.io/Kemeja', miniCardX + miniPadX + 12, miniCardY + 90);
 
       pdfGradientRect(doc, MARGIN, 138, CONTENT_W, 2.4, BLUE, TEAL2);
 
@@ -922,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
          ditampilkan sekali di banner atas, jadi tidak perlu diulang).
          Latar gradasi navy → teal untuk kesan premium di akhir dokumen.
       ========================================================= */
-      const CARD_H = 78, CARD_GAP = 26, SUMMARY_BLOCK_H = 100;
+      const CARD_H = 78, CARD_GAP = 26, SUMMARY_BLOCK_H = 155;
       let finalY = doc.lastAutoTable.finalY + CARD_GAP;
       if (finalY + CARD_H + SUMMARY_BLOCK_H > PAGE_H - 40){
         doc.addPage();
@@ -955,7 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(224, 253, 246);
-      doc.text(`per ${hariTanggal}, ${jam} WIB`, MARGIN + CONTENT_W - 16, finalY + CARD_H - 14, { align: 'right' });
+      doc.text(`per ${hariTanggal}, ${jam}`, MARGIN + CONTENT_W - 16, finalY + CARD_H - 14, { align: 'right' });
 
       const sumY = finalY + CARD_H + 34;
 
@@ -971,22 +976,44 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(slateLR, slateLG, slateLB);
       doc.text(`•  ${lunasCount} Lunas   •  ${dpCount} DP Terbayar`, MARGIN + totalLabelW + 14, sumY);
 
+      const capY = sumY + 28;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('WEBSITE DAFTAR BAJU LOKON PRIMA', MARGIN, capY);
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9.3);
+      doc.setTextColor(slateLR, slateLG, slateLB);
+      doc.text('Pantau status pesanan & pembayaranmu kapan saja, di mana saja.', MARGIN, capY + 15);
+
       const linkText = 'benyoriki.github.io/Kemeja';
       doc.setFont('courier', 'bold');
-      doc.setFontSize(8.6);
+      doc.setFontSize(13);
       const linkTextW = doc.getTextWidth(linkText);
-      const linkPadX = 10, linkDot = 6;
-      const linkW = linkDot + 8 + linkTextW + linkPadX * 2;
-      const linkH = 20, linkY = sumY + 16;
+      const iconD = 26, linkPadL = 12, linkPadR = 18, gapIconText = 12;
+      const linkW = linkPadL + iconD + gapIconText + linkTextW + linkPadR;
+      const linkH = 36, linkY = capY + 24;
+
       doc.setFillColor(230, 247, 244);
-      doc.roundedRect(MARGIN, linkY, linkW, linkH, 10, 10, 'F');
+      doc.roundedRect(MARGIN, linkY, linkW, linkH, 18, 18, 'F');
       doc.setDrawColor(13, 148, 136);
-      doc.setLineWidth(0.6);
-      doc.roundedRect(MARGIN, linkY, linkW, linkH, 10, 10, 'S');
+      doc.setLineWidth(0.9);
+      doc.roundedRect(MARGIN, linkY, linkW, linkH, 18, 18, 'S');
+
+      // Ikon globe sederhana: lingkaran teal + garis lintang/bujur putih.
+      const gCx = MARGIN + linkPadL + iconD / 2, gCy = linkY + linkH / 2;
       doc.setFillColor(tealR, tealG, tealB);
-      doc.circle(MARGIN + linkPadX + linkDot / 2, linkY + linkH / 2, linkDot / 2, 'F');
-      doc.setTextColor(tealR, tealG, tealB);
-      doc.text(linkText, MARGIN + linkPadX + linkDot + 8, linkY + linkH / 2 + 3);
+      doc.circle(gCx, gCy, iconD / 2, 'F');
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.9);
+      doc.line(gCx - iconD / 2 + 2.5, gCy, gCx + iconD / 2 - 2.5, gCy);
+      doc.ellipse(gCx, gCy, iconD / 2 - 6.5, iconD / 2, 'S');
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text(linkText, MARGIN + linkPadL + iconD + gapIconText, gCy + 4.5);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.6);
