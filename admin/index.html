@@ -28,7 +28,7 @@
      situs publik, jadi dasbor tidak akan lagi rusak/berubah tak terduga
      tiap kali CSS landing page diedit, dan halaman ini juga lebih ringan
      (tidak memuat 148KB CSS landing page yang tidak relevan untuknya). -->
-<link rel="stylesheet" href="admin-style.css?v=5">
+<link rel="stylesheet" href="admin-style.css?v=6">
 </head>
 <body>
 
@@ -44,56 +44,98 @@
 
     <!-- Layar login -->
     <div class="admin-login" id="adminLogin">
-      <span class="admin-login-eyebrow"><span class="dot"></span> AKSES TERBATAS</span>
-      <div class="admin-icon"><i class="fa-solid fa-shield-halved"></i></div>
-      <h3>Panel Kontrol Admin</h3>
-      <p>Khusus tim keuangan &amp; penanggung jawab program untuk mengelola data peserta dan pembayaran.</p>
+      <div class="alogin-grid">
 
-      <div class="admin-field">
-        <label for="adminUsername">Email Admin</label>
-        <div class="admin-input-wrap">
-          <i class="fa-solid fa-envelope"></i>
-          <input type="email" id="adminUsername" placeholder="nama@lokonprima.com" autocomplete="username">
-        </div>
-      </div>
-
-      <div class="admin-field">
-        <label for="adminPasscode">Kata Sandi</label>
-        <div class="admin-input-wrap">
-          <i class="fa-solid fa-lock"></i>
-          <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="current-password">
-          <button type="button" class="admin-pass-toggle" id="adminPassToggle" aria-label="Tampilkan/sembunyikan kata sandi" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
-        </div>
-      </div>
-
-      <div class="admin-field admin-captcha">
-        <label for="adminCaptchaInput">Verifikasi keamanan</label>
-        <div class="admin-captcha-row">
-          <div class="admin-captcha-equation">
-            <span id="adminCaptchaQuestion">-</span> <span class="eq-sign">=</span> <span class="eq-mark">?</span>
+        <!-- Panel branding (dekoratif, hanya tampil di layar besar) -->
+        <aside class="alogin-brand" aria-hidden="true">
+          <div class="alogin-brand-glow"></div>
+          <div class="alogin-brand-top">
+            <div class="alogin-brand-badge"><i class="fa-solid fa-shirt"></i></div>
+            <span class="alogin-brand-name">LOKON PRIMA</span>
           </div>
-          <input type="text" id="adminCaptchaInput" placeholder="Jawaban" inputmode="numeric" autocomplete="off">
-          <button type="button" class="admin-captcha-refresh" id="adminCaptchaRefresh" aria-label="Ganti soal"><i class="fa-solid fa-rotate"></i></button>
+          <h4 class="alogin-brand-title">Kendalikan seluruh <span>pesanan &amp; pembayaran</span> dari satu ruang kontrol.</h4>
+          <p class="alogin-brand-sub">Panel khusus tim keuangan &amp; penanggung jawab program — data peserta, cicilan, dan progres pesanan diperbarui secara realtime.</p>
+          <ul class="alogin-brand-list">
+            <li><i class="fa-solid fa-bolt"></i> Data realtime, langsung tersinkron</li>
+            <li><i class="fa-solid fa-shield-halved"></i> Login aman via Firebase Authentication</li>
+            <li><i class="fa-solid fa-clock-rotate-left"></i> Riwayat setiap aksi admin tercatat</li>
+          </ul>
+          <div class="alogin-brand-orbit" aria-hidden="true">
+            <span class="orbit-ring r1"></span>
+            <span class="orbit-ring r2"></span>
+            <span class="orbit-dot"></span>
+          </div>
+        </aside>
+
+        <!-- Kartu form login -->
+        <div class="alogin-formwrap">
+          <span class="admin-login-eyebrow"><span class="dot"></span> AKSES TERBATAS</span>
+          <div class="admin-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <h3>Panel Kontrol Admin</h3>
+          <p>Khusus tim keuangan &amp; penanggung jawab program untuk mengelola data peserta dan pembayaran.</p>
+
+          <div class="admin-field">
+            <label for="adminUsername">Email Admin</label>
+            <div class="admin-input-wrap">
+              <i class="fa-solid fa-envelope"></i>
+              <input type="email" id="adminUsername" placeholder="nama@lokonprima.com" autocomplete="username">
+            </div>
+          </div>
+
+          <div class="admin-field">
+            <label for="adminPasscode">Kata Sandi</label>
+            <div class="admin-input-wrap">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="adminPasscode" placeholder="Masukkan kata sandi admin" autocomplete="current-password">
+              <button type="button" class="admin-pass-toggle" id="adminPassToggle" aria-label="Tampilkan/sembunyikan kata sandi" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+
+          <div class="admin-field admin-captcha">
+            <label for="adminCaptchaInput">Verifikasi keamanan</label>
+            <div class="admin-captcha-row">
+              <div class="admin-captcha-equation">
+                <span id="adminCaptchaQuestion">-</span> <span class="eq-sign">=</span> <span class="eq-mark">?</span>
+              </div>
+              <input type="text" id="adminCaptchaInput" placeholder="Jawaban" inputmode="numeric" autocomplete="off">
+              <button type="button" class="admin-captcha-refresh" id="adminCaptchaRefresh" aria-label="Ganti soal"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+          </div>
+
+          <small class="admin-error" id="adminLoginError"></small>
+
+          <div class="admin-login-actions">
+            <a class="btn btn-outline-dark" id="adminCancelBtn" href="../index.html">Batal</a>
+            <button class="btn btn-primary ripple" id="adminLoginBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+          </div>
+
+          <p class="admin-login-trust"><i class="fa-solid fa-fingerprint"></i> Diamankan dengan Firebase Authentication — enkripsi ujung-ke-ujung.</p>
         </div>
       </div>
-
-      <small class="admin-error" id="adminLoginError"></small>
-
-      <div class="admin-login-actions">
-        <a class="btn btn-outline-dark" id="adminCancelBtn" href="../index.html">Batal</a>
-        <button class="btn btn-primary ripple" id="adminLoginBtn" type="button"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
-      </div>
-
-      <p class="admin-login-trust"><i class="fa-solid fa-fingerprint"></i> Diamankan dengan Firebase Authentication — enkripsi ujung-ke-ujung.</p>
     </div>
 
     <!-- Panel kelola peserta (DASBOR ADMIN) -->
     <div class="admin-panel" id="adminPanel">
 
+      <!-- Widget hitung mundur otomatis-logout: hanya tampil saat dasbor
+           terdeteksi tidak ada aktivitas (mouse/keyboard/sentuhan) dalam
+           beberapa detik terakhir sebelum sesi otomatis ditutup. -->
+      <div class="adash-idle-banner" id="adashIdleBanner" role="status" aria-live="polite">
+        <div class="adash-idle-ring" id="adashIdleRing" style="--p:100">
+          <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+        <div class="adash-idle-copy">
+          <b>Tidak ada aktivitas</b>
+          <span>Keluar otomatis dalam <span id="adashIdleTime">0:15</span></span>
+        </div>
+        <button type="button" class="adash-idle-dismiss" id="adashIdleStay" title="Saya masih di sini"><i class="fa-solid fa-hand"></i> Saya masih di sini</button>
+      </div>
+
       <div class="adash-header">
         <div class="adash-header-left">
           <div class="adash-logo-badge"><i class="fa-solid fa-chart-pie"></i></div>
           <div>
+            <span class="adash-admin-name" id="adashAdminName"><i class="fa-solid fa-circle-user"></i> Memuat sesi...</span>
             <h3>Dasbor Admin <span class="adash-live-pill"><span class="dot"></span> LIVE</span></h3>
             <p id="adashClock">Memuat waktu...</p>
           </div>
@@ -525,7 +567,7 @@
 })();
 </script>
 
-<script src="admin-script.js?v=3"></script>
+<script src="admin-script.js?v=4"></script>
 
 <!-- Kontrol panel menu hamburger (khusus tampilan HP). Berdiri sendiri,
      tidak menyentuh logika admin-script.js — cukup "meneruskan" klik

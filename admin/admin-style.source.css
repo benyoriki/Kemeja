@@ -301,6 +301,101 @@ button{ cursor:pointer; border:none; background:none; }
 }
 .admin-login-trust i{ color:var(--teal); }
 
+/* ---------------------------------------------------------
+   4b. LOGIN — layout dua kolom (branding + form) khusus layar
+   besar. Di HP, kolom branding disembunyikan sepenuhnya dan
+   hanya form yang tampil (perilaku lama tetap dipertahankan).
+--------------------------------------------------------- */
+@keyframes aloginOrbitSpin{ to{ transform:rotate(360deg); } }
+@keyframes aloginBlobDrift{
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%{ transform:translate(-4%,3%) scale(1.06); }
+}
+@keyframes aloginDotFloat{
+  0%,100%{ transform:translate(-50%,-50%) rotate(0deg) translateX(0); }
+  50%{ transform:translate(-50%,-50%) rotate(180deg) translateX(6px); }
+}
+
+.alogin-grid{ display:grid; grid-template-columns:1fr; align-items:stretch; }
+
+.alogin-brand{ display:none; }
+
+.alogin-formwrap{ padding:16px 0 4px; text-align:center; }
+.alogin-formwrap h3{ font-size:21px; margin-bottom:9px; }
+.alogin-formwrap p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:24px; line-height:1.55; }
+
+@media (min-width:960px){
+  .admin-box{ max-width:940px; }
+  .admin-overlay:not(.admin-dash-mode) .admin-box{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-strong); overflow:hidden;
+  }
+  .alogin-grid{
+    grid-template-columns:0.92fr 1fr; min-height:600px;
+  }
+  .alogin-brand{
+    display:flex; flex-direction:column; justify-content:center; gap:22px;
+    position:relative; overflow:hidden; padding:52px 44px;
+    background:
+      radial-gradient(120% 100% at 0% 0%, rgba(15,216,184,.20), transparent 55%),
+      radial-gradient(100% 90% at 100% 100%, rgba(18,169,224,.24), transparent 55%),
+      linear-gradient(160deg, #0A2038 0%, #071426 100%);
+    border-right:1px solid var(--line);
+  }
+  .alogin-brand-glow{
+    position:absolute; inset:-40%; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(38% 30% at 20% 20%, rgba(15,216,184,.22), transparent 60%),
+      radial-gradient(34% 26% at 85% 70%, rgba(18,169,224,.24), transparent 60%);
+    animation:aloginBlobDrift 16s ease-in-out infinite;
+    filter:blur(6px);
+  }
+  .alogin-brand > *{ position:relative; z-index:1; }
+  .alogin-brand-top{ display:flex; align-items:center; gap:12px; }
+  .alogin-brand-badge{
+    width:42px; height:42px; border-radius:13px; background:var(--gradient-brand); color:#04213A;
+    display:flex; align-items:center; justify-content:center; font-size:17px; box-shadow:var(--shadow-glow);
+  }
+  .alogin-brand-name{ font-family:var(--font-display); font-weight:800; letter-spacing:.03em; font-size:15px; color:var(--ink); }
+  .alogin-brand-title{ font-size:25px; line-height:1.32; letter-spacing:-.01em; max-width:390px; }
+  .alogin-brand-title span{
+    background:var(--gradient-brand); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .alogin-brand-sub{ font-size:13.5px; color:var(--ink-soft); line-height:1.65; max-width:380px; }
+  .alogin-brand-list{ display:flex; flex-direction:column; gap:12px; margin-top:6px; }
+  .alogin-brand-list li{
+    display:flex; align-items:center; gap:10px; font-size:13px; color:var(--ink-soft);
+    background:rgba(255,255,255,.04); border:1px solid var(--line); padding:10px 14px; border-radius:var(--radius-sm);
+  }
+  .alogin-brand-list li i{ color:var(--teal); font-size:13px; width:16px; text-align:center; }
+
+  .alogin-brand-orbit{
+    position:absolute; right:-70px; bottom:-70px; width:220px; height:220px; z-index:0; opacity:.6;
+  }
+  .orbit-ring{
+    position:absolute; inset:0; border-radius:50%; border:1.5px dashed rgba(15,216,184,.32);
+    animation:aloginOrbitSpin 26s linear infinite;
+  }
+  .orbit-ring.r2{ inset:26px; border-color:rgba(18,169,224,.32); animation-duration:18s; animation-direction:reverse; }
+  .orbit-dot{
+    position:absolute; left:50%; top:50%; width:8px; height:8px; border-radius:50%;
+    background:var(--teal); box-shadow:0 0 14px 3px rgba(15,216,184,.55);
+    animation:aloginDotFloat 7s ease-in-out infinite;
+  }
+
+  .alogin-formwrap{ padding:52px 48px; text-align:left; display:flex; flex-direction:column; justify-content:center; }
+  .alogin-formwrap h3, .alogin-formwrap p{ text-align:left; }
+  .alogin-formwrap .admin-icon{ margin:0 0 18px; }
+  .alogin-formwrap .admin-login-actions .btn{ flex:initial; }
+  .alogin-formwrap .admin-login-actions{ justify-content:flex-start; }
+  .alogin-formwrap .btn-primary{ padding:13px 34px; }
+  .admin-box::after{ display:none; }
+}
+@media (min-width:1180px){
+  .admin-box{ max-width:1020px; }
+  .alogin-brand-title{ font-size:27px; }
+}
+
 /* =========================================================
    5. DASBOR — HEADER
 ========================================================= */
@@ -313,6 +408,15 @@ button{ cursor:pointer; border:none; background:none; }
 .adash-header-left{ display:flex; align-items:center; gap:14px; min-width:0; }
 .adash-header-left h3{ font-size:19px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; letter-spacing:-.01em; }
 .adash-header-left p{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+
+.adash-admin-name{
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:11px;
+  font-weight:600; letter-spacing:.03em; color:var(--aqua); background:rgba(18,169,224,.1);
+  border:1px solid rgba(18,169,224,.26); padding:3px 10px 3px 8px; border-radius:20px; margin-bottom:6px;
+  text-transform:capitalize; max-width:100%;
+}
+.adash-admin-name i{ font-size:11px; }
+.adash-admin-name span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .adash-logo-badge{
   width:44px; height:44px; min-width:44px; border-radius:14px; position:relative;
@@ -820,3 +924,54 @@ button{ cursor:pointer; border:none; background:none; }
 .adash-drawer-item.is-logout{ margin-top:2px; }
 .adash-drawer-item.is-logout:hover{ background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.14); }
 .adash-mobile-drawer :focus-visible{ outline:2px solid var(--teal); outline-offset:2px; border-radius:10px; }
+
+/* =========================================================
+   14. WIDGET HITUNG MUNDUR — AUTO-LOGOUT KARENA TIDAK AKTIF
+   Tersembunyi secara default; hanya muncul saat admin-script.js
+   mendeteksi tidak ada gerakan mouse/ketikan/sentuhan dalam
+   beberapa detik terakhir sebelum sesi otomatis ditutup 1 menit.
+   Begitu ada aktivitas lagi, widget ini langsung disembunyikan.
+========================================================= */
+@keyframes adashIdleIn{ from{ opacity:0; transform:translateY(14px) scale(.94); } to{ opacity:1; transform:translateY(0) scale(1); } }
+@keyframes adashIdlePulseRing{ 0%,100%{ box-shadow:0 0 0 0 rgba(240,180,41,.35); } 50%{ box-shadow:0 0 0 7px rgba(240,180,41,0); } }
+
+.adash-idle-banner{
+  position:fixed; right:18px; bottom:18px; z-index:4000;
+  display:none; align-items:center; gap:12px;
+  background:linear-gradient(180deg, rgba(20,32,50,.96), rgba(10,20,36,.96));
+  border:1px solid rgba(240,180,41,.35); border-radius:18px;
+  padding:12px 14px; box-shadow:0 20px 46px rgba(2,6,16,.55), 0 0 0 1px rgba(240,180,41,.08);
+  backdrop-filter:blur(10px); max-width:min(340px, calc(100vw - 32px));
+  animation:adashIdleIn .3s cubic-bezier(.2,.8,.3,1) both;
+}
+.adash-idle-banner.show{ display:flex; }
+@media (prefers-reduced-motion: reduce){ .adash-idle-banner{ animation:none; } }
+
+.adash-idle-ring{
+  --p:100; width:42px; height:42px; min-width:42px; border-radius:50%; position:relative;
+  display:flex; align-items:center; justify-content:center; color:var(--amber); font-size:15px;
+  background:
+    conic-gradient(var(--amber) calc(var(--p) * 1%), rgba(255,255,255,.1) 0);
+  animation:adashIdlePulseRing 1.6s ease-in-out infinite;
+  transition:background .9s linear;
+}
+.adash-idle-ring::after{
+  content:''; position:absolute; inset:4px; border-radius:50%; background:var(--panel);
+}
+.adash-idle-ring i{ position:relative; z-index:1; }
+
+.adash-idle-copy{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+.adash-idle-copy b{ font-size:12.5px; color:#fff; font-family:var(--font-display); letter-spacing:-.01em; }
+.adash-idle-copy span{ font-size:11.5px; color:var(--ink-soft); }
+.adash-idle-copy span #adashIdleTime{ font-family:var(--font-mono); font-weight:700; color:var(--amber); }
+
+.adash-idle-dismiss{
+  flex-basis:100%; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:7px;
+  font-size:11.5px; font-weight:700; color:#04213A; background:var(--gradient-brand);
+  padding:8px 10px; border-radius:11px; transition:var(--transition);
+}
+.adash-idle-dismiss:hover{ transform:translateY(-1px); box-shadow:0 10px 20px rgba(18,169,224,.25); }
+
+@media (max-width:520px){
+  .adash-idle-banner{ left:12px; right:12px; bottom:12px; max-width:none; }
+}

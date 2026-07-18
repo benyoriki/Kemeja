@@ -298,6 +298,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return window.__lokonFirebase?.auth?.currentUser?.email || 'Admin (tidak diketahui)';
   }
 
+  // Nama tampilan yang lebih ramah di dasbor, diturunkan dari email admin
+  // yang sedang login (contoh: "kamil@lokon.com" -> "Kamil").
+  const adashAdminNameEl = document.getElementById('adashAdminName');
+  function getAdminDisplayName(){
+    const email = getAdminEmail();
+    const local = String(email).split('@')[0] || email;
+    const pretty = local.replace(/[._-]+/g, ' ').trim();
+    return pretty ? pretty.replace(/\b\w/g, c => c.toUpperCase()) : email;
+  }
+  function updateAdminNameDisplay(){
+    if (!adashAdminNameEl) return;
+    const email = getAdminEmail();
+    adashAdminNameEl.innerHTML = `<i class="fa-solid fa-circle-user"></i> <span>${escapeHtml(getAdminDisplayName())} &middot; ${escapeHtml(email)}</span>`;
+  }
+
   const ADMIN_LOG_COLLECTION = 'admin_log';
 
   async function logAdminAction(aksi, detail, targetLabel){
@@ -432,6 +447,76 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function stopAdminClock(){ clearInterval(adminClockTimer); }
 
+  /* =========================================================
+     AUTO-LOGOUT KARENA TIDAK ADA AKTIVITAS
+     - Jika tidak ada gerakan mouse/klik/ketikan/sentuhan/scroll di
+       dasbor selama IDLE_LIMIT_SECONDS (1 menit), admin otomatis
+       logout (keluar dari Firebase Auth) demi keamanan.
+     - Widget hitung mundur (adashIdleBanner) HANYA muncul saat
+       admin sudah diam selama IDLE_WARN_SECONDS terakhir sebelum
+       batas waktu tercapai. Begitu ada aktivitas apa pun, widget
+       langsung disembunyikan lagi dan hitungan direset ke awal.
+  ========================================================= */
+  const IDLE_LIMIT_SECONDS = 60;   // total waktu diam sebelum auto-logout
+  const IDLE_WARN_SECONDS = 15;    // sisa waktu saat hitung mundur mulai tampil
+  const adashIdleBanner = document.getElementById('adashIdleBanner');
+  const adashIdleTime = document.getElementById('adashIdleTime');
+  const adashIdleRing = document.getElementById('adashIdleRing');
+  const adashIdleStay = document.getElementById('adashIdleStay');
+  const IDLE_ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'wheel', 'scroll', 'touchstart', 'click'];
+
+  let idleLastActivityAt = Date.now();
+  let idleTickTimer = null;
+
+  function markAdminActivity(){
+    idleLastActivityAt = Date.now();
+    if (adashIdleBanner) adashIdleBanner.classList.remove('show');
+  }
+
+  function tickIdleWatcher(){
+    if (!adminUnlocked) return;
+    const idleSeconds = Math.floor((Date.now() - idleLastActivityAt) / 1000);
+    const remaining = IDLE_LIMIT_SECONDS - idleSeconds;
+
+    if (remaining <= 0){
+      stopIdleWatcher();
+      showToast('Sesi berakhir otomatis karena 1 menit tidak ada aktivitas.', 'error');
+      logoutAdmin();
+      return;
+    }
+
+    if (remaining <= IDLE_WARN_SECONDS){
+      if (adashIdleBanner) adashIdleBanner.classList.add('show');
+      const mm = Math.floor(remaining / 60);
+      const ss = remaining % 60;
+      if (adashIdleTime) adashIdleTime.textContent = `${mm}:${String(ss).padStart(2, '0')}`;
+      if (adashIdleRing) adashIdleRing.style.setProperty('--p', String(Math.round((remaining / IDLE_WARN_SECONDS) * 100)));
+    } else if (adashIdleBanner) {
+      adashIdleBanner.classList.remove('show');
+    }
+  }
+
+  function startIdleWatcher(){
+    idleLastActivityAt = Date.now();
+    if (adashIdleBanner) adashIdleBanner.classList.remove('show');
+    clearInterval(idleTickTimer);
+    idleTickTimer = setInterval(tickIdleWatcher, 1000);
+    IDLE_ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, markAdminActivity, { passive: true }));
+  }
+
+  function stopIdleWatcher(){
+    clearInterval(idleTickTimer);
+    idleTickTimer = null;
+    if (adashIdleBanner) adashIdleBanner.classList.remove('show');
+    IDLE_ACTIVITY_EVENTS.forEach(evt => window.removeEventListener(evt, markAdminActivity));
+  }
+
+  // Tombol "Saya masih di sini" di dalam widget hitung mundur — menghitung
+  // sebagai aktivitas juga (klik tombol otomatis kena listener 'click',
+  // tapi dipanggil eksplisit di sini supaya widget langsung tertutup
+  // tanpa menunggu tick berikutnya).
+  adashIdleStay?.addEventListener('click', markAdminActivity);
+
   // Halaman ini SELALU tampil penuh (bukan modal yang bisa ditutup) —
   // begitu dibuka, langsung tampilkan layar login (kecuali sesi Firebase
   // Auth sebelumnya masih aktif, ditangani watchAdminAuthState di bawah).
@@ -441,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     adminUnlocked = false;
     adminOverlay.classList.remove('admin-dash-mode');
     stopAdminClock();
+    stopIdleWatcher();
     const fb = window.__lokonFirebase;
     if (fb?.auth){
       try { await fb.signOut(fb.auth); } catch (err){ console.warn('Gagal logout dari Firebase Auth:', err); }
@@ -465,7 +551,9 @@ document.addEventListener('DOMContentLoaded', () => {
         adminLogin.style.display = 'none';
         adminPanel.style.display = 'block';
         adminOverlay.classList.add('admin-dash-mode');
+        updateAdminNameDisplay();
         startAdminClock();
+        startIdleWatcher();
         startPesertaListener();
         renderAdminList();
       } else if (!user && adminUnlocked){
@@ -474,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminLogin.style.display = 'block';
         adminPanel.style.display = 'none';
         stopAdminClock();
+        stopIdleWatcher();
       }
     });
   }
@@ -512,7 +601,9 @@ document.addEventListener('DOMContentLoaded', () => {
       adminLogin.style.display = 'none';
       adminPanel.style.display = 'block';
       adminOverlay.classList.add('admin-dash-mode');
+      updateAdminNameDisplay();
       startAdminClock();
+      startIdleWatcher();
       startPesertaListener();
       renderAdminList();
       logAdminAction('login', 'Admin berhasil masuk ke dasbor.', email);
