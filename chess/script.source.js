@@ -47,6 +47,8 @@ const el = {
 
   profileModal: $('profileModal'),
   victoryModal: $('victoryModal'),
+  victoryPeekBtn: $('victoryPeekBtn'),
+  victoryPeekBackBtn: $('victoryPeekBackBtn'),
   settingsModal: $('settingsModal'),
   guestLockModal: $('guestLockModal'),
   drawOfferBox: $('drawOfferBox'),
@@ -1035,11 +1037,24 @@ function wireGameActions(){
     exitToLobby();
   });
 
+  // "Lihat Papan Akhir" — supaya user bisa lihat sendiri posisi akhir
+  // (kenapa bisa skakmat/remis) sebelum kembali ke dasbor/main lagi.
+  // Kartu hasil disembunyikan sementara (bukan ditutup penuh), papan 3D
+  // di baliknya jadi terlihat & tetap bisa diputar/zoom seperti biasa.
+  el.victoryPeekBtn && el.victoryPeekBtn.addEventListener('click', () => {
+    el.victoryModal.classList.add('peek-board');
+  });
+  el.victoryPeekBackBtn && el.victoryPeekBackBtn.addEventListener('click', () => {
+    el.victoryModal.classList.remove('peek-board');
+  });
+
   $('victoryExitBtn') && $('victoryExitBtn').addEventListener('click', () => {
+    el.victoryModal.classList.remove('peek-board');
     UI.closeModal(el.victoryModal);
     exitToLobby();
   });
   $('victoryRematchBtn') && $('victoryRematchBtn').addEventListener('click', () => {
+    el.victoryModal.classList.remove('peek-board');
     UI.closeModal(el.victoryModal);
     if (state.vsComputer){
       startComputerGame();

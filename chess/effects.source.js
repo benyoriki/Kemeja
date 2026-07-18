@@ -15,6 +15,30 @@
    taruh file di chess/assets/ lalu ganti fungsi createPiece()
    di bawah dengan GLTFLoader — arsitektur sudah disiapkan
    supaya penggantian itu mudah (lihat komentar di createPiece).
+
+   -------------------------------------------------
+   CATATAN PERFORMA (revisi optimasi):
+   Efek visual (glow, bloom, partikel) TIDAK dikurangi — yang
+   diubah hanya CARA kerjanya di balik layar supaya lebih ringan:
+
+   1) 64 petak papan sekarang 1 InstancedMesh per warna (dulu 64
+      mesh terpisah = 64 draw call, sekarang cuma 2) — beban GPU
+      turun signifikan terutama di HP.
+   2) Semua partikel (ledakan tangkap, jejak langkah) memakai
+      POOL yang dipakai ulang, bukan dibuat & dibuang tiap kali
+      ada langkah/tangkapan. Sebelumnya tiap efek bikin buffer
+      geometry + material baru lalu di-dispose ~0.5 detik
+      kemudian — itu memicu gerakan "patah" (GC stutter) tepat
+      saat momen paling seru (menangkap bidak). Sekarang nol
+      alokasi baru saat bermain.
+   3) Render loop otomatis berhenti total saat tab/HP disembunyikan
+      (auto pause) — baterai & CPU tidak terkuras saat game dibuka
+      di tab belakang.
+   4) Kualitas (resolusi bloom, shadow map, partikel ambient, GPU
+      power preference) menyesuaikan otomatis: HP/perangkat 4-core
+      ke bawah dapat beban lebih ringan, PC tetap dapat kualitas
+      penuh — perilaku ini sudah ada sebelumnya, sekarang sedikit
+      lebih agresif di sisi HP tanpa terlihat "murahan".
 ========================================================= */
 
 import * as THREE from 'three';
@@ -44,12 +68,13 @@ export class Chess3DScene{
     this.container = container;
     this.onSquareClick = opts.onSquareClick || (() => {});
     this.orientation = 'w'; // sisi kamera menghadap warna ini di bawah
-    this.squareMeshes = new Map();   // square -> mesh petak
+    this.squareMeshes = new Map();   // square -> mesh petak (kompat lama, tidak dipakai render)
     this.pieceMeshes = new Map();    // square -> group bidak
     this.highlightGroup = null;
     this.checkRing = null;
     this._tweens = [];
     this._raf = null;
+    this._paused = false;
     this.quality = { bloom: true, shadows: true };
   }
 
@@ -71,7 +96,10 @@ export class Chess3DScene{
     this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 100);
     this._setCameraForOrientation('w', true);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: !this._lite, alpha: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: !this._lite, alpha: false,
+      powerPreference: this._lite ? 'low-power' : 'high-performance'
+    });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
     this.renderer.setSize(w, h);
     this.renderer.shadowMap.enabled = true;
@@ -94,10 +122,15 @@ export class Chess3DScene{
     this._setupLights(shadowSize);
     this._setupBoard();
     this._setupAmbientParticles();
+    this._setupParticlePools();
     this._setupComposer(w, h);
     this._setupRaycast();
 
-    window.addEventListener('resize', () => this.resize());
+    this._onResize = () => this._scheduleResize();
+    window.addEventListener('resize', this._onResize);
+    this._onVisibility = () => this._handleVisibility();
+    document.addEventListener('visibilitychange', this._onVisibility);
+
     this._animate();
   }
 
@@ -158,25 +191,51 @@ export class Chess3DScene{
     frame.castShadow = true;
     boardGroup.add(frame);
 
-    // 64 petak
+    // 64 petak — DIGABUNG jadi 2 InstancedMesh (terang/gelap) alih-alih 64
+    // mesh terpisah. Sama persis secara visual, tapi draw call turun dari
+    // 64 jadi 2 → beban GPU jauh lebih ringan, khususnya di HP.
     const lightMat = new THREE.MeshStandardMaterial({ color: 0x4a6087, metalness: 0.2, roughness: 0.48 });
     const darkMat  = new THREE.MeshStandardMaterial({ color: 0x1a2338, metalness: 0.3, roughness: 0.42 });
     const squareGeo = new THREE.BoxGeometry(SQUARE_SIZE * 0.97, 0.12, SQUARE_SIZE * 0.97);
+
+    const lightMesh = new THREE.InstancedMesh(squareGeo, lightMat, 32);
+    const darkMesh  = new THREE.InstancedMesh(squareGeo, darkMat, 32);
+    lightMesh.receiveShadow = true;
+    darkMesh.receiveShadow = true;
+    lightMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+    darkMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+
+    const dummy = new THREE.Object3D();
+    this._squareByInstance = { light: new Array(32), dark: new Array(32) };
+    let li = 0, di = 0;
 
     for (let f = 0; f < 8; f++){
       for (let r = 0; r < 8; r++){
         const square = FILES[f] + (r + 1);
         const isLight = (f + r) % 2 === 1;
-        const mesh = new THREE.Mesh(squareGeo, isLight ? lightMat : darkMat);
         const { x, z } = squareToXZ(square);
-        mesh.position.set(x, 0, z);
-        mesh.receiveShadow = true;
-        mesh.userData.square = square;
-        mesh.userData.baseY = 0;
-        boardGroup.add(mesh);
-        this.squareMeshes.set(square, mesh);
+        dummy.position.set(x, 0, z);
+        dummy.updateMatrix();
+        if (isLight){
+          lightMesh.setMatrixAt(li, dummy.matrix);
+          this._squareByInstance.light[li] = square;
+          li++;
+        } else {
+          darkMesh.setMatrixAt(di, dummy.matrix);
+          this._squareByInstance.dark[di] = square;
+          di++;
+        }
+        // Peta square->posisi tetap disimpan (ringan, cuma {x,z}) untuk
+        // dipakai highlight/animasi langkah — tidak perlu mesh sungguhan.
+        this.squareMeshes.set(square, { userData: { square, baseY: 0 }, position: { x, y: 0, z } });
       }
     }
+    lightMesh.instanceMatrix.needsUpdate = true;
+    darkMesh.instanceMatrix.needsUpdate = true;
+
+    boardGroup.add(lightMesh, darkMesh);
+    this._boardLightMesh = lightMesh;
+    this._boardDarkMesh = darkMesh;
 
     this.boardGroup = boardGroup;
     this.scene.add(boardGroup);
@@ -189,7 +248,7 @@ export class Chess3DScene{
   }
 
   _setupAmbientParticles(){
-    const COUNT = 140;
+    const COUNT = this._lite ? 80 : 140;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(COUNT * 3);
     const speeds = new Float32Array(COUNT);
@@ -205,14 +264,62 @@ export class Chess3DScene{
       blending: THREE.AdditiveBlending, depthWrite: false
     });
     const points = new THREE.Points(geo, mat);
+    points.frustumCulled = false;
     this.scene.add(points);
     this._ambientParticles = { points, speeds, positions };
+  }
+
+  /**
+   * Kolam (pool) partikel yang dipakai ulang untuk efek ledakan tangkap
+   * & jejak langkah. Dulu tiap efek bikin BufferGeometry + PointsMaterial
+   * baru lalu membuangnya ~0.3–0.65 detik kemudian — itu memicu garbage
+   * collection tepat saat animasi paling penting berjalan (kelihatan
+   * seperti "nge-lag" sesaat). Sekarang setiap slot dipakai bergiliran
+   * (round-robin) dan tidak pernah benar-benar dibuang selama scene hidup.
+   */
+  _setupParticlePools(){
+    const MAX_BURST = 40;
+    const burstSlots = this._lite ? 4 : 8;
+    this._burstPool = [];
+    for (let s = 0; s < burstSlots; s++){
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(MAX_BURST * 3);
+      const attr = new THREE.BufferAttribute(positions, 3);
+      attr.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('position', attr);
+      geo.setDrawRange(0, 0);
+      const mat = new THREE.PointsMaterial({ size: 0.09, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+      const points = new THREE.Points(geo, mat);
+      points.visible = false;
+      points.frustumCulled = false;
+      this.scene.add(points);
+      this._burstPool.push({ points, geo, mat, velocities: [], token: 0 });
+    }
+    this._burstCursor = 0;
+
+    const MAX_TRAIL = 12;
+    const trailSlots = this._lite ? 3 : 6;
+    this._trailPool = [];
+    for (let s = 0; s < trailSlots; s++){
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(MAX_TRAIL * 3);
+      const attr = new THREE.BufferAttribute(positions, 3);
+      attr.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('position', attr);
+      const mat = new THREE.PointsMaterial({ color: 0x8fe9ff, size: 0.06, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+      const points = new THREE.Points(geo, mat);
+      points.visible = false;
+      points.frustumCulled = false;
+      this.scene.add(points);
+      this._trailPool.push({ points, geo, mat, token: 0 });
+    }
+    this._trailCursor = 0;
   }
 
   _setupComposer(w, h){
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    const bloomScale = this._lite ? 0.6 : 1;
+    const bloomScale = this._lite ? 0.55 : 1;
     this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w * bloomScale, h * bloomScale), 0.4, 0.4, 0.62);
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
@@ -232,9 +339,13 @@ export class Chess3DScene{
       this.pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       this.raycaster.setFromCamera(this.pointer, this.camera);
-      const targets = [...this.squareMeshes.values()];
+      const targets = [this._boardLightMesh, this._boardDarkMesh];
       const hits = this.raycaster.intersectObjects(targets, false);
-      if (hits.length) this.onSquareClick(hits[0].object.userData.square);
+      if (!hits.length) return;
+      const hit = hits[0];
+      const list = hit.object === this._boardLightMesh ? this._squareByInstance.light : this._squareByInstance.dark;
+      const square = list[hit.instanceId];
+      if (square) this.onSquareClick(square);
     });
   }
 
@@ -501,73 +612,86 @@ export class Chess3DScene{
     if (this.checkRing){ this.scene.remove(this.checkRing); this.checkRing = null; }
   }
 
-  /* ---------------- Partikel efek ---------------- */
+  /* ---------------- Partikel efek (pakai pool, lihat _setupParticlePools) ---------------- */
 
   _emitBurst(xz, color, count = 24){
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const velocities = [];
-    for (let i = 0; i < count; i++){
+    const pool = this._burstPool;
+    const slot = pool[this._burstCursor];
+    this._burstCursor = (this._burstCursor + 1) % pool.length;
+    const myToken = ++slot.token; // batalkan animasi lama di slot ini kalau dipakai ulang lebih cepat dari durasinya
+
+    const capacity = slot.geo.attributes.position.count;
+    const n = Math.min(count, capacity);
+    slot.mat.color.set(color);
+    slot.geo.setDrawRange(0, n);
+
+    const positions = slot.geo.attributes.position.array;
+    const velocities = slot.velocities;
+    for (let i = 0; i < n; i++){
       positions[i*3] = xz.x; positions[i*3+1] = 0.3; positions[i*3+2] = xz.z;
       const angle = Math.random() * Math.PI * 2;
       const speed = 0.02 + Math.random() * 0.05;
-      velocities.push({
-        x: Math.cos(angle) * speed,
-        y: 0.04 + Math.random() * 0.08,
-        z: Math.sin(angle) * speed
-      });
+      velocities[i] = velocities[i] || {};
+      velocities[i].x = Math.cos(angle) * speed;
+      velocities[i].y = 0.04 + Math.random() * 0.08;
+      velocities[i].z = Math.sin(angle) * speed;
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({ color, size: 0.09, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
-    const points = new THREE.Points(geo, mat);
-    this.scene.add(points);
+    slot.geo.attributes.position.needsUpdate = true;
+    slot.mat.opacity = 1;
+    slot.points.visible = true;
 
     const start = performance.now();
     const duration = 650;
     const step = () => {
+      if (slot.token !== myToken) return; // slot sudah dipakai efek lain, hentikan loop lama
       const t = (performance.now() - start) / duration;
-      if (t >= 1){ this.scene.remove(points); geo.dispose(); mat.dispose(); return; }
-      const pos = geo.attributes.position;
-      for (let i = 0; i < count; i++){
+      if (t >= 1){ slot.points.visible = false; return; }
+      const pos = slot.geo.attributes.position;
+      for (let i = 0; i < n; i++){
         pos.array[i*3]   += velocities[i].x;
         pos.array[i*3+1] += velocities[i].y;
         pos.array[i*3+2] += velocities[i].z;
         velocities[i].y -= 0.0025; // gravitasi ringan
       }
       pos.needsUpdate = true;
-      mat.opacity = 1 - t;
+      slot.mat.opacity = 1 - t;
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }
 
   _emitTrailParticles(startXZ, endXZ){
-    const count = 8;
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
+    const pool = this._trailPool;
+    const slot = pool[this._trailCursor];
+    this._trailCursor = (this._trailCursor + 1) % pool.length;
+    const myToken = ++slot.token;
+
+    const count = slot.geo.attributes.position.count;
+    const positions = slot.geo.attributes.position.array;
     for (let i = 0; i < count; i++){
       const t = i / count;
       positions[i*3]   = startXZ.x + (endXZ.x - startXZ.x) * t;
       positions[i*3+1] = 0.15;
       positions[i*3+2] = startXZ.z + (endXZ.z - startXZ.z) * t;
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({ color: 0x8fe9ff, size: 0.06, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false });
-    const points = new THREE.Points(geo, mat);
-    this.scene.add(points);
+    slot.geo.attributes.position.needsUpdate = true;
+    slot.mat.opacity = 0.7;
+    slot.points.visible = true;
+
     const start = performance.now();
     const step = () => {
+      if (slot.token !== myToken) return;
       const t = (performance.now() - start) / 400;
-      if (t >= 1){ this.scene.remove(points); geo.dispose(); mat.dispose(); return; }
-      mat.opacity = 0.7 * (1 - t);
+      if (t >= 1){ slot.points.visible = false; return; }
+      slot.mat.opacity = 0.7 * (1 - t);
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }
 
-  /** Confetti kemenangan — hujan partikel tiga warna dari atas papan. */
+  /** Confetti kemenangan — hujan partikel tiga warna dari atas papan (jarang terjadi, sekali per match: tetap satu-kali pakai, jumlah menyesuaikan perangkat). */
   celebrateVictory(){
-    const COUNT = 220;
+    const COUNT = this._lite ? 130 : 220;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(COUNT * 3);
     const velocities = [];
@@ -585,6 +709,7 @@ export class Chess3DScene{
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const mat = new THREE.PointsMaterial({ size: 0.11, vertexColors: true, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
     const points = new THREE.Points(geo, mat);
+    points.frustumCulled = false;
     this.scene.add(points);
 
     const start = performance.now();
@@ -628,6 +753,17 @@ export class Chess3DScene{
     requestAnimationFrame(tick);
   }
 
+  /** Debounce resize lewat requestAnimationFrame supaya resize/orientation-change
+   *  yang beruntun (umum di HP saat rotasi layar) tidak memicu banyak reflow. */
+  _scheduleResize(){
+    if (this._resizeScheduled) return;
+    this._resizeScheduled = true;
+    requestAnimationFrame(() => {
+      this._resizeScheduled = false;
+      this.resize();
+    });
+  }
+
   resize(){
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
@@ -637,7 +773,19 @@ export class Chess3DScene{
     this.composer.setSize(w, h);
   }
 
+  /** Auto-pause total (hemat baterai/CPU) saat tab/HP disembunyikan, resume otomatis saat kembali aktif. */
+  _handleVisibility(){
+    if (document.hidden){
+      if (this._raf){ cancelAnimationFrame(this._raf); this._raf = null; }
+      this._paused = true;
+    } else if (this._paused){
+      this._paused = false;
+      this._animate();
+    }
+  }
+
   _animate(){
+    if (this._paused) return;
     this._raf = requestAnimationFrame(() => this._animate());
     this.controls.update();
 
@@ -662,7 +810,11 @@ export class Chess3DScene{
 
   dispose(){
     cancelAnimationFrame(this._raf);
-    window.removeEventListener('resize', this.resize);
+    this._paused = true;
+    if (this._onResize) window.removeEventListener('resize', this._onResize);
+    if (this._onVisibility) document.removeEventListener('visibilitychange', this._onVisibility);
+    if (this._burstPool) this._burstPool.forEach(s => { s.geo.dispose(); s.mat.dispose(); });
+    if (this._trailPool) this._trailPool.forEach(s => { s.geo.dispose(); s.mat.dispose(); });
     this.renderer && this.renderer.dispose();
   }
 }

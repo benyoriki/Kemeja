@@ -394,6 +394,32 @@ body.in-game .topbar{ opacity:0; transform:translateY(-16px); pointer-events:non
 .btn-victory.primary{ background:linear-gradient(120deg, var(--cyan), var(--violet)); color:#04101A; }
 .btn-victory.ghost{ background:rgba(255,255,255,.06); color:var(--ink); }
 
+/* Tombol "Lihat Papan Akhir" — supaya user bisa lihat posisi akhir
+   (kenapa bisa skakmat/remis) sebelum keluar dari layar hasil. */
+.btn-peek-board{
+  display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+  padding:11px; margin:14px 0 4px; border-radius:999px; font-weight:600; font-size:12.5px;
+  color:var(--ink-dim); background:transparent; border:1px dashed var(--glass-border);
+  transition:.2s;
+}
+.btn-peek-board:hover, .btn-peek-board:focus-visible{ color:var(--cyan); border-color:var(--cyan); background:rgba(23,230,230,.08); }
+.btn-peek-board i{ font-size:12px; }
+
+/* Mode "peek": modal jadi transparan & tembus-klik supaya papan 3D di
+   belakang terlihat & tetap bisa diputar/zoom, kartu hasil disembunyikan
+   sementara (bukan ditutup) — tinggal tekan "Kembali ke Hasil" untuk balik. */
+.modal-backdrop.peek-board{ background:transparent; backdrop-filter:none; pointer-events:none; }
+.modal-backdrop.peek-board .modal-box{ opacity:0; pointer-events:none; transform:scale(.95) translateY(6px); }
+
+.peek-return-btn{
+  position:fixed; left:50%; bottom:28px; z-index:101;
+  display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:999px;
+  background:linear-gradient(120deg, var(--cyan), var(--violet)); color:#04101A; font-weight:700; font-size:13.5px;
+  box-shadow:0 12px 28px rgba(0,0,0,.4);
+  opacity:0; pointer-events:none; transform:translate(-50%, 14px); transition:.25s;
+}
+.modal-backdrop.peek-board .peek-return-btn{ opacity:1; pointer-events:auto; transform:translate(-50%, 0); }
+
 /* Guest lock modal */
 .guest-lock-icon{ font-size:38px; color:var(--gold); margin-bottom:10px; }
 .guest-lock-actions{ display:flex; gap:10px; margin-top:16px; }

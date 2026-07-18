@@ -295,7 +295,7 @@ export function showVictoryModal(modalEl, { outcome, reason, ratingDelta, vsComp
   const subEl = modalEl.querySelector('[data-f="subtitle"]');
   const deltaEl = modalEl.querySelector('[data-f="delta"]');
 
-  modalEl.classList.remove('outcome-win','outcome-lose','outcome-draw');
+  modalEl.classList.remove('outcome-win','outcome-lose','outcome-draw','peek-board');
   if (outcome === 'win'){ titleEl.textContent = 'KEMENANGAN!'; modalEl.classList.add('outcome-win'); }
   else if (outcome === 'lose'){ titleEl.textContent = 'KALAH'; modalEl.classList.add('outcome-lose'); }
   else { titleEl.textContent = 'REMIS'; modalEl.classList.add('outcome-draw'); }
