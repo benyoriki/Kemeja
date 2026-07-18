@@ -36,11 +36,19 @@
 <meta name="theme-color" content="#0F4C81">
 <meta name="robots" content="index, follow">
 
-<!-- Icons -->
-<link rel="icon" href="favicon.png" type="image/png">
-<link rel="apple-touch-icon" href="favicon.png">
-<!-- Favicon Placeholder -->
-<link rel="icon" type="image/png" href="assets/favicon.png">
+<!-- Icons — favicon.png sekarang 64x64 (dulu 1024x1024, 1.8MB!) dan
+     apple-touch-icon.png 180x180 sesuai standar Apple, jadi jauh lebih
+     ringan. Baris "assets/favicon.png" lama dihapus karena foldernya
+     tidak pernah ada (selalu gagal dimuat / 404 tiap kunjungan). -->
+<link rel="icon" href="favicon.png?v=2" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+
+<!-- Preconnect lebih awal ke domain lain yang pasti dipakai (Firebase
+     realtime data & Font Awesome CDN) supaya koneksinya sudah "siap"
+     sebelum benar-benar dibutuhkan skrip, mempercepat data pertama tampil. -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
 
 <!-- Google Fonts: Outfit (display) + Inter (body) + JetBrains Mono (data) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,8 +60,8 @@
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
 <!-- Stylesheet: style.min.css = fungsi sistem/layout (minified), particles.min.css = efek visual/partikel (minified) -->
-<link rel="stylesheet" href="style.min.css?v=23">
-<link rel="stylesheet" href="particles.min.css?v=6">
+<link rel="stylesheet" href="style.min.css?v=24">
+<link rel="stylesheet" href="particles.min.css?v=7">
 </head>
 <body>
 
@@ -479,27 +487,27 @@
 
     <div class="gallery-grid gallery-grid-set active" id="galeriPria">
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Depan - Kemeja Navy Lengan Panjang">
-        <img src="depan.jpg?v=1" alt="Tampak Depan Kemeja Kerja AQUA - Model Pria" loading="lazy">
+        <img src="depan.jpg?v=2" alt="Tampak Depan Kemeja Kerja AQUA - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Belakang - List Piping Punggung">
-        <img src="belakang.jpg?v=1" alt="Tampak Belakang Kemeja Kerja AQUA - Model Pria" loading="lazy">
+        <img src="belakang.jpg?v=2" alt="Tampak Belakang Kemeja Kerja AQUA - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kanan - Logo Bendera & Nama">
-        <img src="kanan.jpg?v=1" alt="Tampak Samping Kanan - Model Pria" loading="lazy">
+        <img src="kanan.jpg?v=2" alt="Tampak Samping Kanan - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kiri - Logo K3">
-        <img src="kiri.jpg?v=1" alt="Tampak Samping Kiri - Model Pria" loading="lazy">
+        <img src="kiri.jpg?v=2" alt="Tampak Samping Kiri - Model Pria" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Detail Bordir Logo AQUA, Nama, Bendera & K3">
-        <img src="bordir.jpg?v=1" alt="Detail Logo Bordir" loading="lazy">
+        <img src="bordir.jpg?v=2" alt="Detail Logo Bordir" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
@@ -511,27 +519,27 @@
          Hadir" ini tanpa perlu ubah kode apa pun lagi. -->
     <div class="gallery-grid gallery-grid-set" id="galeriWanita">
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Depan - Kemeja Model Wanita">
-        <img src="depan_wanita.png?v=1" alt="Tampak Depan Kemeja Kerja AQUA - Model Wanita" loading="lazy">
+        <img src="depan_wanita.jpg?v=2" alt="Tampak Depan Kemeja Kerja AQUA - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Depan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Depan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Belakang - Kemeja Model Wanita">
-        <img src="belakang_wanita.png?v=1" alt="Tampak Belakang Kemeja Kerja AQUA - Model Wanita" loading="lazy">
+        <img src="belakang_wanita.jpg?v=2" alt="Tampak Belakang Kemeja Kerja AQUA - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Tampak Belakang<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Tampak Belakang</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kanan - Model Wanita">
-        <img src="kanan_wanita.png?v=1" alt="Tampak Samping Kanan - Model Wanita" loading="lazy">
+        <img src="kanan_wanita.jpg?v=2" alt="Tampak Samping Kanan - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kanan<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kanan</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Tampak Samping Kiri - Model Wanita">
-        <img src="kiri_wanita.png?v=1" alt="Tampak Samping Kiri - Model Wanita" loading="lazy">
+        <img src="kiri_wanita.jpg?v=2" alt="Tampak Samping Kiri - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Samping Kiri<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Samping Kiri</span></div>
       </div>
       <div class="gallery-item tilt-card fade-up img-loading" data-caption="Detail Bordir - Model Wanita">
-        <img src="bordir_wanita.png?v=1" alt="Detail Logo Bordir - Model Wanita" loading="lazy">
+        <img src="bordir_wanita.jpg?v=2" alt="Detail Logo Bordir - Model Wanita" loading="lazy">
         <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Detail Bordir<br>Segera Hadir</span></div>
         <div class="gallery-overlay"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Detail Bordir</span></div>
       </div>
@@ -661,13 +669,13 @@
           <button type="button" class="galeri-tab" data-target="polaWanita"><i class="fa-solid fa-person-dress"></i> Pola Wanita</button>
         </div>
         <div class="pola-set active" id="polaPria">
-          <img src="pola.jpg?v=1" alt="Ilustrasi Pola dan Cara Mengukur Badan - Pria" loading="lazy">
+          <img src="pola.jpg?v=2" alt="Ilustrasi Pola dan Cara Mengukur Badan - Pria" loading="lazy">
         </div>
         <div class="pola-set" id="polaWanita">
           <!-- pola_wanita.png belum diupload — otomatis tampil begitu file
                dengan nama ini ditambahkan ke repo (lihat gallery-placeholder). -->
           <div class="gallery-item img-loading" style="height:280px;">
-            <img src="pola_wanita.png?v=1" alt="Ilustrasi Pola dan Cara Mengukur Badan - Wanita" loading="lazy">
+            <img src="pola_wanita.jpg?v=2" alt="Ilustrasi Pola dan Cara Mengukur Badan - Wanita" loading="lazy">
             <div class="gallery-placeholder"><i class="fa-solid fa-image"></i><span>Ilustrasi Pola Wanita<br>Segera Hadir</span></div>
           </div>
         </div>
@@ -1586,8 +1594,8 @@
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.min.js?v=28" defer></script>
-<script src="particles.min.js?v=5" defer></script>
+<script src="script.min.js?v=29" defer></script>
+<script src="particles.min.js?v=6" defer></script>
 </body>
 </html>
 
