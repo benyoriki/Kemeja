@@ -175,9 +175,9 @@ button{ cursor:pointer; border:none; background:none; }
 .admin-overlay{
   position:static; opacity:1; visibility:visible; pointer-events:auto;
   min-height:100vh; display:flex; align-items:flex-start; justify-content:center;
-  padding:28px 16px 48px; width:100%; max-width:100vw; overflow-x:hidden;
+  padding:28px 16px 48px; width:100%; overflow-x:hidden; box-sizing:border-box;
 }
-.admin-box{ margin:0 auto; width:100%; max-width:560px; position:relative; }
+.admin-box{ margin:0 auto; width:100%; max-width:560px; min-width:0; position:relative; }
 
 .admin-close{
   position:absolute; top:16px; right:16px; width:38px; height:38px; border-radius:50%;
@@ -216,7 +216,7 @@ button{ cursor:pointer; border:none; background:none; }
 .history-box{ max-width:640px; }
 @media (min-width:1300px){ .admin-overlay{ padding-top:40px; } }
 @media (max-width:640px){
-  .admin-overlay{ padding:14px 10px 32px; }
+  .admin-overlay{ padding:14px 14px 32px; }
   #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
 }
 
@@ -238,7 +238,7 @@ button{ cursor:pointer; border:none; background:none; }
 /* =========================================================
    4. LOGIN SCREEN
 ========================================================= */
-.admin-login{ text-align:center; padding:16px 0 4px; animation:adashSpring .5s cubic-bezier(.2,.8,.3,1) both; }
+.admin-login{ text-align:center; padding:16px 0 4px; min-width:0; max-width:100%; animation:adashSpring .5s cubic-bezier(.2,.8,.3,1) both; }
 @media (prefers-reduced-motion: reduce){ .admin-login{ animation:none; } }
 .admin-login h3{ font-size:21px; margin-bottom:9px; }
 .admin-login p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:24px; line-height:1.55; }
@@ -260,31 +260,32 @@ button{ cursor:pointer; border:none; background:none; }
 }
 @media (prefers-reduced-motion: reduce){ .admin-icon::after{ animation:none; } }
 
-.admin-field{ text-align:left; margin-bottom:15px; }
+.admin-field{ text-align:left; margin-bottom:15px; min-width:0; max-width:100%; }
 .admin-field label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:7px; letter-spacing:.03em; text-transform:uppercase; }
 
 .admin-input-wrap{
   position:relative; display:flex; align-items:center; background:rgba(255,255,255,.04);
   border:1.5px solid var(--border); border-radius:var(--radius-sm); transition:var(--transition);
+  min-width:0; max-width:100%;
 }
 .admin-input-wrap:focus-within{ border-color:var(--aqua); background:rgba(18,169,224,.08); box-shadow:0 0 0 4px rgba(18,169,224,.12); }
-.admin-input-wrap > i:first-child{ padding-left:15px; color:var(--ink-soft); font-size:14px; }
-.admin-input-wrap input{ flex:1; width:100%; padding:13px 14px; border:none; background:transparent; outline:none; font-size:14px; color:var(--ink); }
+.admin-input-wrap > i:first-child{ padding-left:15px; color:var(--ink-soft); font-size:14px; flex-shrink:0; }
+.admin-input-wrap input{ flex:1; width:100%; min-width:0; padding:13px 14px; border:none; background:transparent; outline:none; font-size:14px; color:var(--ink); }
 .admin-input-wrap input::placeholder{ color:rgba(143,166,192,.5); }
-.admin-pass-toggle{ padding:0 14px; color:var(--ink-soft); transition:var(--transition); }
+.admin-pass-toggle{ padding:0 14px; color:var(--ink-soft); transition:var(--transition); flex-shrink:0; }
 .admin-pass-toggle:hover{ color:var(--aqua); }
 
-.admin-captcha-row{ display:flex; gap:10px; align-items:center; }
-.admin-captcha-row input{ flex:1; min-width:0; text-align:center; font-family:var(--font-mono); }
+.admin-captcha-row{ display:flex; gap:10px; align-items:center; min-width:0; max-width:100%; flex-wrap:wrap; }
+.admin-captcha-row input{ flex:1; min-width:80px; text-align:center; font-family:var(--font-mono); }
 .admin-captcha-equation{
   display:flex; align-items:center; gap:6px; font-family:var(--font-mono); font-weight:700; font-size:15px;
   color:var(--ink); background:rgba(255,255,255,.04); border:1.5px solid var(--border); border-radius:var(--radius-sm);
-  padding:0 16px; height:48px; white-space:nowrap;
+  padding:0 16px; height:48px; white-space:nowrap; flex-shrink:0;
 }
 .eq-sign{ color:var(--ink-soft); }
 .eq-mark{ color:var(--aqua); }
 .admin-captcha-refresh{
-  width:48px; height:48px; min-width:48px; border-radius:var(--radius-sm);
+  width:48px; height:48px; min-width:48px; flex-shrink:0; border-radius:var(--radius-sm);
   background:rgba(18,169,224,.12); color:var(--aqua); border:1px solid var(--border);
   display:flex; align-items:center; justify-content:center; transition:var(--transition);
 }
@@ -316,13 +317,13 @@ button{ cursor:pointer; border:none; background:none; }
   50%{ transform:translate(-50%,-50%) rotate(180deg) translateX(6px); }
 }
 
-.alogin-grid{ display:grid; grid-template-columns:1fr; align-items:stretch; }
+.alogin-grid{ display:grid; grid-template-columns:1fr; align-items:stretch; min-width:0; }
 
 .alogin-brand{ display:none; }
 
-.alogin-formwrap{ padding:16px 0 4px; text-align:center; }
+.alogin-formwrap{ padding:16px 0 4px; text-align:center; min-width:0; max-width:100%; }
 .alogin-formwrap h3{ font-size:21px; margin-bottom:9px; }
-.alogin-formwrap p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:24px; line-height:1.55; }
+.alogin-formwrap p{ font-size:13.5px; color:var(--ink-soft); margin-bottom:24px; line-height:1.55; overflow-wrap:break-word; }
 
 @media (min-width:960px){
   .admin-box{ max-width:940px; }
@@ -1012,15 +1013,25 @@ button{ cursor:pointer; border:none; background:none; }
 .admin-login > .alogin-grid{ position:relative; z-index:1; }
 @media (prefers-reduced-motion: reduce){ .alogin-particles{ display:none; } }
 
-/* --- Kartu: warna solid semi-transparan dulu (murah). Blur kaca
-   sungguhan hanya ditambahkan di layar besar lewat media query
-   di bawah, dengan radius yang jauh lebih kecil dari versi awal. --- */
+/* --- Kartu: sekarang dapat bingkai kartu yang "selesai" (sudut
+   membulat + border tipis + bayangan) di SEMUA ukuran layar, bukan
+   cuma desktop. Sebelumnya di HP kartu ini polos tanpa sudut
+   membulat/border/bayangan sama sekali — itu yang membuatnya
+   terlihat seperti terpotong mendadak (blok tajam menempel di
+   latar halaman yang warnanya mirip). Blur kaca sungguhan tetap
+   HANYA di layar besar (lebih berat), radius & border di HP dibuat
+   lebih murah (tanpa blur) tapi tetap terlihat rapi & premium. --- */
 .admin-overlay:not(.admin-dash-mode) .admin-box{
   background:rgba(13,32,56,.94);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-strong);
+  overflow:hidden;
 }
 @media (min-width:960px){
   .admin-overlay:not(.admin-dash-mode) .admin-box{
     background:rgba(15,37,64,.78);
+    border-radius:var(--radius-xl);
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
   }
