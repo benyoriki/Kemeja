@@ -28,7 +28,7 @@
      situs publik, jadi dasbor tidak akan lagi rusak/berubah tak terduga
      tiap kali CSS landing page diedit, dan halaman ini juga lebih ringan
      (tidak memuat 148KB CSS landing page yang tidak relevan untuknya). -->
-<link rel="stylesheet" href="admin-style.css?v=6">
+<link rel="stylesheet" href="admin-style.css?v=7">
 </head>
 <body>
 
@@ -64,6 +64,7 @@
             <span class="orbit-ring r1"></span>
             <span class="orbit-ring r2"></span>
             <span class="orbit-dot"></span>
+            <span class="orbit-dot dot2"></span>
           </div>
         </aside>
 
@@ -568,6 +569,13 @@
 </script>
 
 <script src="admin-script.js?v=4"></script>
+
+<!-- Efek visual layar login (partikel jaringan tipis, ikon radar,
+     tilt magnetik tombol). Berdiri sendiri, tidak menyentuh logika
+     login/auth apa pun di admin-script.js — murni dekoratif dan
+     otomatis nonaktif saat prefers-reduced-motion atau saat dasbor
+     sudah terbuka (lihat admin-login-fx.js). -->
+<script src="admin-login-fx.js?v=1" defer></script>
 
 <!-- Kontrol panel menu hamburger (khusus tampilan HP). Berdiri sendiri,
      tidak menyentuh logika admin-script.js — cukup "meneruskan" klik
