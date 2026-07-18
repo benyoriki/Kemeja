@@ -879,29 +879,38 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(255, 255, 255);
       doc.text(formatRupiah(totalTerkumpul), bTextX, bannerY + 49);
 
-      // Garis pemisah vertikal + ringkasan cepat lunas/DP di sisi kanan banner.
-      const divX = MARGIN + CONTENT_W - 168;
+      // Garis pemisah vertikal + ringkasan cepat total peserta/lunas/DP di sisi kanan banner.
+      const divX = MARGIN + CONTENT_W - 280;
       doc.setDrawColor(255, 255, 255);
       doc.setLineWidth(0.6);
       doc.line(divX, bannerY + 14, divX, bannerY + bannerH - 14);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(17);
+      doc.setFontSize(19);
       doc.setTextColor(255, 255, 255);
-      doc.text(String(lunasCount), divX + 20, bannerY + 28);
+      doc.text(String(rows.length), divX + 16, bannerY + 28);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
+      doc.setFontSize(9.5);
       doc.setTextColor(255, 255, 255);
-      doc.text('LUNAS', divX + 20, bannerY + 40);
+      doc.text('TOTAL PESERTA', divX + 16, bannerY + 40);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(17);
+      doc.setFontSize(19);
       doc.setTextColor(255, 255, 255);
-      doc.text(String(dpCount), divX + 82, bannerY + 28);
+      doc.text(String(lunasCount), divX + 108, bannerY + 28);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
+      doc.setFontSize(9.5);
       doc.setTextColor(255, 255, 255);
-      doc.text('DP BERJALAN', divX + 82, bannerY + 40);
+      doc.text('LUNAS', divX + 108, bannerY + 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(19);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(dpCount), divX + 200, bannerY + 28);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text('DP BERJALAN', divX + 200, bannerY + 40);
 
       const HEADER_BOTTOM = bannerY + bannerH + 26;
 
@@ -1075,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.6);
-      doc.setTextColor(slateR, slateG, slateB);
+      doc.setTextColor(...hexToRgbArr('#EA580C'));
       doc.text('Cek berkala status produksi kemejamu di link website ini, ya!', MARGIN, capY + 15);
 
       const linkText = 'benyoriki.github.io/Kemeja';
@@ -1106,10 +1115,10 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(navyR, navyG, navyB);
       doc.text(linkText, MARGIN + linkPadL + iconD + gapIconText, gCy + 4.5);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.6);
-      doc.setTextColor(...hexToRgbArr(SLATE_XL));
-      doc.text('Dibuat otomatis oleh Dasbor Admin — LOKON PRIMA', MARGIN, linkY + linkH + 22);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text('Otomatis Sistem Apache Spark, DBMS di kembangan oleh @benyoriki website Developer', MARGIN, linkY + linkH + 22);
 
       /* ===== NOMOR HALAMAN — dipasang terakhir, karena total halaman
          baru pasti diketahui setelah semua konten selesai digambar ===== */
@@ -2073,8 +2082,4 @@ document.addEventListener('DOMContentLoaded', () => {
       await fb.setDoc(programStatusRef(fb), {
         [`stage${n}`]: { estimasiISO, keterangan },
         updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
-      }, { merge: true });
-      await logAdminAction('edit', `Estimasi: ${estimasiISO ? new Date(estimasiISO).toLocaleString('id-ID') : 'kosong'} • Keterangan: ${keterangan || '-'}`, `Tahap ${n} — ${STAGE_LABELS[n]}`);
-      showToast(`Estimasi tahap "${STAGE_LABELS[n]}" berhasil disimpan.`, 'success');
-    } catch (err){
-      console.warn('Gagal menyimpan estimasi tahap:', err.code, err.
+      }, {
