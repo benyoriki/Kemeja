@@ -794,9 +794,9 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.setTextColor(navyR, navyG, navyB);
       doc.text('Kemeja Kerja 2026', MARGIN, 108);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10.5);
-      doc.setTextColor(slateLR, slateLG, slateLB);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11.5);
+      doc.setTextColor(navyR, navyG, navyB);
       doc.text(`${hariTanggal}  •  Diperbarui pukul ${jam}`, MARGIN, 126);
 
       /* ===== KARTU RINGKAS REKENING + WEBSITE (kanan atas header) —
@@ -833,14 +833,14 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.line(miniCardX + miniPadX, miniCardY + 57, miniCardX + miniCardW - miniPadX, miniCardY + 57);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
+      doc.setFontSize(7.6);
       doc.setTextColor(tealR, tealG, tealB);
       doc.text('WEBSITE PENDAFTARAN RESMI', miniCardX + miniPadX, miniCardY + 70);
 
       doc.setFillColor(tealR, tealG, tealB);
       doc.circle(miniCardX + miniPadX + 3, miniCardY + 87, 3, 'F');
       doc.setFont('courier', 'bold');
-      doc.setFontSize(9.5);
+      doc.setFontSize(10.8);
       doc.setTextColor(navyR, navyG, navyB);
       doc.text('benyoriki.github.io/Kemeja', miniCardX + miniPadX + 12, miniCardY + 90);
 
@@ -886,21 +886,21 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.line(divX, bannerY + 14, divX, bannerY + bannerH - 14);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
+      doc.setFontSize(17);
       doc.setTextColor(255, 255, 255);
       doc.text(String(lunasCount), divX + 20, bannerY + 28);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(204, 251, 241);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
       doc.text('LUNAS', divX + 20, bannerY + 40);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(15);
+      doc.setFontSize(17);
       doc.setTextColor(255, 255, 255);
       doc.text(String(dpCount), divX + 82, bannerY + 28);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(204, 251, 241);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(255, 255, 255);
       doc.text('DP BERJALAN', divX + 82, bannerY + 40);
 
       const HEADER_BOTTOM = bannerY + bannerH + 26;
@@ -1069,18 +1069,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const capY = sumY + 28;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       doc.setTextColor(tealR, tealG, tealB);
       doc.text('WEBSITE DAFTAR BAJU LOKON PRIMA', MARGIN, capY);
 
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9.3);
-      doc.setTextColor(slateLR, slateLG, slateLB);
-      doc.text('Pantau status pesanan & pembayaranmu kapan saja, di mana saja.', MARGIN, capY + 15);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text('Cek berkala status produksi kemejamu di link website ini, ya!', MARGIN, capY + 15);
 
       const linkText = 'benyoriki.github.io/Kemeja';
       doc.setFont('courier', 'bold');
-      doc.setFontSize(13);
+      doc.setFontSize(14);
       const linkTextW = doc.getTextWidth(linkText);
       const iconD = 26, linkPadL = 12, linkPadR = 18, gapIconText = 12;
       const linkW = linkPadL + iconD + gapIconText + linkTextW + linkPadR;
@@ -1102,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.ellipse(gCx, gCy, iconD / 2 - 6.5, iconD / 2, 'S');
 
       doc.setFont('courier', 'bold');
-      doc.setFontSize(13);
+      doc.setFontSize(14);
       doc.setTextColor(navyR, navyG, navyB);
       doc.text(linkText, MARGIN + linkPadL + iconD + gapIconText, gCy + 4.5);
 
@@ -2077,62 +2077,4 @@ document.addEventListener('DOMContentLoaded', () => {
       await logAdminAction('edit', `Estimasi: ${estimasiISO ? new Date(estimasiISO).toLocaleString('id-ID') : 'kosong'} • Keterangan: ${keterangan || '-'}`, `Tahap ${n} — ${STAGE_LABELS[n]}`);
       showToast(`Estimasi tahap "${STAGE_LABELS[n]}" berhasil disimpan.`, 'success');
     } catch (err){
-      console.warn('Gagal menyimpan estimasi tahap:', err.code, err.message);
-      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
-    }
-  });
-
-  // Update tahap aktif (dengan pencatatan otomatis "selesaiPadaISO" untuk
-  // tahap-tahap yang baru saja dilewati, supaya badge "Selesai" di situs
-  // publik bisa menampilkan tanggal selesai yang sebenarnya).
-  estCurrentStageSave?.addEventListener('click', async () => {
-    const newStage = parseInt(estCurrentStage?.value, 10) || 1;
-    const oldStage = Math.min(4, Math.max(1, parseInt(estimasiDataCache?.currentStage, 10) || 1));
-
-    if (newStage === oldStage){
-      showToast('Tahap aktif tidak berubah.', 'error');
-      return;
-    }
-
-    const confirmed = await showAdminConfirm({
-      title: 'Update Tahap Aktif Program?',
-      messageHtml: `<p>Tahap aktif akan diubah dari <b>"${escapeHtml(STAGE_LABELS[oldStage])}"</b> menjadi <b>"${escapeHtml(STAGE_LABELS[newStage])}"</b>. Semua pengunjung situs akan langsung melihat perubahan ini di bagian "Progress Iuran Bersama".</p>`,
-      confirmLabel: 'Ya, Update Tahap',
-      danger: newStage < oldStage
-    });
-    if (!confirmed) return;
-
-    const fb = window.__lokonFirebase;
-    if (!fb || !fb.setDoc){
-      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
-      return;
-    }
-    estCurrentStageSave.disabled = true;
-    const originalHtml = estCurrentStageSave.innerHTML;
-    estCurrentStageSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-    try {
-      const patch = { currentStage: newStage, updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString() };
-      // Kalau tahap MAJU, catat tanggal selesai riil untuk tahap-tahap yang baru dilewati.
-      if (newStage > oldStage){
-        const nowIso = new Date().toISOString();
-        for (let n = oldStage; n < newStage; n++){
-          const existing = estimasiDataCache?.[`stage${n}`] || {};
-          patch[`stage${n}`] = { ...existing, selesaiPadaISO: nowIso };
-        }
-      }
-      await fb.setDoc(programStatusRef(fb), patch, { merge: true });
-      await logAdminAction('edit', `Tahap aktif: "${STAGE_LABELS[oldStage]}" → "${STAGE_LABELS[newStage]}"`, 'Progres Program');
-      showToast('Tahap aktif berhasil diperbarui.', 'success');
-    } catch (err){
-      console.warn('Gagal update tahap aktif:', err.code, err.message);
-      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
-    } finally {
-      estCurrentStageSave.disabled = false;
-      estCurrentStageSave.innerHTML = originalHtml;
-    }
-  });
-
-});
+      console.warn('Gagal menyimpan estimasi tahap:', err.code, err.
