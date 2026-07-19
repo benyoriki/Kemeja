@@ -2082,4 +2082,310 @@ document.addEventListener('DOMContentLoaded', () => {
       await fb.setDoc(programStatusRef(fb), {
         [`stage${n}`]: { estimasiISO, keterangan },
         updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
-      }, {
+      }, { merge: true });
+      await logAdminAction('edit', `Estimasi: ${estimasiISO ? new Date(estimasiISO).toLocaleString('id-ID') : 'kosong'} • Keterangan: ${keterangan || '-'}`, `Tahap ${n} — ${STAGE_LABELS[n]}`);
+      showToast(`Estimasi tahap "${STAGE_LABELS[n]}" berhasil disimpan.`, 'success');
+    } catch (err){
+      console.warn('Gagal menyimpan estimasi tahap:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+
+  // Ubah tahap aktif program (dipakai di bagian "Progress Iuran Bersama" situs publik).
+  // Tahap-tahap yang dilewati (dari tahap lama sampai sebelum tahap baru) otomatis
+  // ditandai selesai dengan timestamp saat ini, supaya riwayatnya tercatat rapi.
+  estCurrentStageSave?.addEventListener('click', async () => {
+    const target = parseInt(estCurrentStage?.value, 10) || 1;
+    const current = Math.min(4, Math.max(1, parseInt(estimasiDataCache?.currentStage, 10) || 1));
+    if (target === current){
+      showToast('Tahap aktif tidak berubah.', 'error');
+      return;
+    }
+    const confirmed = await showAdminConfirm({
+      title: 'Update Tahap Aktif Program?',
+      messageHtml: `<p>Tahap aktif akan diubah dari <b>"${escapeHtml(STAGE_LABELS[current])}"</b> menjadi <b>"${escapeHtml(STAGE_LABELS[target])}"</b>. Semua pengunjung situs akan langsung melihat perubahan ini di bagian "Progress Iuran Bersama".</p>`,
+      confirmLabel: 'Ya, Update Tahap',
+      danger: target < current
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    estCurrentStageSave.disabled = true;
+    const originalHtml = estCurrentStageSave.innerHTML;
+    estCurrentStageSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      const patch = {
+        currentStage: target,
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      };
+      // Maju melewati beberapa tahap sekaligus? Tandai semua tahap yang
+      // dilewati sebagai selesai pada waktu yang sama (saat ini).
+      if (target > current){
+        const now = new Date().toISOString();
+        for (let n = current; n < target; n++){
+          const prevStage = estimasiDataCache?.[`stage${n}`] || {};
+          patch[`stage${n}`] = { ...prevStage, selesaiPadaISO: now };
+        }
+      }
+      await fb.setDoc(programStatusRef(fb), patch, { merge: true });
+      await logAdminAction('edit', `Tahap aktif: "${STAGE_LABELS[current]}" → "${STAGE_LABELS[target]}"`, 'Progres Program');
+      showToast('Tahap aktif berhasil diperbarui.', 'success');
+    } catch (err){
+      console.warn('Gagal update tahap aktif:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      estCurrentStageSave.disabled = false;
+      estCurrentStageSave.innerHTML = originalHtml;
+    }
+  });
+
+  /* =========================================================
+     MENU BARU: TURNAMEN CATUR 17 AGUSTUS 2026
+     -------------------------------------------------
+     Dua koleksi Firestore terpisah dari data pendaftaran/kemeja:
+       - chess_tournament_config/agustus17_2026 : 1 dokumen berisi
+         judul, tanggal/jam mulai, hadiah juara 1/2/3, & status aktif
+         (dibaca real-time oleh modul catur di halaman publik).
+       - chess_tournament_agustus17              : 1 dokumen PER
+         PESERTA (docId = kodeUnik), berisi nomor WhatsApp & status
+         pendaftaran ("pending" | "approved" | "rejected") yang
+         diubah admin lewat tombol Terima/Tolak di bawah.
+  ========================================================= */
+  const TOURNEY_CONFIG_COLLECTION = 'chess_tournament_config';
+  const TOURNEY_ID = 'agustus17_2026';
+  const TOURNEY_REG_COLLECTION = 'chess_tournament_agustus17';
+  const TOURNEY_DEFAULTS = {
+    title: 'Turnamen Catur Kemerdekaan 17 Agustus 2026',
+    startAtISO: '2026-08-17T09:00:00+07:00',
+    prize1: 'Rp 1.000.000 + Trofi + Sertifikat',
+    prize2: 'Rp 600.000 + Sertifikat',
+    prize3: 'Rp 300.000 + Sertifikat',
+    active: true
+  };
+  const TOURNEY_STATUS_LABEL = {
+    pending:  { label: 'Menunggu',  cls: 'badge-warn',    icon: 'fa-hourglass-half' },
+    approved: { label: 'Diterima',  cls: 'badge-success', icon: 'fa-circle-check' },
+    rejected: { label: 'Ditolak',   cls: 'badge-danger',  icon: 'fa-circle-xmark' }
+  };
+
+  const chessTourneyBtn = document.getElementById('chessTourneyBtn');
+  const chessTourneyOverlay = document.getElementById('chessTourneyOverlay');
+  const chessTourneyClose = document.getElementById('chessTourneyClose');
+  const ctourTitle = document.getElementById('ctourTitle');
+  const ctourStart = document.getElementById('ctourStart');
+  const ctourPrize1 = document.getElementById('ctourPrize1');
+  const ctourPrize2 = document.getElementById('ctourPrize2');
+  const ctourPrize3 = document.getElementById('ctourPrize3');
+  const ctourActive = document.getElementById('ctourActive');
+  const ctourSaveConfig = document.getElementById('ctourSaveConfig');
+  const ctourConfigError = document.getElementById('ctourConfigError');
+  const ctourFilters = document.getElementById('ctourFilters');
+  const ctourList = document.getElementById('ctourList');
+  const ctourEmpty = document.getElementById('ctourEmpty');
+
+  let ctourConfigCache = null;
+  let ctourRegCache = [];
+  let ctourConfigUnsub = null;
+  let ctourRegUnsub = null;
+  let ctourActiveFilter = 'semua';
+
+  function tourneyConfigRef(fb){ return fb.doc(fb.db, TOURNEY_CONFIG_COLLECTION, TOURNEY_ID); }
+  function tourneyRegRef(fb, kodeUnik){ return fb.doc(fb.db, TOURNEY_REG_COLLECTION, kodeUnik); }
+
+  function renderCtourConfigForm(){
+    const c = { ...TOURNEY_DEFAULTS, ...(ctourConfigCache || {}) };
+    if (ctourTitle) ctourTitle.value = c.title;
+    if (ctourStart) ctourStart.value = isoToDatetimeLocalValue(c.startAtISO);
+    if (ctourPrize1) ctourPrize1.value = c.prize1;
+    if (ctourPrize2) ctourPrize2.value = c.prize2;
+    if (ctourPrize3) ctourPrize3.value = c.prize3;
+    if (ctourActive) ctourActive.checked = c.active !== false;
+  }
+
+  function renderCtourList(){
+    if (!ctourList) return;
+    const counts = { semua: ctourRegCache.length, pending: 0, approved: 0, rejected: 0 };
+    ctourRegCache.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+    setCount('ctourCountSemua', counts.semua);
+    setCount('ctourCountPending', counts.pending);
+    setCount('ctourCountApproved', counts.approved);
+    setCount('ctourCountRejected', counts.rejected);
+
+    const filtered = ctourActiveFilter === 'semua' ? ctourRegCache : ctourRegCache.filter(r => r.status === ctourActiveFilter);
+
+    if (!filtered.length){
+      ctourList.innerHTML = '';
+      if (ctourEmpty) ctourEmpty.style.display = 'block';
+      return;
+    }
+    if (ctourEmpty) ctourEmpty.style.display = 'none';
+
+    ctourList.innerHTML = filtered.map(r => {
+      const info = TOURNEY_STATUS_LABEL[r.status] || TOURNEY_STATUS_LABEL.pending;
+      const waLink = `https://wa.me/${(r.whatsapp || '').replace(/[^\d]/g, '')}`;
+      const tanggal = r.registeredAt?.toDate ? r.registeredAt.toDate().toLocaleString('id-ID') : '-';
+      return `
+        <div class="admin-row" data-kode="${escapeHtml(r.kodeUnik)}">
+          <div class="admin-row-top">
+            <div class="admin-row-id">
+              <div class="admin-row-avatar">${initialsOf(r.nama)}</div>
+              <div class="admin-row-head">
+                <strong>${escapeHtml(r.nama || '-')}</strong>
+                <span><i class="fa-solid fa-hashtag"></i> ${escapeHtml(r.kodeUnik || '-')}</span>
+              </div>
+            </div>
+            <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
+          </div>
+          <div class="admin-row-meta">
+            <div class="admin-row-meta-group">
+              <a class="ctour-wa-link" href="${waLink}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(r.whatsapp || '-')}</a>
+              <span><i class="fa-solid fa-clock"></i> Daftar: ${tanggal}</span>
+            </div>
+          </div>
+          <div class="ctour-row-actions">
+            ${r.status !== 'approved' ? `<button class="btn btn-primary ripple" data-caction="approve" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-check"></i> Terima</button>` : ''}
+            ${r.status !== 'rejected' ? `<button class="btn btn-danger ripple" data-caction="reject" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-xmark"></i> Tolak</button>` : ''}
+            ${r.status !== 'pending' ? `<button class="btn btn-outline-dark ripple" data-caction="pending" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-rotate-left"></i> Batalkan</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadCtourRealtime(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      if (ctourConfigError) ctourConfigError.textContent = 'Tidak bisa memuat data: Firebase belum tersambung.';
+      return;
+    }
+    if (!ctourConfigUnsub){
+      ctourConfigUnsub = fb.onSnapshot(tourneyConfigRef(fb), (snap) => {
+        ctourConfigCache = snap.exists() ? snap.data() : null;
+        renderCtourConfigForm();
+      }, (err) => console.warn('Gagal memantau chess_tournament_config:', err.code, err.message));
+    }
+    if (!ctourRegUnsub){
+      try {
+        const q = fb.query(fb.collection(fb.db, TOURNEY_REG_COLLECTION), fb.orderBy('registeredAt', 'desc'));
+        ctourRegUnsub = fb.onSnapshot(q, (snap) => {
+          ctourRegCache = snap.docs.map(d => d.data());
+          renderCtourList();
+        }, (err) => {
+          console.warn('Gagal memantau chess_tournament_agustus17:', err.code, err.message);
+          if (ctourConfigError) ctourConfigError.textContent = 'Gagal memuat pendaftar — cek Firestore Rules koleksi "chess_tournament_agustus17".';
+        });
+      } catch (err){
+        console.warn('Gagal memasang listener turnamen catur:', err);
+      }
+    }
+  }
+
+  chessTourneyBtn?.addEventListener('click', () => {
+    chessTourneyOverlay?.classList.add('active');
+    if (ctourConfigError) ctourConfigError.textContent = '';
+    loadCtourRealtime();
+  });
+  chessTourneyClose?.addEventListener('click', () => chessTourneyOverlay?.classList.remove('active'));
+  chessTourneyOverlay?.addEventListener('click', (e) => { if (e.target === chessTourneyOverlay) chessTourneyOverlay.classList.remove('active'); });
+
+  ctourFilters?.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-cfilter]');
+    if (!chip) return;
+    ctourActiveFilter = chip.dataset.cfilter;
+    ctourFilters.querySelectorAll('.adash-chip').forEach(c => c.classList.toggle('active', c === chip));
+    renderCtourList();
+  });
+
+  // Simpan pengaturan event (judul, tanggal/jam, hadiah, tampil/sembunyikan banner)
+  ctourSaveConfig?.addEventListener('click', async () => {
+    const title = (ctourTitle?.value || '').trim() || TOURNEY_DEFAULTS.title;
+    const startAtISO = datetimeLocalValueToIso(ctourStart?.value || '') || TOURNEY_DEFAULTS.startAtISO;
+    const prize1 = (ctourPrize1?.value || '').trim() || TOURNEY_DEFAULTS.prize1;
+    const prize2 = (ctourPrize2?.value || '').trim() || TOURNEY_DEFAULTS.prize2;
+    const prize3 = (ctourPrize3?.value || '').trim() || TOURNEY_DEFAULTS.prize3;
+    const active = !!ctourActive?.checked;
+
+    const confirmed = await showAdminConfirm({
+      title: 'Simpan Pengaturan Turnamen Catur?',
+      messageHtml: `<p>Perubahan akan langsung tampil real-time ke semua peserta yang membuka Lokon Chess Arena — termasuk countdown, hadiah, dan status tampil/sembunyi banner.</p>`,
+      confirmLabel: 'Ya, Simpan'
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    ctourSaveConfig.disabled = true;
+    const originalHtml = ctourSaveConfig.innerHTML;
+    ctourSaveConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      await fb.setDoc(tourneyConfigRef(fb), {
+        title, startAtISO, prize1, prize2, prize3, active,
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      }, { merge: true });
+      await logAdminAction('edit', `Judul: "${title}" • Mulai: ${new Date(startAtISO).toLocaleString('id-ID')} • Tampil: ${active ? 'Ya' : 'Tidak'}`, 'Turnamen Catur 17 Agustus');
+      showToast('Pengaturan turnamen berhasil disimpan.', 'success');
+    } catch (err){
+      console.warn('Gagal menyimpan pengaturan turnamen:', err.code, err.message);
+      if (ctourConfigError) ctourConfigError.textContent = 'Gagal menyimpan — cek Firestore Rules koleksi "chess_tournament_config".';
+    } finally {
+      ctourSaveConfig.disabled = false;
+      ctourSaveConfig.innerHTML = originalHtml;
+    }
+  });
+
+  // Terima / Tolak / Batalkan (kembalikan ke menunggu) — event delegation
+  // supaya tetap berfungsi walau daftar di-render ulang oleh listener realtime.
+  ctourList?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-caction]');
+    if (!btn) return;
+    const action = btn.dataset.caction;
+    const kode = btn.dataset.kode;
+    const reg = ctourRegCache.find(r => r.kodeUnik === kode);
+    if (!reg) return;
+
+    const ACTION_META = {
+      approve: { newStatus: 'approved', title: 'Terima Pendaftaran Turnamen?', confirmLabel: 'Ya, Terima', danger: false,
+        msg: `<p><b>${escapeHtml(reg.nama)}</b> akan resmi terdaftar sebagai peserta Turnamen Catur 17 Agustus dan namanya akan tampil di daftar peserta publik.</p>` },
+      reject: { newStatus: 'rejected', title: 'Tolak Pendaftaran Turnamen?', confirmLabel: 'Ya, Tolak', danger: true,
+        msg: `<p>Pendaftaran <b>${escapeHtml(reg.nama)}</b> akan ditandai ditolak. Peserta akan melihat status ini di halaman catur dan bisa mendaftar ulang kalau perlu.</p>` },
+      pending: { newStatus: 'pending', title: 'Batalkan Keputusan & Kembalikan ke Menunggu?', confirmLabel: 'Ya, Batalkan', danger: false,
+        msg: `<p>Status <b>${escapeHtml(reg.nama)}</b> akan dikembalikan ke "Menunggu" seperti sebelum diputuskan.</p>` }
+    };
+    const meta = ACTION_META[action];
+    if (!meta) return;
+
+    const confirmed = await showAdminConfirm({ title: meta.title, messageHtml: meta.msg, confirmLabel: meta.confirmLabel, danger: meta.danger });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.updateDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await fb.updateDoc(tourneyRegRef(fb, kode), {
+        status: meta.newStatus,
+        reviewedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      });
+      await logAdminAction('status', `Status pendaftaran turnamen catur diubah menjadi "${TOURNEY_STATUS_LABEL[meta.newStatus].label}".`, `${reg.nama || '-'} (${kode})`);
+      showToast(`Status "${escapeHtml(reg.nama)}" berhasil diubah.`, 'success');
+    } catch (err){
+      console.warn('Gagal mengubah status pendaftaran turnamen:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "chess_tournament_agustus17".', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+});

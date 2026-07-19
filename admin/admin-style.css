@@ -189,7 +189,8 @@ button{ cursor:pointer; border:none; background:none; }
 /* Modal sungguhan: Edit Peserta, Riwayat, Estimasi */
 .admin-overlay#addPesertaOverlay,
 .admin-overlay#adminHistoryOverlay,
-.admin-overlay#estimasiOverlay{
+.admin-overlay#estimasiOverlay,
+.admin-overlay#chessTourneyOverlay{
   position:fixed; inset:0; opacity:0; visibility:hidden; pointer-events:none;
   backdrop-filter:blur(6px); background:rgba(4,10,20,.72);
   transition:opacity .3s ease, visibility .3s ease; padding:20px;
@@ -197,27 +198,28 @@ button{ cursor:pointer; border:none; background:none; }
 }
 .admin-overlay#addPesertaOverlay.active,
 .admin-overlay#adminHistoryOverlay.active,
-.admin-overlay#estimasiOverlay.active{
+.admin-overlay#estimasiOverlay.active,
+.admin-overlay#chessTourneyOverlay.active{
   opacity:1; visibility:visible; pointer-events:auto;
 }
-#addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box{
+#addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{
   transform:translateY(14px) scale(.97); opacity:0;
   transition:transform .38s cubic-bezier(.2,.8,.3,1), opacity .3s ease;
   max-height:88vh; overflow-y:auto;
   background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-xl);
   padding:32px 28px; box-shadow:var(--shadow-strong);
 }
-#addPesertaOverlay.active .admin-box, #adminHistoryOverlay.active .admin-box, #estimasiOverlay.active .admin-box{
+#addPesertaOverlay.active .admin-box, #adminHistoryOverlay.active .admin-box, #estimasiOverlay.active .admin-box, #chessTourneyOverlay.active .admin-box{
   transform:translateY(0) scale(1); opacity:1;
 }
 @media (prefers-reduced-motion: reduce){
-  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
 }
 .history-box{ max-width:640px; }
 @media (min-width:1300px){ .admin-overlay{ padding-top:40px; } }
 @media (max-width:640px){
   .admin-overlay{ padding:14px 14px 32px; }
-  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
 }
 
 /* Atmosfer latar halus di dalam kartu modal — grid tipis + aurora sangat lambat */
@@ -1153,3 +1155,54 @@ button{ cursor:pointer; border:none; background:none; }
   animation:aloginDotFloat2 10s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce){ .orbit-dot.dot2{ animation:none; } }
+
+/* =========================================================
+   8. DASBOR ADMIN — MENU BARU: TURNAMEN CATUR 17 AGUSTUS 2026
+   -------------------------------------------------
+   Tombol header + item drawer memakai warna merah-putih (tema
+   HUT RI) supaya gampang dikenali di antara menu lain. Modalnya
+   sendiri memakai komponen yang SUDAH ADA (admin-box, admin-field,
+   admin-input-wrap, admin-row, adash-chip, btn) supaya konsisten
+   dengan seluruh dasbor — cuma menambah beberapa aturan kecil
+   yang belum ada (grid pengaturan, toggle switch, divider).
+========================================================= */
+.adi-merah{ background:linear-gradient(135deg, rgba(255,59,59,.92), rgba(240,180,41,.55)); }
+.chess-tourney-btn{ color:#FF8A8A; }
+.chess-tourney-btn:hover{ background:linear-gradient(135deg, #FF3B3B, #F2C14E); color:#2A0A0A; }
+
+.chess-tourney-box{ max-width:760px; }
+
+.ctour-config-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; margin:18px 0 6px; }
+.ctour-active-field{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ctour-active-field label:first-child{ margin-bottom:0; }
+#ctourSaveConfig{ margin-top:6px; }
+@media (max-width:640px){ .ctour-config-grid{ grid-template-columns:1fr; } }
+
+.ctour-divider{
+  display:flex; align-items:center; gap:12px; margin:26px 0 14px; color:var(--ink-faint);
+  font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+}
+.ctour-divider::before, .ctour-divider::after{ content:''; flex:1; height:1px; background:var(--line); }
+
+/* Toggle switch (belum ada di dasbor admin sebelumnya) */
+.switch{ position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; }
+.switch input{ opacity:0; width:0; height:0; }
+.switch .slider{
+  position:absolute; inset:0; cursor:pointer; background:rgba(255,255,255,.12);
+  border:1px solid var(--border); border-radius:999px; transition:var(--transition);
+}
+.switch .slider::before{
+  content:''; position:absolute; width:16px; height:16px; left:3px; top:2px; border-radius:50%;
+  background:var(--ink-soft); transition:var(--transition);
+}
+.switch input:checked + .slider{ background:var(--gradient-brand); border-color:transparent; }
+.switch input:checked + .slider::before{ transform:translateX(18px); background:#04213A; }
+
+/* Baris pendaftar turnamen — dibangun di atas .admin-row yang sudah
+   ada (avatar, badge status, dsb), ditambah baris tombol aksi. */
+.ctour-row-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.ctour-row-actions .btn{ flex:1; min-width:120px; padding:9px 14px; font-size:12.5px; }
+.ctour-wa-link{ color:var(--teal); text-decoration:none; }
+.ctour-wa-link:hover{ text-decoration:underline; }
+.badge-danger{ background:rgba(239,90,111,.16); color:#FF8095; }
+.admin-row:has(.badge-danger){ border-left-color:var(--danger); }

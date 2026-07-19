@@ -1,1 +1,2391 @@
-document.addEventListener("DOMContentLoaded",()=>{function a(a=2e4){return window.__lokonFirebase?Promise.resolve(window.__lokonFirebase):new Promise(e=>{let t=!1;const n=()=>{t||(t=!0,window.removeEventListener("lokon-firebase-ready",i),clearTimeout(s),e(window.__lokonFirebase))},i=()=>n();window.addEventListener("lokon-firebase-ready",i);const s=setTimeout(n,a)})}function e(a,e="success"){const t=document.createElement("div");t.className=`toast ${e}`;const n="error"===e?"fa-circle-exclamation":"fa-circle-check";t.innerHTML=`<i class="fa-solid ${n}"></i><span>${a}</span>`,document.getElementById("toastContainer").appendChild(t),setTimeout(()=>t.remove(),3e3)}document.querySelectorAll(".ripple").forEach(a=>{a.addEventListener("click",function(a){const e=document.createElement("span"),t=Math.max(this.clientWidth,this.clientHeight),n=t/2;e.style.width=e.style.height=`${t}px`,e.style.left=a.clientX-this.getBoundingClientRect().left-n+"px",e.style.top=a.clientY-this.getBoundingClientRect().top-n+"px",e.classList.add("ripple-circle");const i=this.querySelector(".ripple-circle");i&&i.remove(),this.appendChild(e),setTimeout(()=>e.remove(),650)})});function t(a){return"Rp"+a.toLocaleString("id-ID")}function n(a){let e=String(a||"").replace(/[^0-9]/g,"");return e.startsWith("0")&&(e="62"+e.slice(1)),!e.startsWith("62")&&e.length>0&&(e="62"+e),e}function i(a){const e=document.createElement("div");return e.textContent=null==a?"":String(a),e.innerHTML}function s(a,e){const t=performance.now(),n=parseInt(a.textContent,10)||0;requestAnimationFrame(function i(s){const o=Math.min((s-t)/900,1),l=1-Math.pow(1-o,3);a.textContent=Math.round(n+(e-n)*l),o<1?requestAnimationFrame(i):a.textContent=e})}const o={belum_dp:{label:"Menunggu DP",cls:"badge-warn",icon:"fa-hourglass-half"},dp:{label:"DP Terbayar",cls:"badge-info",icon:"fa-hand-holding-dollar"},cicilan:{label:"Cicilan 2x Berjalan",cls:"badge-info",icon:"fa-coins"},lunas:{label:"Lunas",cls:"badge-success",icon:"fa-crown"}};function l(a){const e="number"!=typeof a.subtotal||isNaN(a.subtotal)?(a.harga||0)*(a.jumlah||1):a.subtotal,t="cicilan"===a.pembayaran?.metode,n=t?a.pembayaran?.biayaAdmin||5e3:0;return(t?Math.round(.5*e):e)+n}let r=[],d=!1;document.getElementById("adminEmpty");function c(a){const e=document.getElementById("adminList");e&&(e.innerHTML=`<p class="adash-empty" style="grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation"></i> ${a||"Gagal memuat data."}</p>`)}function m(){if(d)return;const a=window.__lokonFirebase;if(a){d=!0;try{const e=a.query(a.collection(a.db,a.FIRESTORE_COLLECTION),a.orderBy("timestamp","desc"));a.onSnapshot(e,a=>{r=a.docs.map(a=>{const e=a.data(),t=e.timestamp?.toMillis?e.timestamp.toMillis():null,n=e.adminEditedAt?.toMillis?e.adminEditedAt.toMillis():null;return{id:a.id,...e,_ms:t,_editedMs:n}}),Ka()},a=>{let e;console.warn("Firestore listener error:",a.code,a.message),e="permission-denied"===a.code?'<i class="fa-solid fa-lock"></i> Akses Firestore ditolak. Cek Firestore Rules di Firebase Console.':"unavailable"===a.code?'<i class="fa-solid fa-wifi"></i> Tidak bisa terhubung ke Firestore (jaringan bermasalah).':`<i class="fa-solid fa-triangle-exclamation"></i> Gagal memuat data peserta (${a.code||"error"}).`,c(e)})}catch(a){console.warn("Gagal memulai listener peserta:",a),c()}}else c("Firebase belum tersambung. Cek koneksi internet lalu tekan tombol refresh di pojok kanan atas.")}const u=document.getElementById("adminOverlay"),p=document.getElementById("adminLogin"),g=document.getElementById("adminPanel"),b=document.getElementById("adminUsername"),h=document.getElementById("adminPasscode"),y=document.getElementById("adminPassToggle"),f=document.getElementById("adminLoginBtn"),k=(document.getElementById("adminCancelBtn"),document.getElementById("adminLoginError")),v=document.getElementById("adminList"),w=document.getElementById("adminEmpty"),E=document.getElementById("adminCaptchaQuestion"),L=document.getElementById("adminCaptchaInput"),C=document.getElementById("adminCaptchaRefresh"),S=document.getElementById("adminLogoutBtn"),$=document.getElementById("adminRefreshBtn"),I=document.getElementById("adminExportBtn"),T=document.getElementById("adminExportPdfBtn"),B=document.getElementById("adminSearch"),D=document.getElementById("adminFilters"),F=document.getElementById("adashClock"),x=document.getElementById("adashTotal"),P=document.getElementById("adashPendapatan"),M=document.getElementById("adashPendapatanFill"),A=document.getElementById("adashPendapatanPct"),_=document.getElementById("adashMenunggu"),j=document.getElementById("adashCicilan"),N=document.getElementById("adashLunas"),R=document.getElementById("chipCountSemua"),O=document.getElementById("chipCountBelumDp"),H=document.getElementById("chipCountDp"),U=document.getElementById("chipCountCicilan"),G=document.getElementById("chipCountLunas"),K=document.getElementById("adminHistoryBtn"),z=document.getElementById("adminHistoryOverlay"),W=document.getElementById("adminHistoryClose"),J=document.getElementById("adminHistoryList"),q=document.getElementById("adminHistoryEmpty"),Y=document.getElementById("adminHistorySearch"),Q=document.getElementById("adminGenericConfirmOverlay"),V=document.getElementById("agcTitle"),X=document.getElementById("agcMessage"),Z=document.getElementById("agcError"),aa=document.getElementById("agcCancelBtn"),ea=document.getElementById("agcConfirmBtn"),ta=document.getElementById("agcConfirmLabel");let na=!1,ia=null,sa="semua",oa="",la=null,ra=null;function da({title:a,messageHtml:e,confirmLabel:t="Ya, Simpan",danger:n=!1}){return new Promise(i=>{Q?(ra=i,V.textContent=a||"Konfirmasi Perubahan",X.innerHTML=e||"Apakah Anda yakin ingin menyimpan perubahan ini?",ta.textContent=t,ea.className=n?"btn btn-danger ripple":"btn btn-primary ripple",Z&&(Z.textContent=""),Q.classList.add("active")):i(!0)})}function ca(a){if(Q&&Q.classList.remove("active"),"function"==typeof ra){const e=ra;ra=null,e(a)}}function ma(){return window.__lokonFirebase?.auth?.currentUser?.email||"Admin (tidak diketahui)"}aa?.addEventListener("click",()=>ca(!1)),ea?.addEventListener("click",()=>ca(!0)),Q?.addEventListener("click",a=>{a.target===Q&&ca(!1)});const ua=document.getElementById("adashAdminName");function pa(){if(!ua)return;const a=ma();ua.innerHTML=`<i class="fa-solid fa-circle-user"></i> <span>${i(function(){const a=ma(),e=(String(a).split("@")[0]||a).replace(/[._-]+/g," ").trim();return e?e.replace(/\b\w/g,a=>a.toUpperCase()):a}())} &middot; ${i(a)}</span>`}const ga="admin_log";async function ba(a,e,t){try{const n=window.__lokonFirebase;if(!n)return;const i=new Date;await n.addDoc(n.collection(n.db,ga),{admin:ma(),aksi:a,target:t||"-",detail:e||"-",waktu:i.toISOString(),waktuTampil:i.toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})+" • "+i.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit",second:"2-digit"}),serverWaktu:n.serverTimestamp?n.serverTimestamp():null})}catch(a){console.warn("Gagal mencatat riwayat admin (diabaikan, tidak fatal):",a.code,a.message)}}const ha={hapus:{cls:"aksi-hapus",icon:"fa-trash"},edit:{cls:"aksi-edit",icon:"fa-pen"},status:{cls:"aksi-status",icon:"fa-coins"},chat:{cls:"aksi-chat",icon:"fa-comment-slash"},login:{cls:"aksi-status",icon:"fa-right-to-bracket"}};let ya=[],fa=!1;function ka(){if(!J)return;const a=(Y?.value||"").trim().toLowerCase();let e=ya.slice();a&&(e=e.filter(e=>(e.admin||"").toLowerCase().includes(a)||(e.aksi||"").toLowerCase().includes(a)||(e.target||"").toLowerCase().includes(a)||(e.detail||"").toLowerCase().includes(a))),J.innerHTML="",q&&(q.style.display=0===e.length?"block":"none"),e.forEach(a=>{const e="hapus"===a.aksi?"hapus":"edit"===a.aksi?"edit":"chat"===a.aksi?"chat":"status",t=ha[e]||ha.status,n=document.createElement("div");n.className="admin-history-item",n.innerHTML=`\n        <div class="admin-history-top">\n          <span class="admin-history-admin"><i class="fa-solid fa-user-shield"></i> ${i(a.admin||"-")}</span>\n          <span class="admin-history-time">${i(a.waktuTampil||"-")}</span>\n        </div>\n        <span class="admin-history-aksi ${t.cls}"><i class="fa-solid ${t.icon}"></i> ${i(a.aksi||"-")}</span>\n        <div class="admin-history-detail"><b>${i(a.target||"-")}</b> — ${i(a.detail||"-")}</div>\n      `,J.appendChild(n)})}function va(){const a=Math.floor(8*Math.random())+1,e=Math.floor(8*Math.random())+1;ia=a+e,E&&(E.textContent=`${a} + ${e}`),L&&(L.value="")}function wa(){b&&(b.value=""),h&&(h.value="",h.type="password"),y&&(y.innerHTML='<i class="fa-solid fa-eye"></i>'),k&&(k.textContent=""),va()}function Ea(){if(!F)return;const a=()=>{const a=new Date;F.textContent=a.toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})+" • "+a.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit",second:"2-digit"})};a(),clearInterval(la),la=setInterval(a,1e3)}function La(){clearInterval(la)}K?.addEventListener("click",()=>{z?.classList.add("active"),async function(){const t=await a(8e3);if(t)try{let a;if("function"==typeof t.getDocs&&"function"==typeof t.query){const e=t.query(t.collection(t.db,ga),t.orderBy("waktu","desc"),t.limit(300));a=await t.getDocs(e)}else a=await t.getDocs(t.collection(t.db,ga));ya=a.docs.map(a=>({id:a.id,...a.data()})),fa=!0,ka()}catch(a){console.warn("Gagal memuat riwayat admin:",a.code,a.message),e('Gagal memuat riwayat aktivitas. Cek Firestore Rules koleksi "admin_log".',"error")}else e("Tidak bisa memuat riwayat: Firebase belum tersambung.","error")}()}),W?.addEventListener("click",()=>z?.classList.remove("active")),z?.addEventListener("click",a=>{a.target===z&&z.classList.remove("active")}),Y?.addEventListener("input",ka),C?.addEventListener("click",va),y?.addEventListener("click",()=>{const a="text"===h.type;h.type=a?"password":"text",y.innerHTML=a?'<i class="fa-solid fa-eye"></i>':'<i class="fa-solid fa-eye-slash"></i>'});const Ca=document.getElementById("adashIdleBanner"),Sa=document.getElementById("adashIdleTime"),$a=document.getElementById("adashIdleRing"),Ia=document.getElementById("adashIdleStay"),Ta=["mousemove","mousedown","keydown","wheel","scroll","touchstart","click"];let Ba=Date.now(),Da=null;function Fa(){Ba=Date.now(),Ca&&Ca.classList.remove("show")}function xa(){if(!na)return;const a=60-Math.floor((Date.now()-Ba)/1e3);if(a<=0)return Ma(),e("Sesi berakhir otomatis karena 1 menit tidak ada aktivitas.","error"),void Aa();if(a<=15){Ca&&Ca.classList.add("show");const e=Math.floor(a/60),t=a%60;Sa&&(Sa.textContent=`${e}:${String(t).padStart(2,"0")}`),$a&&$a.style.setProperty("--p",String(Math.round(a/15*100)))}else Ca&&Ca.classList.remove("show")}function Pa(){Ba=Date.now(),Ca&&Ca.classList.remove("show"),clearInterval(Da),Da=setInterval(xa,1e3),Ta.forEach(a=>window.addEventListener(a,Fa,{passive:!0}))}function Ma(){clearInterval(Da),Da=null,Ca&&Ca.classList.remove("show"),Ta.forEach(a=>window.removeEventListener(a,Fa))}async function Aa(){na=!1,u.classList.remove("admin-dash-mode"),La(),Ma();const a=window.__lokonFirebase;if(a?.auth)try{await a.signOut(a.auth)}catch(a){console.warn("Gagal logout dari Firebase Auth:",a)}p.style.display="block",g.style.display="none",wa(),e("Berhasil keluar dari dasbor admin.","success")}function _a(a){const e=a.replace("#","");return[parseInt(e.slice(0,2),16),parseInt(e.slice(2,4),16),parseInt(e.slice(4,6),16)]}function ja(a,e,t){return[Math.round(a[0]+(e[0]-a[0])*t),Math.round(a[1]+(e[1]-a[1])*t),Math.round(a[2]+(e[2]-a[2])*t)]}function Na(a,e,t,n,i,s,o,l=48){const r=_a(s),d=_a(o),c=n/l;for(let n=0;n<l;n++){const[s,o,m]=ja(r,d,n/(l-1));a.setFillColor(s,o,m),a.rect(e+n*c,t,c+.6,i,"F")}}Ia?.addEventListener("click",Fa),wa(),S?.addEventListener("click",Aa),f?.addEventListener("click",async()=>{const e=b.value.trim(),t=h.value;if(parseInt(L.value,10)!==ia)return k.textContent="Jawaban verifikasi salah, coba lagi.",void va();if(!e||!t)return void(k.textContent="Email dan kata sandi wajib diisi.");f.disabled=!0,k.textContent="";const n=await a(8e3);if(!n||!n.auth)return k.textContent="Tidak bisa terhubung ke server login. Cek koneksi internet lalu coba lagi.",void(f.disabled=!1);try{await n.signInWithEmailAndPassword(n.auth,e,t),na=!0,p.style.display="none",g.style.display="block",u.classList.add("admin-dash-mode"),pa(),Ea(),Pa(),m(),Ka(),ba("login","Admin berhasil masuk ke dasbor.",e)}catch(a){console.warn("Login admin gagal:",a.code,a.message);const e={"auth/invalid-email":"Format email tidak valid.","auth/user-not-found":"Email admin tidak ditemukan.","auth/wrong-password":"Kata sandi salah.","auth/invalid-credential":"Email atau kata sandi salah.","auth/too-many-requests":"Terlalu banyak percobaan gagal. Coba lagi beberapa menit lagi.","auth/network-request-failed":"Koneksi bermasalah, coba lagi."};k.textContent=e[a.code]||"Login gagal. Periksa kembali email & kata sandi.",va()}finally{f.disabled=!1}}),(async()=>{const e=await a();e?.auth&&function(a){a.onAuthStateChanged(a.auth,a=>{a&&!na?(na=!0,p.style.display="none",g.style.display="block",u.classList.add("admin-dash-mode"),pa(),Ea(),Pa(),m(),Ka()):!a&&na&&(na=!1,u.classList.remove("admin-dash-mode"),p.style.display="block",g.style.display="none",La(),Ma())})}(e)})(),$?.addEventListener("click",async()=>{window.__lokonFirebase||"function"!=typeof window.__lokonRetryFirebase||($.disabled=!0,await window.__lokonRetryFirebase(),$.disabled=!1,window.__lokonFirebase&&m()),Ka(),e(window.__lokonFirebase?"Data dasbor disegarkan.":"Masih belum tersambung ke database.",window.__lokonFirebase?"success":"error")}),B?.addEventListener("input",a=>{oa=a.target.value,Ka()}),D?.addEventListener("click",a=>{const e=a.target.closest(".adash-chip");e&&(D.querySelectorAll(".adash-chip").forEach(a=>a.classList.remove("active")),e.classList.add("active"),sa=e.dataset.filter,Ka())}),I?.addEventListener("click",()=>{if(!r.length)return void e("Belum ada data untuk diexport.","error");const a=[["Kode Unik","Nama","Nama Bordir","WhatsApp","Departemen","Jenis Kelamin","Ukuran","Jenis Kemeja","Jumlah","Total","Metode Bayar","Status","Total Dibayar"],...r.map(a=>[a.kodeUnik||"",a.nama||"",a.namaBordir||"",a.whatsapp||"",a.departemen||"",a.gender||"",a.ukuranKemeja||"",a.jenis||"",a.jumlah||0,a.total||0,"cicilan"===a.pembayaran?.metode?"2x Cicilan":"Tunai",o[a.pembayaran?.status||"belum_dp"]?.label||"-",a.pembayaran?.totalDibayar||0])].map(a=>a.map(a=>`"${String(a).replace(/"/g,'""')}"`).join(",")).join("\n"),t=new Blob(["\ufeff"+a],{type:"text/csv;charset=utf-8;"}),n=URL.createObjectURL(t),i=document.createElement("a");i.href=n,i.download=`peserta-kemeja-${(new Date).toISOString().slice(0,10)}.csv`,i.click(),URL.revokeObjectURL(n),e("Data berhasil diexport ke CSV.","success")}),T?.addEventListener("click",async function(){if(!r.length)return void e("Belum ada data peserta untuk diunduh.","error");if(!window.jspdf||!window.jspdf.jsPDF)return void e("Modul PDF belum siap dimuat — cek koneksi internet lalu coba lagi.","error");const a=T.querySelector("i");T.disabled=!0,a?.classList.replace("fa-file-pdf","fa-circle-notch"),a?.classList.add("fa-spin");try{const{jsPDF:a}=window.jspdf,n=[...r].sort((a,e)=>(a._ms||0)-(e._ms||0)),i=n.filter(a=>"lunas"===a.pembayaran?.status).length,s=n.filter(a=>"lunas"!==a.pembayaran?.status&&(a.pembayaran?.totalDibayar||0)>0).length,o=n.reduce((a,e)=>a+(e.pembayaran?.totalDibayar||0),0),l=new a({orientation:"portrait",unit:"pt",format:"a4"}),d=l.internal.pageSize.getWidth(),c=l.internal.pageSize.getHeight(),m=40,u=d-2*m,p="#0B2545",g="#0D9488",b="#12A9E0",h="#0FD8B8",y="#475569",f="#64748B",k="#94A3B8",[v,w,E]=_a(p),[L,C,S]=_a(g),[$,I,T]=_a(y),[B,D,F]=_a(f),x={bank:"Bank BCA",nomor:"0830142452",atasNama:"KAMIL MUHAMMAD NUR"},{hariTanggal:P,jam:M}=function(a){const e=String(a.getHours()).padStart(2,"0"),t=String(a.getMinutes()).padStart(2,"0");return{hariTanggal:`${["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"][a.getDay()]}, ${a.getDate()} ${["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][a.getMonth()]} ${a.getFullYear()}`,jam:`${e}.${t} WIB`}}(new Date);l.setFont("helvetica","bold"),l.setFontSize(9.5),l.setTextColor($,I,T),l.text("PT. LOKON PRIMA — DISTRIBUTOR AIR MINUM",m,42),l.setFillColor(204,251,241),l.roundedRect(m,52,172,22,11,11,"F"),l.setFillColor(L,C,S),l.circle(m+14,63,3,"F"),l.setFont("courier","bold"),l.setFontSize(8.5),l.setTextColor(L,C,S),l.text("DAFTAR PESERTA RESMI",m+24,66),l.setFont("helvetica","bold"),l.setFontSize(26),l.setTextColor(v,w,E),l.text("Kemeja Kerja 2026",m,108),l.setFont("helvetica","bold"),l.setFontSize(11.5),l.setTextColor(v,w,E),l.text(`${P}  •  Diperbarui pukul ${M}`,m,126);const A=205,_=100,j=m+u-A,N=36;l.setFillColor(239,252,249),l.roundedRect(j,N,A,_,10,10,"F"),l.setDrawColor(18,169,224),l.setLineWidth(.7),l.roundedRect(j,N,A,_,10,10,"S");const R=14;l.setFont("courier","bold"),l.setFontSize(7.3),l.setTextColor(L,C,S),l.text("TRANSFER PEMBAYARAN KE",j+R,N+15),l.setFont("courier","bold"),l.setFontSize(15.5),l.setTextColor(v,w,E),l.text(x.nomor,j+R,N+34),l.setFont("helvetica","normal"),l.setFontSize(8.3),l.setTextColor($,I,T),l.text(`${x.bank}  •  a.n. ${x.atasNama}`,j+R,N+48),l.setDrawColor(204,251,241),l.setLineWidth(.6),l.line(j+R,N+57,j+A-R,N+57),l.setFont("helvetica","bold"),l.setFontSize(7.6),l.setTextColor(L,C,S),l.text("WEBSITE PENDAFTARAN RESMI",j+R,N+70),l.setFillColor(L,C,S),l.circle(j+R+3,N+87,3,"F"),l.setFont("courier","bold"),l.setFontSize(10.8),l.setTextColor(v,w,E),l.text("benyoriki.github.io/Kemeja",j+R+12,N+90),Na(l,m,138,u,2.4,b,h);const O=158,H=66;l.setFillColor(v,w,E),l.roundedRect(m,O,u,H,12,12,"F"),Na(l,m+12,O+H-3,u-24,1.6,h,b);const U=40,G=m+16,K=O+(H-U)/2;l.setFillColor(L,C,S),l.roundedRect(G,K,U,U,9,9,"F"),l.setFillColor(255,255,255),l.circle(G+U/2-5,K+U/2+3,8,"F"),l.setFillColor(L,C,S),l.circle(G+U/2-5,K+U/2+3,8,"S"),l.setFillColor(255,255,255),l.circle(G+U/2+6,K+U/2-5,8,"F"),l.setDrawColor(L,C,S),l.setLineWidth(1),l.circle(G+U/2+6,K+U/2-5,8,"S");const z=G+U+16;l.setFont("courier","bold"),l.setFontSize(8),l.setTextColor(204,251,241),l.text("TOTAL UANG TERKUMPUL",z,O+24),l.setFont("helvetica","bold"),l.setFontSize(21),l.setTextColor(255,255,255),l.text(t(o),z,O+49);const W=m+u-280;l.setDrawColor(255,255,255),l.setLineWidth(.6),l.line(W,O+14,W,O+H-14),l.setFont("helvetica","bold"),l.setFontSize(19),l.setTextColor(255,255,255),l.text(String(n.length),W+16,O+28),l.setFont("helvetica","bold"),l.setFontSize(9.5),l.setTextColor(255,255,255),l.text("TOTAL PESERTA",W+16,O+40),l.setFont("helvetica","bold"),l.setFontSize(19),l.setTextColor(255,255,255),l.text(String(i),W+108,O+28),l.setFont("helvetica","bold"),l.setFontSize(9.5),l.setTextColor(255,255,255),l.text("LUNAS",W+108,O+40),l.setFont("helvetica","bold"),l.setFontSize(19),l.setTextColor(255,255,255),l.text(String(s),W+200,O+28),l.setFont("helvetica","bold"),l.setFontSize(9.5),l.setTextColor(255,255,255),l.text("DP BERJALAN",W+200,O+40);const J=O+H+26,q={lunas:{bg:[220,252,231],fg:[21,128,61]},dp:{bg:[254,243,199],fg:[180,83,9]},belum_dp:{bg:[252,234,234],fg:[192,57,43]}},Y=n.map((a,e)=>{const n=a.pembayaran?.status||"belum_dp",i=a.pembayaran?.totalDibayar||0,s="lunas"===n,o=!s&&i>0,l=s?"lunas":o?"dp":"belum_dp",r=s?"LUNAS":o?`DP ${t(i)}`:"Belum DP";return{cells:[String(e+1),a.nama||"-",a.namaBordir||"-",a.ukuranKemeja||"-","Lengan Panjang"===a.jenis?"Panjang":"Pendek",r],statusKey:l,statusText:r}});l.autoTable({startY:J,margin:{left:m,right:m,top:54,bottom:70},head:[["NO","NAMA PESERTA","NAMA BORDIR","UKURAN","LENGAN","STATUS PEMBAYARAN"]],body:Y.map(a=>a.cells),theme:"plain",styles:{font:"helvetica",fontSize:9.5,cellPadding:{top:8,bottom:8,left:10,right:6},textColor:[71,85,105],lineColor:[226,232,240],lineWidth:{bottom:.6},valign:"middle"},headStyles:{fillColor:[11,37,69],textColor:[255,255,255],fontStyle:"bold",fontSize:8.6,cellPadding:{top:10,bottom:10,left:10,right:6},lineWidth:0},alternateRowStyles:{fillColor:[248,250,252]},columnStyles:{0:{cellWidth:32,halign:"center",textColor:[148,163,184],fontStyle:"bold",cellPadding:{top:8,bottom:8,left:4,right:4}},1:{cellWidth:138,fontStyle:"bold",textColor:[15,23,42],fontSize:10},2:{cellWidth:92},3:{cellWidth:55,halign:"center",font:"courier",fontStyle:"bold",textColor:[3,105,161]},4:{cellWidth:58,halign:"center",textColor:[100,116,139],cellPadding:{top:8,bottom:8,left:3,right:3}},5:{cellWidth:140,halign:"left"}},didParseCell:a=>{"body"===a.section&&5===a.column.index&&(a.cell.text=[])},didDrawCell:a=>{if("body"!==a.section)return;const e=Y[a.row.index];if(e){if(0===a.column.index){const t="lunas"===e.statusKey?[22,163,74]:"dp"===e.statusKey?[217,119,6]:[224,82,79];l.setFillColor(...t),l.rect(m,a.cell.y,2.6,a.cell.height,"F")}if(5===a.column.index){const t=q[e.statusKey],n="lunas"===e.statusKey;l.setFont("courier","bold"),l.setFontSize(8.6);const i=l.getTextWidth(e.statusText),s=n?15:0,o=Math.min(i+20+s,a.cell.width-8),r=16,d=a.cell.x+4,c=a.cell.y+(a.cell.height-r)/2;l.setFillColor(...t.bg),l.roundedRect(d,c,o,r,8,8,"F"),l.setTextColor(...t.fg),n?(l.setDrawColor(21,128,61),l.setLineWidth(.6),l.roundedRect(d,c,o,r,8,8,"S"),function(a,e,t,n,i){const[s,o,l]=_a(i);a.setDrawColor(s,o,l),a.setLineWidth(1.2),a.line(e-.5*n,t,e-.05*n,t+.45*n),a.line(e-.05*n,t+.45*n,e+.55*n,t-.45*n)}(l,d+13,c+r/2,5,"#16A34A"),l.text(e.statusText,d+22,c+r/2+3)):l.text(e.statusText,d+10,c+r/2+3)}}},didDrawPage:a=>{a.pageNumber>1&&(l.setFont("helvetica","bold"),l.setFontSize(9),l.setTextColor($,I,T),l.text("PT. LOKON PRIMA — Daftar Peserta Kemeja Kerja 2026",m,28),Na(l,m,36,u,1.6,b,h))}});const Q=78,V=26,X=155;let Z=l.lastAutoTable.finalY+V;Z+Q+X>c-40&&(l.addPage(),Z=56),l.setFillColor(v,w,E),l.roundedRect(m,Z,u,Q,12,12,"F"),Na(l,m+12,Z+5,u-24,2,h,b),l.setDrawColor(v,w,E),l.setLineWidth(.8),l.roundedRect(m,Z,u,Q,12,12,"S");const aa=42,ea=m+18,ta=Z+(Q-aa)/2;l.setFillColor(255,255,255),l.circle(ea+aa/2-6,ta+aa/2+4,9,"F"),l.circle(ea+aa/2+7,ta+aa/2-6,9,"F");const na=ea+aa+20;l.setFont("courier","bold"),l.setFontSize(8.8),l.setTextColor(224,253,246),l.text("TOTAL UANG TERKUMPUL",na,Z+26),l.setFont("helvetica","bold"),l.setFontSize(23),l.setTextColor(255,255,255),l.text(t(o),na,Z+55),l.setFont("helvetica","normal"),l.setFontSize(9),l.setTextColor(224,253,246),l.text(`per ${P}, ${M}`,m+u-16,Z+Q-14,{align:"right"});const ia=Z+Q+34;l.setFont("helvetica","bold"),l.setFontSize(12.5),l.setTextColor(v,w,E);const sa=`Total ${n.length} Peserta`;l.text(sa,m,ia);const oa=l.getTextWidth(sa);l.setFont("helvetica","normal"),l.setFontSize(10.5),l.setTextColor(B,D,F),l.text(`•  ${i} Lunas   •  ${s} DP Terbayar`,m+oa+14,ia);const la=ia+28;l.setFont("helvetica","bold"),l.setFontSize(11),l.setTextColor(L,C,S),l.text("WEBSITE DAFTAR BAJU LOKON PRIMA",m,la),l.setFont("helvetica","bold"),l.setFontSize(9.6),l.setTextColor(..._a("#EA580C")),l.text("Cek berkala status produksi kemejamu di link website ini, ya!",m,la+15);const ra="benyoriki.github.io/Kemeja";l.setFont("courier","bold"),l.setFontSize(14);const da=l.getTextWidth(ra),ca=26,ma=12,ua=12,pa=ma+ca+ua+da+18,ga=36,ba=la+24;l.setFillColor(230,247,244),l.roundedRect(m,ba,pa,ga,18,18,"F"),l.setDrawColor(13,148,136),l.setLineWidth(.9),l.roundedRect(m,ba,pa,ga,18,18,"S");const ha=m+ma+ca/2,ya=ba+ga/2;l.setFillColor(L,C,S),l.circle(ha,ya,ca/2,"F"),l.setDrawColor(255,255,255),l.setLineWidth(.9),l.line(ha-ca/2+2.5,ya,ha+ca/2-2.5,ya),l.ellipse(ha,ya,ca/2-6.5,ca/2,"S"),l.setFont("courier","bold"),l.setFontSize(14),l.setTextColor(v,w,E),l.text(ra,m+ma+ca+ua,ya+4.5),l.setFont("helvetica","bold"),l.setFontSize(9),l.setTextColor($,I,T),l.text("Otomatis Sistem Apache Spark, DBMS di kembangan oleh @benyoriki website Developer",m,ba+ga+22);const fa=l.internal.getNumberOfPages();for(let a=1;a<=fa;a++)l.setPage(a),l.setFont("helvetica","normal"),l.setFontSize(8.5),l.setTextColor(..._a(k)),l.text(`Halaman ${a} dari ${fa}`,d-m,c-24,{align:"right"});l.save(`daftar-peserta-kemeja-${(new Date).toISOString().slice(0,10)}.pdf`),e("Dokumen PDF daftar peserta berhasil diunduh — rapi, tajam & siap dibagikan.","success")}catch(a){console.error("Gagal membuat PDF daftar peserta:",a),e("Terjadi kesalahan saat membuat PDF.","error")}finally{T.disabled=!1,a?.classList.remove("fa-spin"),a?.classList.replace("fa-circle-notch","fa-file-pdf")}});const Ra=document.getElementById("adminResetChatBtn"),Oa=document.getElementById("resetChatOverlay"),Ha=document.getElementById("resetChatCancelBtn"),Ua=document.getElementById("resetChatConfirmBtn");function Ga(){Oa&&Oa.classList.remove("active")}function Ka(){if(!na||!v)return;const d=r.length,c=r.filter(a=>"belum_dp"===(a.pembayaran?.status||"belum_dp")).length,m=r.filter(a=>"dp"===a.pembayaran?.status).length,u=r.filter(a=>["dp","cicilan"].includes(a.pembayaran?.status)).length,p=r.filter(a=>"cicilan"===a.pembayaran?.status).length,g=r.filter(a=>"lunas"===a.pembayaran?.status).length,b=r.reduce((a,e)=>a+(e.pembayaran?.totalDibayar||0),0),h=r.reduce((a,e)=>a+(e.total||0),0);if(x&&s(x,d),_&&s(_,c),j&&s(j,u),N&&s(N,g),P&&(P.textContent=t(b)),M&&A){const a=h>0?Math.min(100,Math.round(b/h*100)):0;M.style.width=`${a}%`,A.textContent=h>0?`${a}% dari total ${t(h)} pesanan`:"Belum ada pesanan tercatat"}R&&(R.textContent=d),O&&(O.textContent=c),H&&(H.textContent=m),U&&(U.textContent=p),G&&(G.textContent=g);let y=r.slice();if("semua"!==sa&&(y=y.filter(a=>(a.pembayaran?.status||"belum_dp")===sa)),""!==oa.trim()){const a=oa.trim().toLowerCase();y=y.filter(e=>(e.nama||"").toLowerCase().includes(a)||(e.whatsapp||"").toLowerCase().includes(a)||(e.kodeUnik||"").toLowerCase().includes(a)||(e.departemen||"").toLowerCase().includes(a))}v.innerHTML="",w&&(w.style.display=0===y.length?"block":"none"),y.forEach(a=>{const e=a.pembayaran?.status||"belum_dp",s=o[e]||o.belum_dp,l=a.pembayaran?.cicilan||[],r=(l.filter(a=>a.dibayar).length,"cicilan"===a.pembayaran?.metode),d=l.find(a=>!a.dibayar),c="dp"===e?d?d.nominal||0:Math.max((a.total||0)-(a.pembayaran?.totalDibayar||0),0):0,m=document.createElement("div");var u;m.className="admin-row",m.innerHTML=`\n        <div class="admin-row-top">\n          <div class="admin-row-id">\n            <div class="admin-row-avatar">${u=a.nama,String(u||"?").trim().split(/\s+/).slice(0,2).map(a=>a[0]?.toUpperCase()||"").join("")}</div>\n            <div class="admin-row-head">\n              <strong>${i(a.nama||"-")}</strong>\n              <span>${i(a.departemen||"-")}</span>\n            </div>\n          </div>\n          <span class="admin-row-badge ${s.cls}"><i class="fa-solid ${s.icon}"></i> ${s.label}</span>\n        </div>\n        <div class="admin-row-meta">\n          <div class="admin-row-meta-group">\n            <span class="admin-code-chip"><i class="fa-solid fa-hashtag"></i>${i(a.kodeUnik||"-")}</span>\n            <span><i class="fa-solid fa-shirt"></i> ${i(a.jenis||"-")} • ${i(a.ukuranKemeja||"-")}</span>\n          </div>\n          <div class="admin-row-meta-group">\n            <span><i class="fa-solid fa-cubes"></i> ${a.jumlah||1} pcs</span>\n            <span><i class="fa-solid fa-wallet"></i> ${r?"2x Cicilan":"Tunai"}</span>\n            <span class="admin-row-total"><i class="fa-solid fa-tag"></i> ${t(a.total||0)}</span>\n          </div>\n        </div>\n        ${r?`\n          <div class="admin-row-progress">\n            <div class="admin-row-progress-bar"><div class="admin-row-progress-fill" style="width:${"lunas"===e?100:"belum_dp"===e?0:50}%"></div></div>\n            <span>${"belum_dp"===e?"Belum bayar sama sekali":"lunas"===e?"Lunas — 2/2 pembayaran selesai":"Pembayaran ke-1 (DP) selesai, menunggu ke-2"} • Terkumpul ${t(a.pembayaran?.totalDibayar||0)}</span>\n            ${"dp"===e?`<span class="admin-row-sisa"><i class="fa-solid fa-circle-exclamation"></i> Sisa pembayaran ke-2 yang perlu ditagih: <b>${t(c)}</b></span>`:""}\n          </div>`:""}\n        <div class="admin-row-actions">\n          <div class="admin-row-actions-primary">\n            ${"belum_dp"===e?r?`<button class="admin-action-btn" data-action="inputdp" data-id="${a.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Input Nominal DP (1/2)</button>`:`<button class="admin-action-btn" data-action="dp" data-id="${a.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai Lunas Terbayar</button>`:""}\n            ${r&&l.some(a=>!a.dibayar)&&"belum_dp"!==e?`<button class="admin-action-btn" data-action="cicilan" data-id="${a.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2) — ${t(c)}</button>`:""}\n            ${"lunas"!==e?`<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${a.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>`:""}\n            <button class="admin-action-btn admin-action-ubahstatus" data-action="ubahstatus" data-id="${a.id}" title="Perbaiki status kalau salah pencet — status bisa diubah lagi kapan saja"><i class="fa-solid fa-rotate-left"></i> Ubah Status</button>\n          </div>\n          <div class="admin-row-actions-icons">\n            ${a.whatsapp?`<a class="admin-icon-action wa" title="Chat WhatsApp" href="https://wa.me/${encodeURIComponent(n(a.whatsapp))}?text=${encodeURIComponent("Halo "+a.nama+", kode unik pendaftaran kemeja Anda: "+a.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>`:""}\n            <button class="admin-icon-action edit" title="Edit data peserta" data-action="edit" data-id="${a.id}"><i class="fa-solid fa-pen"></i></button>\n            <button class="admin-icon-action hapus" title="Hapus peserta" data-action="hapus" data-id="${a.id}"><i class="fa-solid fa-trash"></i></button>\n          </div>\n        </div>\n      `,v.appendChild(m)}),v.querySelectorAll("[data-action]").forEach(n=>{const s=n.dataset.action,d=n.dataset.id;if("edit"===s)n.addEventListener("click",()=>function(a){const t=r.find(e=>e.id===a);if(!t)return void e("Data peserta tidak ditemukan (mungkin baru saja dihapus/berubah).","error");ae=a,qa.reset(),Ya.textContent="",document.getElementById("apKodeUnik").value=t.kodeUnik||"",document.getElementById("apNama").value=t.nama||"",document.getElementById("apNamaBordir").value=t.namaBordir||"",document.getElementById("apWhatsapp").value=t.whatsapp||"",t.departemen&&(document.getElementById("apDepartemen").value=t.departemen);t.gender&&(document.getElementById("apGender").value=t.gender);document.getElementById("apUkuran").value=t.ukuranKemeja||"",Va.value=t.jumlah||1,document.getElementById("apCatatan").value=t.catatan&&"-"!==t.catatan?t.catatan:"";const n="Lengan Panjang"===t.jenis?"panjang":"pendek",i=document.querySelector(`input[name="apJenis"][value="${n}"]`);i&&(i.checked=!0);const s="cicilan"===t.pembayaran?.metode?"cicilan":"tunai",o=document.querySelector(`input[name="apMetode"][value="${s}"]`);o&&(o.checked=!0);ne(),za.classList.add("active")}(d));else if("hapus"===s){const t=r.find(a=>a.id===d);n.addEventListener("click",()=>async function(t,n,s){if(!await da({title:"Hapus Data Peserta Ini?",messageHtml:`<p>Anda akan <b>menghapus permanen</b> pendaftaran atas nama <b>${i(n)}</b> (${i(s||"-")}). Seluruh data pembayaran &amp; profil catur terkait ikut terhapus. Tindakan ini <b>tidak bisa dibatalkan</b>.</p>`,confirmLabel:"Ya, Hapus Permanen",danger:!0}))return;const o=await a(1e4);if(!o)return void e("Gagal hapus: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.","error");try{if(await o.deleteDoc(o.doc(o.db,o.FIRESTORE_COLLECTION,t)),s)try{await o.deleteDoc(o.doc(o.db,"chess_players",String(s).toUpperCase()))}catch(a){console.warn("Gagal menghapus profil catur terkait (diabaikan, tidak fatal):",a.code,a.message)}e(`Peserta "${n}" berhasil dihapus.`,"success"),await ba("hapus","Data peserta dihapus permanen dari dasbor.",`${n} (${s||"-"})`)}catch(a){let t;console.warn("Gagal menghapus peserta:",a.code,a.message),t="permission-denied"===a.code?'Gagal hapus: akses Firestore ditolak. Pastikan Firestore Rules mengizinkan "allow delete: if true" pada koleksi pendaftaran, lalu Publish.':`Gagal hapus (${a.code||"error tidak diketahui"}).`,e(t,"error")}}(d,t?.nama||"peserta ini",t?.kodeUnik))}else"ubahstatus"===s?n.addEventListener("click",()=>function(n){const s=r.find(a=>a.id===n);if(!s)return;const d="cicilan"===s.pembayaran?.metode,c=s.pembayaran?.status||"belum_dp",m=d?[["belum_dp","Belum Bayar Sama Sekali"],["dp","DP Terbayar (1/2)"],["lunas","Lunas (2/2)"]]:[["belum_dp","Belum Bayar"],["lunas","Lunas"]];da({title:"Ubah Status Pembayaran Secara Manual",messageHtml:`\n        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${i(s.nama||"-")} (${i(s.kodeUnik||"-")})</span></div>\n        <div class="agc-diff-row"><span class="agc-diff-label">Status saat ini</span><span>${i(o[c]?.label||"-")}</span></div>\n        <p style="margin:10px 0 4px;">Pilih status pembayaran yang benar. Gunakan ini untuk memperbaiki kalau sebelumnya salah pencet tombol status (mis. tidak sengaja ke "Lunas").</p>\n        <select class="agc-status-select" id="agcStatusSelect">\n          ${m.map(([a,e])=>`<option value="${a}" ${a===c?"selected":""}>${e}</option>`).join("")}\n        </select>\n      `,confirmLabel:"Ya, Terapkan Status Ini"}).then(i=>{if(!i)return;const s=document.getElementById("agcStatusSelect"),d=s?s.value:c;!async function(n,i){const s=r.find(a=>a.id===n);if(!s)return;const d=o[s.pembayaran?.status||"belum_dp"]?.label||"-",c=JSON.parse(JSON.stringify(s.pembayaran||{})),m=c.cicilan||[];if("belum_dp"===i)c.status="belum_dp",c.dpDibayar=!1,c.totalDibayar=0,m.forEach(a=>{a.dibayar=!1,delete a.tanggalBayar});else if("dp"===i){c.status="dp",c.dpDibayar=!0,m.forEach(a=>{a.dibayar=!1,delete a.tanggalBayar});const a=l(s);c.dpMinimal=a,c.totalDibayar=a}else"lunas"===i&&(c.status="lunas",c.dpDibayar=!0,m.forEach(a=>{a.dibayar=!0,a.tanggalBayar||(a.tanggalBayar=(new Date).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"}))}),c.totalDibayar=s.total);c.cicilan=m;const u=await a(8e3);if(!u)return void e("Firebase tidak aktif, tidak bisa memperbarui status.","error");try{await u.updateDoc(u.doc(u.db,u.FIRESTORE_COLLECTION,n),{pembayaran:c,adminEditedAt:u.serverTimestamp?u.serverTimestamp():new Date}),e("Status pembayaran berhasil diubah.","success"),await ba("status",`Status diubah manual dari "${d}" menjadi "${o[i]?.label}". Total dibayar: ${t(c.totalDibayar||0)}.`,`${s.nama||"-"} (${s.kodeUnik||"-"})`)}catch(a){console.warn("Gagal mengubah status manual:",a.code,a.message),e(`Gagal mengubah status (${a.code||"error"}). Coba lagi.`,"error")}}(n,d)})}(d)):"inputdp"===s?n.addEventListener("click",()=>async function(n){const s=r.find(a=>a.id===n);if(!s)return;const d=s.total||0,c=l(s),m=da({title:"Input Nominal DP Pertama",messageHtml:`\n        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${i(s.nama||"-")} (${i(s.kodeUnik||"-")})</span></div>\n        <div class="agc-diff-row"><span class="agc-diff-label">Total Pesanan</span><span>${t(d)}</span></div>\n        <div class="agc-diff-row"><span class="agc-diff-label">Saran DP (50% + admin)</span><span>${t(c)}</span></div>\n        <div class="agc-dp-input-wrap">\n          <label for="agcDpNominalInput">Nominal DP yang benar-benar dibayar peserta</label>\n          <input type="number" id="agcDpNominalInput" class="agc-dp-input" inputmode="numeric" min="1" max="${d}" step="1000" value="${c}">\n          <small class="agc-dp-hint" id="agcDpNominalHint"></small>\n        </div>\n      `,confirmLabel:"Simpan Nominal DP"}),u=document.getElementById("agcDpNominalInput"),p=document.getElementById("agcDpNominalHint"),g=()=>{let a=parseInt(u?.value,10);(isNaN(a)||a<0)&&(a=0);const e=Math.max(d-a,0);p&&(p.innerHTML=a>=d?"Nominal ini menutup seluruh total pesanan — status langsung menjadi <b>Lunas</b>, tanpa sisa cicilan ke-2.":`Sisa pelunasan (cicilan ke-2) otomatis: <b>${t(e)}</b>`)};u?.addEventListener("input",g),g(),u?.focus(),u?.select();if(!await m)return;let b=parseInt(u?.value,10);if(isNaN(b)||b<=0)return void e("Nominal DP tidak valid, perubahan dibatalkan.","error");b>d&&(b=d);const h=o[s.pembayaran?.status||"belum_dp"]?.label||"-",y=JSON.parse(JSON.stringify(s.pembayaran||{})),f=Math.max(d-b,0);if(y.dpDibayar=!0,y.dpMinimal=b,y.totalDibayar=b,f>0)y.cicilan=[{ke:1,nominal:f,dibayar:!1,tanggalBayar:null}],y.status="dp";else{const a=(new Date).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});y.cicilan=(y.cicilan||[]).map(e=>({...e,dibayar:!0,tanggalBayar:e.tanggalBayar||a})),y.status="lunas",y.totalDibayar=d}const k=o[y.status]?.label||"-",v=await a(8e3);if(!v)return void e("Firebase tidak aktif, tidak bisa memperbarui status.","error");try{await v.updateDoc(v.doc(v.db,v.FIRESTORE_COLLECTION,n),{pembayaran:y,adminEditedAt:v.serverTimestamp?v.serverTimestamp():new Date}),e(`DP tersimpan: ${t(b)}${f>0?`, sisa pelunasan ${t(f)}`:" (langsung Lunas)"}.`,"success"),await ba("status",`DP diinput manual sebesar ${t(b)} dari total ${t(d)} (status "${h}" → "${k}", sisa pelunasan ${t(f)}).`,`${s.nama||"-"} (${s.kodeUnik||"-"})`)}catch(a){console.warn("Gagal menyimpan nominal DP manual:",a.code,a.message),e(`Gagal menyimpan nominal DP (${a.code||"error"}). Coba lagi.`,"error")}}(d)):n.addEventListener("click",()=>async function(n,s){const d=r.find(a=>a.id===n);if(!d)return;const c=JSON.parse(JSON.stringify(d.pembayaran||{})),m=o[c.status||"belum_dp"]?.label||"-";if("dp"===s){c.dpDibayar=!0;const a=l(d);c.dpMinimal=a,c.totalDibayar=a,c.status="cicilan"===c.metode?"dp":"lunas","lunas"===c.status&&(c.totalDibayar=d.total)}else if("cicilan"===s){const a=(c.cicilan||[]).find(a=>!a.dibayar);a&&(a.dibayar=!0,a.tanggalBayar=(new Date).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"}),c.totalDibayar=(c.totalDibayar||0)+(a.nominal||0));const e=(c.cicilan||[]).every(a=>a.dibayar);c.status=e?"lunas":"cicilan",e&&(c.totalDibayar=d.total)}else"lunas"===s&&(c.status="lunas",c.totalDibayar=d.total,(c.cicilan||[]).forEach(a=>{a.dibayar=!0}));const u=o[c.status||"belum_dp"]?.label||"-";if(!await da({title:"Ubah Status Pembayaran?",messageHtml:`\n        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${i(d.nama||"-")} (${i(d.kodeUnik||"-")})</span></div>\n        <div class="agc-diff-row"><span class="agc-diff-label">Status</span><span>${i(m)} <span class="agc-arrow">→</span> ${i(u)}</span></div>\n        <div class="agc-diff-row"><span class="agc-diff-label">Total Dibayar</span><span>${t(c.totalDibayar||0)}</span></div>\n        <p style="margin-top:12px;">Pastikan sudah benar sebelum disimpan. Status ini masih bisa diubah lagi nanti lewat tombol "Ubah Status" kalau ternyata salah pencet.</p>\n      `,confirmLabel:"Ya, Simpan Perubahan"}))return;const p=await a(8e3);if(!p)return void e("Firebase tidak aktif, tidak bisa memperbarui status.","error");try{await p.updateDoc(p.doc(p.db,p.FIRESTORE_COLLECTION,n),{pembayaran:c,adminEditedAt:p.serverTimestamp?p.serverTimestamp():new Date}),e("Status pembayaran berhasil diperbarui.","success"),await ba("status",`Status diubah dari "${m}" menjadi "${u}". Total dibayar: ${t(c.totalDibayar||0)}.`,`${d.nama||"-"} (${d.kodeUnik||"-"})`)}catch(a){console.warn("Gagal memperbarui status pembayaran:",a.code,a.message),e(`Gagal memperbarui status (${a.code||"error"}). Coba lagi.`,"error")}}(d,s))})}Ra?.addEventListener("click",function(){Oa&&Oa.classList.add("active")}),Ha?.addEventListener("click",Ga),Oa?.addEventListener("click",a=>{a.target===Oa&&Ga()}),Ua?.addEventListener("click",async()=>{const a=window.__lokonFirebase;if(!a)return void e("Tidak bisa menghapus chat: Firebase belum tersambung.","error");Ua.disabled=!0;const t=Ua.innerHTML;Ua.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Menghapus...';try{const t=(await a.getDocs(a.collection(a.db,a.CHAT_COLLECTION))).docs;if(!t.length)return e("Grup chat memang sudah kosong.","success"),void Ga();if("function"==typeof a.writeBatch){const e=400;for(let n=0;n<t.length;n+=e){const i=a.writeBatch(a.db);t.slice(n,n+e).forEach(e=>{const t=e.ref||a.doc(a.db,a.CHAT_COLLECTION,e.id);i.delete(t)}),await i.commit()}}else for(const e of t){const t=e.ref||a.doc(a.db,a.CHAT_COLLECTION,e.id);await a.deleteDoc(t)}e(`Berhasil menghapus ${t.length} pesan. Grup chat sudah bersih.`,"success"),await ba("chat",`Menghapus seluruh ${t.length} pesan di grup chat peserta (reset total).`,"Grup Chat Peserta"),Ga()}catch(a){console.warn("Gagal menghapus chat grup:",a),e("Gagal menghapus chat grup. Cek koneksi & Firestore Rules (allow delete: if true).","error")}finally{Ua.disabled=!1,Ua.innerHTML=t}});const za=document.getElementById("addPesertaOverlay"),Wa=document.getElementById("addPesertaClose"),Ja=document.getElementById("addPesertaCancelBtn"),qa=document.getElementById("addPesertaForm"),Ya=document.getElementById("addPesertaError"),Qa=document.getElementById("addPesertaSubmitBtn"),Va=document.getElementById("apJumlah"),Xa=document.querySelectorAll('input[name="apJenis"]'),Za=document.getElementById("apTotalHarga");let ae=null;const ee=document.querySelectorAll('input[name="apMetode"]'),te=document.getElementById("apMetodeNote");function ne(){const a=document.querySelector('input[name="apJenis"]:checked'),e=a?parseInt(a.dataset.harga,10):0,n=parseInt(Va?.value,10)||0,i=e*n,s=document.querySelector('input[name="apMetode"]:checked')?.value||"tunai",o="cicilan"===s,l=o?5e3:0,r=i+l;return Za&&(Za.textContent=t(r)),te&&(te.innerHTML=o?`Termasuk Subtotal Kemeja ${t(i)} + Biaya Admin Cicilan <b>${t(l)}</b>`:`Subtotal Kemeja ${t(i)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`),{harga:e,jumlah:n,subtotal:i,metode:s,biayaAdmin:l,total:r}}function ie(){za.classList.remove("active"),ae=null}Xa.forEach(a=>a.addEventListener("change",ne)),Va?.addEventListener("input",ne),ee.forEach(a=>a.addEventListener("change",ne)),Wa?.addEventListener("click",ie),Ja?.addEventListener("click",ie),za?.addEventListener("click",a=>{a.target===za&&ie()}),qa?.addEventListener("submit",async s=>{if(s.preventDefault(),Ya.textContent="",!ae)return void(Ya.textContent="Tidak ada peserta yang sedang diedit. Tutup dan coba lagi dari tombol Edit.");const l=document.getElementById("apNama").value.trim(),d=document.getElementById("apNamaBordir").value.trim(),c=document.getElementById("apWhatsapp").value.trim(),m=document.getElementById("apDepartemen").value,u=document.getElementById("apGender").value,p=document.getElementById("apUkuran").value,g=parseInt(Va.value,10)||1,b=document.querySelector('input[name="apJenis"]:checked'),h="panjang"===b?.value?"Lengan Panjang":"Lengan Pendek",y=document.getElementById("apCatatan").value.trim(),{harga:f,subtotal:k,metode:v,biayaAdmin:w,total:E}=ne();if(!l||!p)return void(Ya.textContent="Nama dan Ukuran wajib diisi.");const L=r.find(a=>a.id===ae)||{},C="cicilan"===L.pembayaran?.metode?"cicilan":"tunai",S=C!==v,$=a=>"cicilan"===a?"2x Cicilan":"Tunai / Lunas";let I=null;S&&(I=function(a,e,t){const n="cicilan"===e,i=n&&t||0,s=n?Math.round(.5*a):a,o=s+i,l=[];if(n){const e=a-s;l.push({ke:1,nominal:e,dibayar:!1,tanggalBayar:null})}return{metode:e,biayaAdmin:i,dpMinimal:o,dpDibayar:!1,cicilan:l,totalDibayar:0,status:"belum_dp"}}(k,v,w));const T={nama:l,namaBordir:d,whatsapp:c?n(c):"",departemen:m,gender:u,ukuranKemeja:p,jenis:h,jumlah:g,harga:f,subtotal:k,biayaAdmin:w,total:E,catatan:y,pembayaranBaru:I},B=[["Nama",L.nama||"-",T.nama||"-"],["Nama Bordir",L.namaBordir||"-",T.namaBordir||"-"],["WhatsApp",L.whatsapp||"-",T.whatsapp||"-"],["Departemen",L.departemen||"-",T.departemen||"-"],["Ukuran",L.ukuranKemeja||"-",T.ukuranKemeja||"-"],["Jenis Kemeja",L.jenis||"-",T.jenis||"-"],["Jumlah",String(L.jumlah||0),String(T.jumlah||0)],["Metode Bayar",$(C),$(v)],["Biaya Admin",t(L.biayaAdmin||L.pembayaran?.biayaAdmin||0),t(T.biayaAdmin||0)],["Total",t(L.total||0),t(T.total||0)],["Catatan",L.catatan||"-",T.catatan||"-"]].filter(([,a,e])=>String(a)!==String(e));if(0===B.length)return void(Ya.textContent="Tidak ada perubahan yang perlu disimpan.");const D=B.map(([a,e,t])=>`<div class="agc-diff-row"><span class="agc-diff-label">${i(a)}</span><span>${i(e)} <span class="agc-arrow">→</span> ${i(t)}</span></div>`).join("");let F="";if(S){const a=o[L.pembayaran?.status||"belum_dp"]?.label||"Menunggu DP";F="belum_dp"!==(L.pembayaran?.status||"belum_dp")?`<p style="margin-top:12px;color:#b45309;"><i class="fa-solid fa-triangle-exclamation"></i> Peserta ini sebelumnya berstatus <b>"${i(a)}"</b> dengan total terbayar <b>${t(L.pembayaran?.totalDibayar||0)}</b>. Mengubah Metode Pembayaran akan <b>mereset status ke "Menunggu DP"</b> mengikuti metode baru (${i($(v))}). Pastikan sudah dicek ulang ke peserta sebelum disimpan.</p>`:`<p style="margin-top:12px;">Metode Pembayaran akan disesuaikan menjadi <b>${i($(v))}</b>, dan status pembayaran akan diatur ke "Menunggu DP" sesuai metode baru.</p>`}if(!await da({title:"Simpan Perubahan Data Peserta?",messageHtml:`<p style="margin-bottom:10px;">Data <b>${i(L.nama||l)}</b> (${i(L.kodeUnik||"-")}) akan diubah sebagai berikut:</p>${D}${F}`,confirmLabel:"Ya, Simpan Perubahan",danger:S&&"belum_dp"!==(L.pembayaran?.status||"belum_dp")}))return;Qa.disabled=!0,Qa.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';const x=await async function(t,n){const i=await a(1e4);if(!i)return e("Gagal simpan: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.","error"),{ok:!1};const s={nama:n.nama,namaBordir:n.namaBordir||n.nama,whatsapp:n.whatsapp||"",departemen:n.departemen,gender:n.gender,ukuranKemeja:n.ukuranKemeja,jenis:n.jenis,jumlah:n.jumlah,harga:n.harga,subtotal:n.subtotal,biayaAdmin:n.biayaAdmin,total:n.total,catatan:n.catatan||"-",adminEditedAt:i.serverTimestamp?i.serverTimestamp():new Date};n.pembayaranBaru&&(s.pembayaran=n.pembayaranBaru);try{return await i.updateDoc(i.doc(i.db,i.FIRESTORE_COLLECTION,t),s),e(`Data "${n.nama}" berhasil diperbarui.`,"success"),{ok:!0}}catch(a){let t;return console.warn("Gagal memperbarui peserta:",a.code,a.message),t="permission-denied"===a.code?"Gagal simpan: akses Firestore ditolak. Cek Firestore Rules di Firebase Console.":`Gagal simpan (${a.code||"error tidak diketahui"}).`,e(t,"error"),{ok:!1}}}(ae,T);if(Qa.disabled=!1,Qa.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan',x.ok){const a=B.map(([a,e,t])=>`${a}: "${e}" → "${t}"`).join("; ");await ba("edit",a,`${L.nama||l} (${L.kodeUnik||"-"})`),ie()}else Ya.textContent="Gagal menyimpan — lihat notifikasi di atas untuk detail."});const se={1:"Pendaftaran",2:"Target Terkumpul",3:"Produksi Massal",4:"Distribusi"},oe=document.getElementById("estimasiBtn"),le=document.getElementById("estimasiOverlay"),re=document.getElementById("estimasiClose"),de=document.getElementById("estimasiStageList"),ce=document.getElementById("estCurrentStage"),me=document.getElementById("estCurrentStageSave"),ue=document.getElementById("estimasiError");let pe=null,ge=null;function be(a){return a.doc(a.db,"program_status","estimasi")}function he(){if(!de)return;const a=pe||{},e=Math.min(4,Math.max(1,parseInt(a.currentStage,10)||1));ce&&(ce.value=String(e)),de.innerHTML="",[1,2,3,4].forEach(t=>{const n=a[`stage${t}`]||{},s=document.createElement("div");s.className="estimasi-stage-card"+(t===e?" is-current-stage":""),s.innerHTML=`\n        <div class="estimasi-stage-card-head">\n          <h4><span class="estimasi-stage-num">${t}</span> ${i(se[t])}</h4>\n          <span class="estimasi-stage-tag">${t===e?"Tahap Aktif":t<e?"Sudah Selesai":"Belum Dimulai"}</span>\n        </div>\n        <div class="estimasi-stage-grid">\n          <div class="form-group">\n            <label for="estDate${t}">Estimasi Tanggal &amp; Jam Selesai</label>\n            <input type="datetime-local" id="estDate${t}" value="${function(a){if(!a)return"";const e=new Date(a);if(isNaN(e.getTime()))return"";const t=a=>String(a).padStart(2,"0");return`${e.getFullYear()}-${t(e.getMonth()+1)}-${t(e.getDate())}T${t(e.getHours())}:${t(e.getMinutes())}`}(n.estimasiISO)}">\n          </div>\n          <div class="form-group">\n            <label for="estNote${t}">Keterangan untuk Peserta</label>\n            <textarea id="estNote${t}" rows="2" placeholder="Contoh: Menunggu 10 peserta lagi sebelum produksi dimulai.">${i(n.keterangan||"")}</textarea>\n          </div>\n        </div>\n        <div class="estimasi-stage-actions">\n          <button class="btn btn-primary ripple" type="button" data-save-stage="${t}"><i class="fa-solid fa-floppy-disk"></i> Simpan Tahap ${t}</button>\n        </div>\n      `,de.appendChild(s)})}oe?.addEventListener("click",()=>{le?.classList.add("active"),ue&&(ue.textContent=""),async function(){const e=await a(8e3);if(e){if(!ge)try{ge=e.onSnapshot(be(e),a=>{pe=a.exists()?a.data():null,he()},a=>{console.warn("Gagal memantau program_status/estimasi:",a.code,a.message),ue&&(ue.textContent='Gagal memuat data — cek Firestore Rules koleksi "program_status".')})}catch(a){console.warn("Gagal memasang listener program_status/estimasi:",a)}}else ue&&(ue.textContent="Tidak bisa memuat data: Firebase belum tersambung.")}()}),re?.addEventListener("click",()=>le?.classList.remove("active")),le?.addEventListener("click",a=>{a.target===le&&le.classList.remove("active")}),de?.addEventListener("click",async a=>{const t=a.target.closest("[data-save-stage]");if(!t)return;const n=parseInt(t.dataset.saveStage,10),s=document.getElementById(`estDate${n}`),o=document.getElementById(`estNote${n}`),l=function(a){if(!a)return null;const e=new Date(a);return isNaN(e.getTime())?null:e.toISOString()}(s?.value||""),r=(o?.value||"").trim();if(!await da({title:`Simpan Estimasi Tahap ${n} — ${se[n]}?`,messageHtml:`<p>Estimasi tanggal/jam &amp; keterangan untuk tahap <b>${i(se[n])}</b> akan diperbarui dan langsung tampil ke semua pengunjung situs. Pastikan tanggalnya sudah benar.</p>`,confirmLabel:"Ya, Simpan"}))return;const d=window.__lokonFirebase;if(!d||!d.setDoc)return void e("Gagal menyimpan: Firebase belum tersambung.","error");t.disabled=!0;const c=t.innerHTML;t.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';try{await d.setDoc(be(d),{[`stage${n}`]:{estimasiISO:l,keterangan:r},updatedAt:d.serverTimestamp?d.serverTimestamp():(new Date).toISOString()},{merge:!0}),await ba("edit",`Estimasi: ${l?new Date(l).toLocaleString("id-ID"):"kosong"} • Keterangan: ${r||"-"}`,`Tahap ${n} — ${se[n]}`),e(`Estimasi tahap "${se[n]}" berhasil disimpan.`,"success")}catch(a){console.warn("Gagal menyimpan estimasi tahap:",a.code,a.message),e('Gagal menyimpan — cek Firestore Rules koleksi "program_status".',"error")}finally{t.disabled=!1,t.innerHTML=c}}),me?.addEventListener("click",async()=>{const a=parseInt(ce?.value,10)||1,t=Math.min(4,Math.max(1,parseInt(pe?.currentStage,10)||1));if(a===t)return void e("Tahap aktif tidak berubah.","error");if(!await da({title:"Update Tahap Aktif Program?",messageHtml:`<p>Tahap aktif akan diubah dari <b>"${i(se[t])}"</b> menjadi <b>"${i(se[a])}"</b>. Semua pengunjung situs akan langsung melihat perubahan ini di bagian "Progress Iuran Bersama".</p>`,confirmLabel:"Ya, Update Tahap",danger:a<t}))return;const n=window.__lokonFirebase;if(!n||!n.setDoc)return void e("Gagal menyimpan: Firebase belum tersambung.","error");me.disabled=!0;const s=me.innerHTML;me.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';try{const i={currentStage:a,updatedAt:n.serverTimestamp?n.serverTimestamp():(new Date).toISOString()};if(a>t){const e=(new Date).toISOString();for(let n=t;n<a;n++){const a=pe?.[`stage${n}`]||{};i[`stage${n}`]={...a,selesaiPadaISO:e}}}await n.setDoc(be(n),i,{merge:!0}),await ba("edit",`Tahap aktif: "${se[t]}" → "${se[a]}"`,"Progres Program"),e("Tahap aktif berhasil diperbarui.","success")}catch(a){console.warn("Gagal update tahap aktif:",a.code,a.message),e('Gagal menyimpan — cek Firestore Rules koleksi "program_status".',"error")}finally{me.disabled=!1,me.innerHTML=s}})});
+/* =========================================================
+   LOKON PRIMA — admin-script.js
+   Dasbor Admin, HALAMAN TERPISAH dari situs publik (index.html).
+   Terhubung ke Firestore & Firebase Auth yang SAMA PERSIS dengan
+   situs publik — jadi datanya real-time sinkron, hanya "pintu
+   masuknya" saja yang beda (tidak perlu buka index.html dulu).
+
+   File ini diturunkan dari script.js versi situs publik, bagian
+   "PANEL ADMIN" (khusus fungsi admin, tanpa kode hero/galeri/
+   formulir publik yang tidak dipakai di halaman ini).
+========================================================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* ============ FIREBASE READY HELPER ============ */
+  function waitForFirebase(timeoutMs = 20000){
+    if (window.__lokonFirebase) return Promise.resolve(window.__lokonFirebase);
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        window.removeEventListener('lokon-firebase-ready', onReady);
+        clearTimeout(timer);
+        resolve(window.__lokonFirebase);
+      };
+      const onReady = () => finish();
+      window.addEventListener('lokon-firebase-ready', onReady);
+      const timer = setTimeout(finish, timeoutMs);
+    });
+  }
+
+  /* ============ TOAST NOTIFICATION ============ */
+  function showToast(message, type = 'success'){
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+    document.getElementById('toastContainer').appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  /* ============ RIPPLE BUTTON EFFECT (disalin dari particles.js,
+     supaya halaman admin tidak perlu memuat seluruh file animasi
+     hero/confetti yang tidak dipakai di sini) ============ */
+  document.querySelectorAll('.ripple').forEach(btn => {
+    btn.addEventListener('click', function(e){
+      const circle = document.createElement('span');
+      const diameter = Math.max(this.clientWidth, this.clientHeight);
+      const radius = diameter / 2;
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${e.clientX - this.getBoundingClientRect().left - radius}px`;
+      circle.style.top = `${e.clientY - this.getBoundingClientRect().top - radius}px`;
+      circle.classList.add('ripple-circle');
+      const oldRipple = this.querySelector('.ripple-circle');
+      if (oldRipple) oldRipple.remove();
+      this.appendChild(circle);
+      setTimeout(() => circle.remove(), 650);
+    });
+  });
+
+  /* ============ HELPER UMUM (sama seperti situs publik) ============ */
+  const ADMIN_FEE_CICILAN = 5000;
+
+  function formatRupiah(angka){
+    return 'Rp' + angka.toLocaleString('id-ID');
+  }
+
+  function normalizeWhatsapp(raw){
+    let d = String(raw || '').replace(/[^0-9]/g, '');
+    if (d.startsWith('0')) d = '62' + d.slice(1);
+    if (!d.startsWith('62') && d.length > 0) d = '62' + d;
+    return d;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function initialsOf(nama){
+    return String(nama || '?').trim().split(/\s+/).slice(0,2).map(w => w[0]?.toUpperCase() || '').join('');
+  }
+
+  function animateStatNumber(el, target){
+    const duration = 900;
+    const start = performance.now();
+    const from = parseInt(el.textContent, 10) || 0;
+    function step(now){
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(from + (target - from) * eased);
+      if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(step);
+  }
+
+  const STATUS_LABEL = {
+    belum_dp: { label:'Menunggu DP', cls:'badge-warn', icon:'fa-hourglass-half' },
+    dp:       { label:'DP Terbayar', cls:'badge-info', icon:'fa-hand-holding-dollar' },
+    cicilan:  { label:'Cicilan 2x Berjalan', cls:'badge-info', icon:'fa-coins' },
+    lunas:    { label:'Lunas', cls:'badge-success', icon:'fa-crown' }
+  };
+
+  function hitungDPSeharusnya(p){
+    const subtotal = (typeof p.subtotal === 'number' && !isNaN(p.subtotal))
+      ? p.subtotal
+      : (p.harga || 0) * (p.jumlah || 1);
+    const isCicilan = p.pembayaran?.metode === 'cicilan';
+    const fee = isCicilan ? (p.pembayaran?.biayaAdmin || ADMIN_FEE_CICILAN) : 0;
+    const dpProduk = isCicilan ? Math.round(subtotal * 0.5) : subtotal;
+    return dpProduk + fee;
+  }
+
+  function buildPembayaranAwal(subtotal, metodeBayar, biayaAdmin){
+    const isCicilan = metodeBayar === 'cicilan';
+    const fee = isCicilan ? (biayaAdmin || 0) : 0;
+    const dpProduk = isCicilan ? Math.round(subtotal * 0.5) : subtotal;
+    const dpMinimal = dpProduk + fee;
+    const rencanaCicilan = [];
+    if (isCicilan){
+      const sisaSetelahDp = subtotal - dpProduk;
+      rencanaCicilan.push({ ke: 1, nominal: sisaSetelahDp, dibayar: false, tanggalBayar: null });
+    }
+    return {
+      metode: metodeBayar,
+      biayaAdmin: fee,
+      dpMinimal,
+      dpDibayar: false,
+      cicilan: rencanaCicilan,
+      totalDibayar: 0,
+      status: 'belum_dp'
+    };
+  }
+
+  /* =========================================================
+     LISTENER REAL-TIME DATA PESERTA (Firestore) — versi dasbor
+     admin: hanya perlu mengisi pesertaData & memanggil ulang
+     renderAdminList(), tidak perlu render kartu publik/progress
+     bar/dsb seperti di situs utama.
+  ========================================================= */
+  let pesertaData = [];
+  let pesertaListenerStarted = false;
+  const adminOfflineNotice = document.getElementById('adminEmpty');
+
+  function showAdminOffline(reason){
+    const list = document.getElementById('adminList');
+    if (list) list.innerHTML = `<p class="adash-empty" style="grid-column:1/-1;"><i class="fa-solid fa-triangle-exclamation"></i> ${reason || 'Gagal memuat data.'}</p>`;
+  }
+
+  function startPesertaListener(){
+    if (pesertaListenerStarted) return;
+    const fb = window.__lokonFirebase;
+    if (!fb){
+      showAdminOffline('Firebase belum tersambung. Cek koneksi internet lalu tekan tombol refresh di pojok kanan atas.');
+      return;
+    }
+    pesertaListenerStarted = true;
+    try {
+      const q = fb.query(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), fb.orderBy('timestamp', 'desc'));
+      fb.onSnapshot(q, (snap) => {
+        pesertaData = snap.docs.map(d => {
+          const docData = d.data();
+          const ms = docData.timestamp?.toMillis ? docData.timestamp.toMillis() : null;
+          const editedMs = docData.adminEditedAt?.toMillis ? docData.adminEditedAt.toMillis() : null;
+          return { id: d.id, ...docData, _ms: ms, _editedMs: editedMs };
+        });
+        renderAdminList();
+      }, (err) => {
+        console.warn('Firestore listener error:', err.code, err.message);
+        let reason;
+        if (err.code === 'permission-denied'){
+          reason = '<i class="fa-solid fa-lock"></i> Akses Firestore ditolak. Cek Firestore Rules di Firebase Console.';
+        } else if (err.code === 'unavailable'){
+          reason = '<i class="fa-solid fa-wifi"></i> Tidak bisa terhubung ke Firestore (jaringan bermasalah).';
+        } else {
+          reason = `<i class="fa-solid fa-triangle-exclamation"></i> Gagal memuat data peserta (${err.code || 'error'}).`;
+        }
+        showAdminOffline(reason);
+      });
+    } catch (err){
+      console.warn('Gagal memulai listener peserta:', err);
+      showAdminOffline();
+    }
+  }
+
+  /* =========================================================
+     19. PANEL ADMIN — UBAH STATUS PEMBAYARAN
+     Akses panel admin TERSEMBUNYI: ketuk logo "LOKON PRIMA" di
+     navbar sebanyak 5x dalam waktu singkat untuk membukanya.
+     Login memakai username + kata sandi + captcha sederhana
+     (soal penjumlahan acak) sebagai pengaman tambahan dari bot.
+
+     Catatan keamanan: validasi ini hanya diperiksa di sisi
+     browser (client-side), sehingga bukan pengaman yang kuat.
+     Untuk keamanan penuh di produksi nyata, gunakan Firebase
+     Authentication + Firestore Security Rules agar hanya admin
+     yang benar-benar bisa menulis perubahan data pembayaran.
+  ========================================================= */
+  const adminOverlay = document.getElementById('adminOverlay');
+  const adminLogin = document.getElementById('adminLogin');
+  const adminPanel = document.getElementById('adminPanel');
+  const adminUsername = document.getElementById('adminUsername');
+  const adminPasscode = document.getElementById('adminPasscode');
+  const adminPassToggle = document.getElementById('adminPassToggle');
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
+  const adminCancelBtn = document.getElementById('adminCancelBtn');
+  const adminLoginError = document.getElementById('adminLoginError');
+  const adminList = document.getElementById('adminList');
+  const adminEmpty = document.getElementById('adminEmpty');
+  const adminCaptchaQuestion = document.getElementById('adminCaptchaQuestion');
+  const adminCaptchaInput = document.getElementById('adminCaptchaInput');
+  const adminCaptchaRefresh = document.getElementById('adminCaptchaRefresh');
+  const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+  const adminRefreshBtn = document.getElementById('adminRefreshBtn');
+  const adminExportBtn = document.getElementById('adminExportBtn');
+  const adminExportPdfBtn = document.getElementById('adminExportPdfBtn');
+  const adminSearchInput = document.getElementById('adminSearch');
+  const adminFiltersWrap = document.getElementById('adminFilters');
+  const adashClock = document.getElementById('adashClock');
+  const adashTotal = document.getElementById('adashTotal');
+  const adashPendapatan = document.getElementById('adashPendapatan');
+  const adashPendapatanFill = document.getElementById('adashPendapatanFill');
+  const adashPendapatanPct = document.getElementById('adashPendapatanPct');
+  const adashMenunggu = document.getElementById('adashMenunggu');
+  const adashCicilan = document.getElementById('adashCicilan');
+  const adashLunas = document.getElementById('adashLunas');
+  const chipCountSemua = document.getElementById('chipCountSemua');
+  const chipCountBelumDp = document.getElementById('chipCountBelumDp');
+  const chipCountDp = document.getElementById('chipCountDp');
+  const chipCountCicilan = document.getElementById('chipCountCicilan');
+  const chipCountLunas = document.getElementById('chipCountLunas');
+
+  // ---- Riwayat Aktivitas Admin ----
+  const adminHistoryBtn = document.getElementById('adminHistoryBtn');
+  const adminHistoryOverlay = document.getElementById('adminHistoryOverlay');
+  const adminHistoryClose = document.getElementById('adminHistoryClose');
+  const adminHistoryList = document.getElementById('adminHistoryList');
+  const adminHistoryEmpty = document.getElementById('adminHistoryEmpty');
+  const adminHistorySearch = document.getElementById('adminHistorySearch');
+
+  // ---- Modal Konfirmasi Generik ----
+  const agcOverlay = document.getElementById('adminGenericConfirmOverlay');
+  const agcTitle = document.getElementById('agcTitle');
+  const agcMessage = document.getElementById('agcMessage');
+  const agcError = document.getElementById('agcError');
+  const agcCancelBtn = document.getElementById('agcCancelBtn');
+  const agcConfirmBtn = document.getElementById('agcConfirmBtn');
+  const agcConfirmLabel = document.getElementById('agcConfirmLabel');
+
+  let adminUnlocked = false;
+  let captchaAnswer = null;
+  let adminFilter = 'semua';
+  let adminSearch = '';
+  let adminClockTimer = null;
+
+  /* =========================================================
+     PERBAIKAN: MODAL KONFIRMASI GENERIK + RIWAYAT AKTIVITAS ADMIN
+     - showAdminConfirm(): dipakai SEBELUM setiap perubahan data di
+       dasbor (ubah status bayar, edit peserta, hapus peserta, reset
+       chat) supaya admin selalu ditanya ulang "yakin?" dengan
+       keterangan jelas apa yang akan berubah, sebelum benar-benar
+       disimpan ke Firestore.
+     - logAdminAction(): setiap kali perubahan BENAR-BENAR disimpan,
+       dicatat ke koleksi Firestore "admin_log" (siapa/admin yang
+       login, jam & tanggal, jenis aksi, dan detail perubahannya)
+       supaya bisa ditelusuri lewat tombol "Riwayat Aktivitas Admin".
+  ========================================================= */
+  let agcResolver = null;
+
+  function showAdminConfirm({ title, messageHtml, confirmLabel = 'Ya, Simpan', danger = false }){
+    return new Promise((resolve) => {
+      if (!agcOverlay){ resolve(true); return; }
+      agcResolver = resolve;
+      agcTitle.textContent = title || 'Konfirmasi Perubahan';
+      agcMessage.innerHTML = messageHtml || 'Apakah Anda yakin ingin menyimpan perubahan ini?';
+      agcConfirmLabel.textContent = confirmLabel;
+      agcConfirmBtn.className = danger ? 'btn btn-danger ripple' : 'btn btn-primary ripple';
+      if (agcError) agcError.textContent = '';
+      agcOverlay.classList.add('active');
+    });
+  }
+  function closeAdminConfirm(result){
+    if (agcOverlay) agcOverlay.classList.remove('active');
+    if (typeof agcResolver === 'function'){
+      const r = agcResolver;
+      agcResolver = null;
+      r(result);
+    }
+  }
+  agcCancelBtn?.addEventListener('click', () => closeAdminConfirm(false));
+  agcConfirmBtn?.addEventListener('click', () => closeAdminConfirm(true));
+  agcOverlay?.addEventListener('click', (e) => { if (e.target === agcOverlay) closeAdminConfirm(false); });
+
+  function getAdminEmail(){
+    return window.__lokonFirebase?.auth?.currentUser?.email || 'Admin (tidak diketahui)';
+  }
+
+  // Nama tampilan yang lebih ramah di dasbor, diturunkan dari email admin
+  // yang sedang login (contoh: "kamil@lokon.com" -> "Kamil").
+  const adashAdminNameEl = document.getElementById('adashAdminName');
+  function getAdminDisplayName(){
+    const email = getAdminEmail();
+    const local = String(email).split('@')[0] || email;
+    const pretty = local.replace(/[._-]+/g, ' ').trim();
+    return pretty ? pretty.replace(/\b\w/g, c => c.toUpperCase()) : email;
+  }
+  function updateAdminNameDisplay(){
+    if (!adashAdminNameEl) return;
+    const email = getAdminEmail();
+    adashAdminNameEl.innerHTML = `<i class="fa-solid fa-circle-user"></i> <span>${escapeHtml(getAdminDisplayName())} &middot; ${escapeHtml(email)}</span>`;
+  }
+
+  const ADMIN_LOG_COLLECTION = 'admin_log';
+
+  async function logAdminAction(aksi, detail, targetLabel){
+    try {
+      const fb = window.__lokonFirebase;
+      if (!fb) return;
+      const now = new Date();
+      await fb.addDoc(fb.collection(fb.db, ADMIN_LOG_COLLECTION), {
+        admin: getAdminEmail(),
+        aksi,
+        target: targetLabel || '-',
+        detail: detail || '-',
+        waktu: now.toISOString(),
+        waktuTampil: now.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) +
+          ' • ' + now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }),
+        serverWaktu: fb.serverTimestamp ? fb.serverTimestamp() : null
+      });
+    } catch (err){
+      // Gagal mencatat riwayat TIDAK BOLEH membatalkan aksi utama yang
+      // sudah berhasil disimpan — cukup dicatat di console sebagai warning.
+      console.warn('Gagal mencatat riwayat admin (diabaikan, tidak fatal):', err.code, err.message);
+    }
+  }
+
+  const AKSI_ICON = {
+    hapus: { cls:'aksi-hapus', icon:'fa-trash' },
+    edit: { cls:'aksi-edit', icon:'fa-pen' },
+    status: { cls:'aksi-status', icon:'fa-coins' },
+    chat: { cls:'aksi-chat', icon:'fa-comment-slash' },
+    login: { cls:'aksi-status', icon:'fa-right-to-bracket' }
+  };
+
+  let adminHistoryCache = [];
+  let adminHistoryLoaded = false;
+
+  async function loadAdminHistory(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Tidak bisa memuat riwayat: Firebase belum tersambung.', 'error');
+      return;
+    }
+    try {
+      let snap;
+      if (typeof fb.getDocs === 'function' && typeof fb.query === 'function'){
+        const q = fb.query(fb.collection(fb.db, ADMIN_LOG_COLLECTION), fb.orderBy('waktu', 'desc'), fb.limit(300));
+        snap = await fb.getDocs(q);
+      } else {
+        snap = await fb.getDocs(fb.collection(fb.db, ADMIN_LOG_COLLECTION));
+      }
+      adminHistoryCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      adminHistoryLoaded = true;
+      renderAdminHistory();
+    } catch (err){
+      console.warn('Gagal memuat riwayat admin:', err.code, err.message);
+      showToast('Gagal memuat riwayat aktivitas. Cek Firestore Rules koleksi "admin_log".', 'error');
+    }
+  }
+
+  function renderAdminHistory(){
+    if (!adminHistoryList) return;
+    const q = (adminHistorySearch?.value || '').trim().toLowerCase();
+    let list = adminHistoryCache.slice();
+    if (q){
+      list = list.filter(h =>
+        (h.admin || '').toLowerCase().includes(q) ||
+        (h.aksi || '').toLowerCase().includes(q) ||
+        (h.target || '').toLowerCase().includes(q) ||
+        (h.detail || '').toLowerCase().includes(q)
+      );
+    }
+    adminHistoryList.innerHTML = '';
+    if (adminHistoryEmpty) adminHistoryEmpty.style.display = list.length === 0 ? 'block' : 'none';
+    list.forEach(h => {
+      const aksiKey = h.aksi === 'hapus' ? 'hapus' : h.aksi === 'edit' ? 'edit' : h.aksi === 'chat' ? 'chat' : 'status';
+      const meta = AKSI_ICON[aksiKey] || AKSI_ICON.status;
+      const item = document.createElement('div');
+      item.className = 'admin-history-item';
+      item.innerHTML = `
+        <div class="admin-history-top">
+          <span class="admin-history-admin"><i class="fa-solid fa-user-shield"></i> ${escapeHtml(h.admin || '-')}</span>
+          <span class="admin-history-time">${escapeHtml(h.waktuTampil || '-')}</span>
+        </div>
+        <span class="admin-history-aksi ${meta.cls}"><i class="fa-solid ${meta.icon}"></i> ${escapeHtml(h.aksi || '-')}</span>
+        <div class="admin-history-detail"><b>${escapeHtml(h.target || '-')}</b> — ${escapeHtml(h.detail || '-')}</div>
+      `;
+      adminHistoryList.appendChild(item);
+    });
+  }
+
+  adminHistoryBtn?.addEventListener('click', () => {
+    adminHistoryOverlay?.classList.add('active');
+    loadAdminHistory();
+  });
+  adminHistoryClose?.addEventListener('click', () => adminHistoryOverlay?.classList.remove('active'));
+  adminHistoryOverlay?.addEventListener('click', (e) => { if (e.target === adminHistoryOverlay) adminHistoryOverlay.classList.remove('active'); });
+  adminHistorySearch?.addEventListener('input', renderAdminHistory);
+
+  function newCaptcha(){
+    const a = Math.floor(Math.random() * 8) + 1;
+    const b = Math.floor(Math.random() * 8) + 1;
+    captchaAnswer = a + b;
+    if (adminCaptchaQuestion) adminCaptchaQuestion.textContent = `${a} + ${b}`;
+    if (adminCaptchaInput) adminCaptchaInput.value = '';
+  }
+  adminCaptchaRefresh?.addEventListener('click', newCaptcha);
+
+  // Tombol mata untuk lihat/sembunyikan kata sandi admin saat mengetik.
+  adminPassToggle?.addEventListener('click', () => {
+    const showing = adminPasscode.type === 'text';
+    adminPasscode.type = showing ? 'password' : 'text';
+    adminPassToggle.innerHTML = showing ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+  });
+
+  function resetAdminLoginForm(){
+    if (adminUsername) adminUsername.value = '';
+    if (adminPasscode) { adminPasscode.value = ''; adminPasscode.type = 'password'; }
+    if (adminPassToggle) adminPassToggle.innerHTML = '<i class="fa-solid fa-eye"></i>';
+    if (adminLoginError) adminLoginError.textContent = '';
+    newCaptcha();
+  }
+
+  function startAdminClock(){
+    if (!adashClock) return;
+    const update = () => {
+      const now = new Date();
+      adashClock.textContent = now.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }) +
+        ' • ' + now.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    };
+    update();
+    clearInterval(adminClockTimer);
+    adminClockTimer = setInterval(update, 1000);
+  }
+  function stopAdminClock(){ clearInterval(adminClockTimer); }
+
+  /* =========================================================
+     AUTO-LOGOUT KARENA TIDAK ADA AKTIVITAS
+     - Jika tidak ada gerakan mouse/klik/ketikan/sentuhan/scroll di
+       dasbor selama IDLE_LIMIT_SECONDS (1 menit), admin otomatis
+       logout (keluar dari Firebase Auth) demi keamanan.
+     - Widget hitung mundur (adashIdleBanner) HANYA muncul saat
+       admin sudah diam selama IDLE_WARN_SECONDS terakhir sebelum
+       batas waktu tercapai. Begitu ada aktivitas apa pun, widget
+       langsung disembunyikan lagi dan hitungan direset ke awal.
+  ========================================================= */
+  const IDLE_LIMIT_SECONDS = 60;   // total waktu diam sebelum auto-logout
+  const IDLE_WARN_SECONDS = 15;    // sisa waktu saat hitung mundur mulai tampil
+  const adashIdleBanner = document.getElementById('adashIdleBanner');
+  const adashIdleTime = document.getElementById('adashIdleTime');
+  const adashIdleRing = document.getElementById('adashIdleRing');
+  const adashIdleStay = document.getElementById('adashIdleStay');
+  const IDLE_ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'wheel', 'scroll', 'touchstart', 'click'];
+
+  let idleLastActivityAt = Date.now();
+  let idleTickTimer = null;
+
+  function markAdminActivity(){
+    idleLastActivityAt = Date.now();
+    if (adashIdleBanner) adashIdleBanner.classList.remove('show');
+  }
+
+  function tickIdleWatcher(){
+    if (!adminUnlocked) return;
+    const idleSeconds = Math.floor((Date.now() - idleLastActivityAt) / 1000);
+    const remaining = IDLE_LIMIT_SECONDS - idleSeconds;
+
+    if (remaining <= 0){
+      stopIdleWatcher();
+      showToast('Sesi berakhir otomatis karena 1 menit tidak ada aktivitas.', 'error');
+      logoutAdmin();
+      return;
+    }
+
+    if (remaining <= IDLE_WARN_SECONDS){
+      if (adashIdleBanner) adashIdleBanner.classList.add('show');
+      const mm = Math.floor(remaining / 60);
+      const ss = remaining % 60;
+      if (adashIdleTime) adashIdleTime.textContent = `${mm}:${String(ss).padStart(2, '0')}`;
+      if (adashIdleRing) adashIdleRing.style.setProperty('--p', String(Math.round((remaining / IDLE_WARN_SECONDS) * 100)));
+    } else if (adashIdleBanner) {
+      adashIdleBanner.classList.remove('show');
+    }
+  }
+
+  function startIdleWatcher(){
+    idleLastActivityAt = Date.now();
+    if (adashIdleBanner) adashIdleBanner.classList.remove('show');
+    clearInterval(idleTickTimer);
+    idleTickTimer = setInterval(tickIdleWatcher, 1000);
+    IDLE_ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, markAdminActivity, { passive: true }));
+  }
+
+  function stopIdleWatcher(){
+    clearInterval(idleTickTimer);
+    idleTickTimer = null;
+    if (adashIdleBanner) adashIdleBanner.classList.remove('show');
+    IDLE_ACTIVITY_EVENTS.forEach(evt => window.removeEventListener(evt, markAdminActivity));
+  }
+
+  // Tombol "Saya masih di sini" di dalam widget hitung mundur — menghitung
+  // sebagai aktivitas juga (klik tombol otomatis kena listener 'click',
+  // tapi dipanggil eksplisit di sini supaya widget langsung tertutup
+  // tanpa menunggu tick berikutnya).
+  adashIdleStay?.addEventListener('click', markAdminActivity);
+
+  // Halaman ini SELALU tampil penuh (bukan modal yang bisa ditutup) —
+  // begitu dibuka, langsung tampilkan layar login (kecuali sesi Firebase
+  // Auth sebelumnya masih aktif, ditangani watchAdminAuthState di bawah).
+  resetAdminLoginForm();
+
+  async function logoutAdmin(){
+    adminUnlocked = false;
+    adminOverlay.classList.remove('admin-dash-mode');
+    stopAdminClock();
+    stopIdleWatcher();
+    const fb = window.__lokonFirebase;
+    if (fb?.auth){
+      try { await fb.signOut(fb.auth); } catch (err){ console.warn('Gagal logout dari Firebase Auth:', err); }
+    }
+    adminLogin.style.display = 'block';
+    adminPanel.style.display = 'none';
+    resetAdminLoginForm();
+    showToast('Berhasil keluar dari dasbor admin.', 'success');
+  }
+
+  // PERBAIKAN: pantau status login Firebase Authentication secara real-time.
+  // - Kalau admin sudah pernah login sebelumnya (sesi Firebase Auth masih
+  //   tersimpan di browser), dasbor otomatis kebuka lagi tanpa perlu
+  //   login ulang tiap buka halaman — ini yang membuat "buka sekali,
+  //   langsung dasbor" terasa seperti aplikasi tersendiri.
+  // - Kalau sesi berakhir/di-logout dari perangkat lain, otomatis
+  //   kembali ke layar login di sini juga.
+  function watchAdminAuthState(fb){
+    fb.onAuthStateChanged(fb.auth, (user) => {
+      if (user && !adminUnlocked){
+        adminUnlocked = true;
+        adminLogin.style.display = 'none';
+        adminPanel.style.display = 'block';
+        adminOverlay.classList.add('admin-dash-mode');
+        updateAdminNameDisplay();
+        startAdminClock();
+        startIdleWatcher();
+        startPesertaListener();
+        renderAdminList();
+      } else if (!user && adminUnlocked){
+        adminUnlocked = false;
+        adminOverlay.classList.remove('admin-dash-mode');
+        adminLogin.style.display = 'block';
+        adminPanel.style.display = 'none';
+        stopAdminClock();
+        stopIdleWatcher();
+      }
+    });
+  }
+
+  adminLogoutBtn?.addEventListener('click', logoutAdmin);
+
+  adminLoginBtn?.addEventListener('click', async () => {
+    const email = adminUsername.value.trim();
+    const pass = adminPasscode.value;
+
+    if (parseInt(adminCaptchaInput.value, 10) !== captchaAnswer){
+      adminLoginError.textContent = 'Jawaban verifikasi salah, coba lagi.';
+      newCaptcha();
+      return;
+    }
+    if (!email || !pass){
+      adminLoginError.textContent = 'Email dan kata sandi wajib diisi.';
+      return;
+    }
+
+    adminLoginBtn.disabled = true;
+    adminLoginError.textContent = '';
+    const fb = await waitForFirebase(8000);
+    if (!fb || !fb.auth){
+      adminLoginError.textContent = 'Tidak bisa terhubung ke server login. Cek koneksi internet lalu coba lagi.';
+      adminLoginBtn.disabled = false;
+      return;
+    }
+
+    try {
+      // Login SUNGGUHAN lewat Firebase Authentication — bukan lagi
+      // dicocokkan manual di JavaScript. Akun admin dibuat lewat
+      // Firebase Console > Authentication > Users.
+      await fb.signInWithEmailAndPassword(fb.auth, email, pass);
+      adminUnlocked = true;
+      adminLogin.style.display = 'none';
+      adminPanel.style.display = 'block';
+      adminOverlay.classList.add('admin-dash-mode');
+      updateAdminNameDisplay();
+      startAdminClock();
+      startIdleWatcher();
+      startPesertaListener();
+      renderAdminList();
+      logAdminAction('login', 'Admin berhasil masuk ke dasbor.', email);
+    } catch (err){
+      console.warn('Login admin gagal:', err.code, err.message);
+      const map = {
+        'auth/invalid-email': 'Format email tidak valid.',
+        'auth/user-not-found': 'Email admin tidak ditemukan.',
+        'auth/wrong-password': 'Kata sandi salah.',
+        'auth/invalid-credential': 'Email atau kata sandi salah.',
+        'auth/too-many-requests': 'Terlalu banyak percobaan gagal. Coba lagi beberapa menit lagi.',
+        'auth/network-request-failed': 'Koneksi bermasalah, coba lagi.'
+      };
+      adminLoginError.textContent = map[err.code] || 'Login gagal. Periksa kembali email & kata sandi.';
+      newCaptcha();
+    } finally {
+      adminLoginBtn.disabled = false;
+    }
+  });
+
+  // Aktifkan pemantauan sesi login begitu Firebase siap.
+  (async () => {
+    const fb = await waitForFirebase();
+    if (fb?.auth) watchAdminAuthState(fb);
+  })();
+
+  adminRefreshBtn?.addEventListener('click', async () => {
+    if (!window.__lokonFirebase && typeof window.__lokonRetryFirebase === 'function'){
+      adminRefreshBtn.disabled = true;
+      await window.__lokonRetryFirebase();
+      adminRefreshBtn.disabled = false;
+      if (window.__lokonFirebase) startPesertaListener();
+    }
+    renderAdminList();
+    showToast(window.__lokonFirebase ? 'Data dasbor disegarkan.' : 'Masih belum tersambung ke database.', window.__lokonFirebase ? 'success' : 'error');
+  });
+
+  adminSearchInput?.addEventListener('input', (e) => {
+    adminSearch = e.target.value;
+    renderAdminList();
+  });
+
+  adminFiltersWrap?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.adash-chip');
+    if (!btn) return;
+    adminFiltersWrap.querySelectorAll('.adash-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    adminFilter = btn.dataset.filter;
+    renderAdminList();
+  });
+
+  /* ---- Export data peserta ke file CSV (dibuka di Excel/Sheets) ---- */
+  adminExportBtn?.addEventListener('click', () => {
+    if (!pesertaData.length){
+      showToast('Belum ada data untuk diexport.', 'error');
+      return;
+    }
+    const header = ['Kode Unik','Nama','Nama Bordir','WhatsApp','Departemen','Jenis Kelamin','Ukuran','Jenis Kemeja','Jumlah','Total','Metode Bayar','Status','Total Dibayar'];
+    const rows = pesertaData.map(p => [
+      p.kodeUnik || '', p.nama || '', p.namaBordir || '', p.whatsapp || '', p.departemen || '', p.gender || '',
+      p.ukuranKemeja || '', p.jenis || '', p.jumlah || 0, p.total || 0,
+      p.pembayaran?.metode === 'cicilan' ? '2x Cicilan' : 'Tunai',
+      STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-',
+      p.pembayaran?.totalDibayar || 0
+    ]);
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `peserta-kemeja-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Data berhasil diexport ke CSV.', 'success');
+  });
+
+  /* =========================================================
+     18b. EXPORT DAFTAR PESERTA SEBAGAI FILE PDF
+     Diganti dari versi gambar (.jpg) ke dokumen PDF asli: teks di
+     tabelnya digambar sebagai VEKTOR (bukan piksel), jadi tetap
+     tajam & enak dibaca walau daftar pesertanya sangat panjang —
+     beda dengan JPG lama yang gampang buram kalau datanya makin
+     banyak. Dibuat pakai jsPDF + AutoTable, dengan tata letak
+     kartu, badge status berwarna, kartu info rekening, ringkasan,
+     dan penomoran halaman — supaya nuansa modern & premiumnya
+     tetap sama (bahkan lebih rapi & lebih profesional untuk
+     dibagikan atau dicetak) dibanding versi gambar sebelumnya.
+  ========================================================= */
+  function formatTanggalJamIndo(date){
+    const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const jam = String(date.getHours()).padStart(2,'0');
+    const menit = String(date.getMinutes()).padStart(2,'0');
+    return {
+      hariTanggal: `${HARI[date.getDay()]}, ${date.getDate()} ${BULAN[date.getMonth()]} ${date.getFullYear()}`,
+      jam: `${jam}.${menit} WIB`
+    };
+  }
+
+  function hexToRgbArr(hex){
+    const h = hex.replace('#','');
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+
+  function pdfLerpColor(c1, c2, t){
+    return [
+      Math.round(c1[0] + (c2[0]-c1[0])*t),
+      Math.round(c1[1] + (c2[1]-c1[1])*t),
+      Math.round(c1[2] + (c2[2]-c1[2])*t)
+    ];
+  }
+
+  // jsPDF tidak punya gradient asli untuk fill sederhana, jadi
+  // disimulasikan dengan banyak potongan tipis vertikal — cukup
+  // untuk garis aksen brand tipis di bawah header.
+  function pdfGradientRect(doc, x, y, w, h, hexFrom, hexTo, steps = 48){
+    const c1 = hexToRgbArr(hexFrom), c2 = hexToRgbArr(hexTo);
+    const stepW = w / steps;
+    for (let i = 0; i < steps; i++){
+      const [r,g,b] = pdfLerpColor(c1, c2, i/(steps-1));
+      doc.setFillColor(r,g,b);
+      doc.rect(x + i*stepW, y, stepW + 0.6, h, 'F');
+    }
+  }
+
+  // Lencana centang kecil khusus status LUNAS di dalam badge PDF.
+  function pdfCheckMark(doc, cx, cy, r, colorHex){
+    const [rr,gg,bb] = hexToRgbArr(colorHex);
+    doc.setDrawColor(rr,gg,bb);
+    doc.setLineWidth(1.2);
+    doc.line(cx - r*0.5, cy, cx - r*0.05, cy + r*0.45);
+    doc.line(cx - r*0.05, cy + r*0.45, cx + r*0.55, cy - r*0.45);
+  }
+
+  async function exportPesertaAsPdf(){
+    if (!pesertaData.length){
+      showToast('Belum ada data peserta untuk diunduh.', 'error');
+      return;
+    }
+    if (!window.jspdf || !window.jspdf.jsPDF){
+      showToast('Modul PDF belum siap dimuat — cek koneksi internet lalu coba lagi.', 'error');
+      return;
+    }
+    const iconEl = adminExportPdfBtn.querySelector('i');
+    adminExportPdfBtn.disabled = true;
+    iconEl?.classList.replace('fa-file-pdf', 'fa-circle-notch');
+    iconEl?.classList.add('fa-spin');
+    try {
+      const { jsPDF } = window.jspdf;
+      const rows = [...pesertaData].sort((a, b) => (a._ms || 0) - (b._ms || 0));
+      const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
+      const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
+      const totalTerkumpul = rows.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
+
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const PAGE_W = doc.internal.pageSize.getWidth();
+      const PAGE_H = doc.internal.pageSize.getHeight();
+      const MARGIN = 40;
+      const CONTENT_W = PAGE_W - MARGIN * 2;
+
+      const NAVY = '#0B2545', TEAL = '#0D9488', BLUE = '#12A9E0', TEAL2 = '#0FD8B8';
+      const SLATE = '#475569', SLATE_L = '#64748B', SLATE_XL = '#94A3B8';
+      const [navyR,navyG,navyB] = hexToRgbArr(NAVY);
+      const [tealR,tealG,tealB] = hexToRgbArr(TEAL);
+      const [slateR,slateG,slateB] = hexToRgbArr(SLATE);
+      const [slateLR,slateLG,slateLB] = hexToRgbArr(SLATE_L);
+
+      const REKENING = { bank: 'Bank BCA', nomor: '0830142452', atasNama: 'KAMIL MUHAMMAD NUR' };
+      const { hariTanggal, jam } = formatTanggalJamIndo(new Date());
+
+      /* ===== HEADER (halaman pertama) ===== */
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text('PT. LOKON PRIMA — DISTRIBUTOR AIR MINUM', MARGIN, 42);
+
+      doc.setFillColor(204, 251, 241);
+      doc.roundedRect(MARGIN, 52, 172, 22, 11, 11, 'F');
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(MARGIN + 14, 63, 3, 'F');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('DAFTAR PESERTA RESMI', MARGIN + 24, 66);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(26);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text('Kemeja Kerja 2026', MARGIN, 108);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11.5);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text(`${hariTanggal}  •  Diperbarui pukul ${jam}`, MARGIN, 126);
+
+      /* ===== KARTU RINGKAS REKENING + WEBSITE (kanan atas header) —
+         mengisi ruang kosong di sebelah judul, supaya info transfer
+         langsung terlihat begitu PDF dibuka, tanpa perlu ke halaman
+         terakhir. Kartu lengkap (dengan ringkasan & logo BCA) tetap
+         dipertahankan di bawah tabel sebagai rujukan detail. ===== */
+      const miniCardW = 205, miniCardH = 100, miniCardX = MARGIN + CONTENT_W - miniCardW, miniCardY = 36;
+      doc.setFillColor(239, 252, 249);
+      doc.roundedRect(miniCardX, miniCardY, miniCardW, miniCardH, 10, 10, 'F');
+      doc.setDrawColor(18, 169, 224);
+      doc.setLineWidth(0.7);
+      doc.roundedRect(miniCardX, miniCardY, miniCardW, miniCardH, 10, 10, 'S');
+
+      const miniPadX = 14;
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(7.3);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('TRANSFER PEMBAYARAN KE', miniCardX + miniPadX, miniCardY + 15);
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(15.5);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text(REKENING.nomor, miniCardX + miniPadX, miniCardY + 34);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.3);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text(`${REKENING.bank}  •  a.n. ${REKENING.atasNama}`, miniCardX + miniPadX, miniCardY + 48);
+
+      // Garis pemisah tipis sebelum link website
+      doc.setDrawColor(204, 251, 241);
+      doc.setLineWidth(0.6);
+      doc.line(miniCardX + miniPadX, miniCardY + 57, miniCardX + miniCardW - miniPadX, miniCardY + 57);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.6);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('WEBSITE PENDAFTARAN RESMI', miniCardX + miniPadX, miniCardY + 70);
+
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(miniCardX + miniPadX + 3, miniCardY + 87, 3, 'F');
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(10.8);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text('benyoriki.github.io/Kemeja', miniCardX + miniPadX + 12, miniCardY + 90);
+
+      pdfGradientRect(doc, MARGIN, 138, CONTENT_W, 2.4, BLUE, TEAL2);
+
+      /* ===== BANNER "TOTAL UANG TERKUMPUL" (full-width, di bawah header) —
+         info paling dicari duluan: berapa dana yang sudah masuk sejauh ini.
+         Latar navy solid + garis emas tipis kasih kesan premium/mewah. ===== */
+      const bannerY = 158, bannerH = 66;
+      doc.setFillColor(navyR, navyG, navyB);
+      doc.roundedRect(MARGIN, bannerY, CONTENT_W, bannerH, 12, 12, 'F');
+      pdfGradientRect(doc, MARGIN + 12, bannerY + bannerH - 3, CONTENT_W - 24, 1.6, TEAL2, BLUE);
+
+      // Ikon koin (dua lingkaran bertumpuk) dalam kotak teal.
+      const bIconSize = 40, bIconX = MARGIN + 16, bIconY = bannerY + (bannerH - bIconSize) / 2;
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.roundedRect(bIconX, bIconY, bIconSize, bIconSize, 9, 9, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.circle(bIconX + bIconSize/2 - 5, bIconY + bIconSize/2 + 3, 8, 'F');
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(bIconX + bIconSize/2 - 5, bIconY + bIconSize/2 + 3, 8, 'S');
+      doc.setFillColor(255, 255, 255);
+      doc.circle(bIconX + bIconSize/2 + 6, bIconY + bIconSize/2 - 5, 8, 'F');
+      doc.setDrawColor(tealR, tealG, tealB);
+      doc.setLineWidth(1);
+      doc.circle(bIconX + bIconSize/2 + 6, bIconY + bIconSize/2 - 5, 8, 'S');
+
+      const bTextX = bIconX + bIconSize + 16;
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(204, 251, 241);
+      doc.text('TOTAL UANG TERKUMPUL', bTextX, bannerY + 24);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(21);
+      doc.setTextColor(255, 255, 255);
+      doc.text(formatRupiah(totalTerkumpul), bTextX, bannerY + 49);
+
+      // Garis pemisah vertikal + ringkasan cepat total peserta/lunas/DP di sisi kanan banner.
+      const divX = MARGIN + CONTENT_W - 280;
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.6);
+      doc.line(divX, bannerY + 14, divX, bannerY + bannerH - 14);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(19);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(rows.length), divX + 16, bannerY + 28);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL PESERTA', divX + 16, bannerY + 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(19);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(lunasCount), divX + 108, bannerY + 28);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text('LUNAS', divX + 108, bannerY + 40);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(19);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(dpCount), divX + 200, bannerY + 28);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text('DP BERJALAN', divX + 200, bannerY + 40);
+
+      const HEADER_BOTTOM = bannerY + bannerH + 26;
+
+      /* ===== TABEL PESERTA ===== */
+      const STATUS_COLORS = {
+        lunas:    { bg: [220,252,231], fg: [21,128,61] },
+        dp:       { bg: [254,243,199], fg: [180,83,9]  },
+        belum_dp: { bg: [252,234,234], fg: [192,57,43] }
+      };
+
+      const tableRows = rows.map((p, i) => {
+        const status = p.pembayaran?.status || 'belum_dp';
+        const dibayar = p.pembayaran?.totalDibayar || 0;
+        const isLunas = status === 'lunas';
+        const isDp = !isLunas && dibayar > 0;
+        const statusKey = isLunas ? 'lunas' : (isDp ? 'dp' : 'belum_dp');
+        const statusText = isLunas ? 'LUNAS' : (isDp ? `DP ${formatRupiah(dibayar)}` : 'Belum DP');
+        return {
+          cells: [String(i + 1), p.nama || '-', p.namaBordir || '-', p.ukuranKemeja || '-',
+                  p.jenis === 'Lengan Panjang' ? 'Panjang' : 'Pendek', statusText],
+          statusKey, statusText
+        };
+      });
+
+      doc.autoTable({
+        startY: HEADER_BOTTOM,
+        margin: { left: MARGIN, right: MARGIN, top: 54, bottom: 70 },
+        head: [['NO', 'NAMA PESERTA', 'NAMA BORDIR', 'UKURAN', 'LENGAN', 'STATUS PEMBAYARAN']],
+        body: tableRows.map(r => r.cells),
+        theme: 'plain',
+        styles: {
+          font: 'helvetica', fontSize: 9.5,
+          cellPadding: { top: 8, bottom: 8, left: 10, right: 6 },
+          textColor: [71, 85, 105], lineColor: [226, 232, 240], lineWidth: { bottom: 0.6 },
+          valign: 'middle'
+        },
+        headStyles: {
+          fillColor: [11, 37, 69], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.6,
+          cellPadding: { top: 10, bottom: 10, left: 10, right: 6 }, lineWidth: 0
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 32, halign: 'center', textColor: [148, 163, 184], fontStyle: 'bold', cellPadding: { top: 8, bottom: 8, left: 4, right: 4 } },
+          1: { cellWidth: 138, fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 10 },
+          2: { cellWidth: 92 },
+          3: { cellWidth: 55, halign: 'center', font: 'courier', fontStyle: 'bold', textColor: [3, 105, 161] },
+          4: { cellWidth: 58, halign: 'center', textColor: [100, 116, 139], cellPadding: { top: 8, bottom: 8, left: 3, right: 3 } },
+          5: { cellWidth: 140, halign: 'left' }
+        },
+        didParseCell: (data) => {
+          // Sembunyikan teks asli kolom status — akan digambar ulang
+          // sebagai badge berwarna lewat didDrawCell di bawah, supaya
+          // tampil sebagai "pill" bukan teks polos.
+          if (data.section === 'body' && data.column.index === 5){
+            data.cell.text = [];
+          }
+        },
+        didDrawCell: (data) => {
+          if (data.section !== 'body') return;
+          const info = tableRows[data.row.index];
+          if (!info) return;
+
+          // Garis aksen tipis di kiri tiap baris sesuai status pembayaran —
+          // bantu mata memindai daftar panjang tanpa perlu baca satu-satu.
+          if (data.column.index === 0){
+            const accent = info.statusKey === 'lunas' ? [22,163,74]
+              : info.statusKey === 'dp' ? [217,119,6] : [224,82,79];
+            doc.setFillColor(...accent);
+            doc.rect(MARGIN, data.cell.y, 2.6, data.cell.height, 'F');
+          }
+
+          // Badge status berwarna, dengan lencana centang khusus untuk LUNAS.
+          if (data.column.index === 5){
+            const conf = STATUS_COLORS[info.statusKey];
+            const isLunas = info.statusKey === 'lunas';
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(8.6);
+            const textW = doc.getTextWidth(info.statusText);
+            const badgeExtra = isLunas ? 15 : 0;
+            const badgeW = Math.min(textW + 20 + badgeExtra, data.cell.width - 8);
+            const badgeH = 16;
+            const badgeX = data.cell.x + 4;
+            const badgeY = data.cell.y + (data.cell.height - badgeH) / 2;
+            doc.setFillColor(...conf.bg);
+            doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 8, 8, 'F');
+            doc.setTextColor(...conf.fg);
+            if (isLunas){
+              doc.setDrawColor(21,128,61);
+              doc.setLineWidth(0.6);
+              doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 8, 8, 'S');
+              pdfCheckMark(doc, badgeX + 13, badgeY + badgeH/2, 5, '#16A34A');
+              doc.text(info.statusText, badgeX + 22, badgeY + badgeH/2 + 3);
+            } else {
+              doc.text(info.statusText, badgeX + 10, badgeY + badgeH/2 + 3);
+            }
+          }
+        },
+        didDrawPage: (data) => {
+          // Strip merek tipis di bagian atas tiap halaman ke-2 dst, supaya
+          // tabel yang panjang tetap kelihatan identitasnya di setiap halaman.
+          if (data.pageNumber > 1){
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(slateR, slateG, slateB);
+            doc.text('PT. LOKON PRIMA — Daftar Peserta Kemeja Kerja 2026', MARGIN, 28);
+            pdfGradientRect(doc, MARGIN, 36, CONTENT_W, 1.6, BLUE, TEAL2);
+          }
+        }
+      });
+
+      /* =========================================================
+         KARTU "TOTAL UANG TERKUMPUL" (penutup) — menggantikan kartu
+         rekening yang dulu ada di sini (sudah dipindah & cukup
+         ditampilkan sekali di banner atas, jadi tidak perlu diulang).
+         Latar gradasi navy → teal untuk kesan premium di akhir dokumen.
+      ========================================================= */
+      const CARD_H = 78, CARD_GAP = 26, SUMMARY_BLOCK_H = 155;
+      let finalY = doc.lastAutoTable.finalY + CARD_GAP;
+      if (finalY + CARD_H + SUMMARY_BLOCK_H > PAGE_H - 40){
+        doc.addPage();
+        finalY = 56;
+      }
+
+      doc.setFillColor(navyR, navyG, navyB);
+      doc.roundedRect(MARGIN, finalY, CONTENT_W, CARD_H, 12, 12, 'F');
+      pdfGradientRect(doc, MARGIN + 12, finalY + 5, CONTENT_W - 24, 2, TEAL2, BLUE);
+      doc.setDrawColor(navyR, navyG, navyB);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(MARGIN, finalY, CONTENT_W, CARD_H, 12, 12, 'S');
+
+      const iconSize = 42, iconX = MARGIN + 18, iconY = finalY + (CARD_H - iconSize) / 2;
+      doc.setFillColor(255, 255, 255);
+      doc.circle(iconX + iconSize/2 - 6, iconY + iconSize/2 + 4, 9, 'F');
+      doc.circle(iconX + iconSize/2 + 7, iconY + iconSize/2 - 6, 9, 'F');
+
+      const textX = iconX + iconSize + 20;
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8.8);
+      doc.setTextColor(224, 253, 246);
+      doc.text('TOTAL UANG TERKUMPUL', textX, finalY + 26);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(23);
+      doc.setTextColor(255, 255, 255);
+      doc.text(formatRupiah(totalTerkumpul), textX, finalY + 55);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(224, 253, 246);
+      doc.text(`per ${hariTanggal}, ${jam}`, MARGIN + CONTENT_W - 16, finalY + CARD_H - 14, { align: 'right' });
+
+      const sumY = finalY + CARD_H + 34;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12.5);
+      doc.setTextColor(navyR, navyG, navyB);
+      const totalLabel = `Total ${rows.length} Peserta`;
+      doc.text(totalLabel, MARGIN, sumY);
+      const totalLabelW = doc.getTextWidth(totalLabel);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      doc.setTextColor(slateLR, slateLG, slateLB);
+      doc.text(`•  ${lunasCount} Lunas   •  ${dpCount} DP Terbayar`, MARGIN + totalLabelW + 14, sumY);
+
+      const capY = sumY + 28;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(tealR, tealG, tealB);
+      doc.text('WEBSITE DAFTAR BAJU LOKON PRIMA', MARGIN, capY);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.6);
+      doc.setTextColor(...hexToRgbArr('#EA580C'));
+      doc.text('Cek berkala status produksi kemejamu di link website ini, ya!', MARGIN, capY + 15);
+
+      const linkText = 'benyoriki.github.io/Kemeja';
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(14);
+      const linkTextW = doc.getTextWidth(linkText);
+      const iconD = 26, linkPadL = 12, linkPadR = 18, gapIconText = 12;
+      const linkW = linkPadL + iconD + gapIconText + linkTextW + linkPadR;
+      const linkH = 36, linkY = capY + 24;
+
+      doc.setFillColor(230, 247, 244);
+      doc.roundedRect(MARGIN, linkY, linkW, linkH, 18, 18, 'F');
+      doc.setDrawColor(13, 148, 136);
+      doc.setLineWidth(0.9);
+      doc.roundedRect(MARGIN, linkY, linkW, linkH, 18, 18, 'S');
+
+      // Ikon globe sederhana: lingkaran teal + garis lintang/bujur putih.
+      const gCx = MARGIN + linkPadL + iconD / 2, gCy = linkY + linkH / 2;
+      doc.setFillColor(tealR, tealG, tealB);
+      doc.circle(gCx, gCy, iconD / 2, 'F');
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.9);
+      doc.line(gCx - iconD / 2 + 2.5, gCy, gCx + iconD / 2 - 2.5, gCy);
+      doc.ellipse(gCx, gCy, iconD / 2 - 6.5, iconD / 2, 'S');
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(navyR, navyG, navyB);
+      doc.text(linkText, MARGIN + linkPadL + iconD + gapIconText, gCy + 4.5);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(slateR, slateG, slateB);
+      doc.text('Otomatis Sistem Apache Spark, DBMS di kembangan oleh @benyoriki website Developer', MARGIN, linkY + linkH + 22);
+
+      /* ===== NOMOR HALAMAN — dipasang terakhir, karena total halaman
+         baru pasti diketahui setelah semua konten selesai digambar ===== */
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++){
+        doc.setPage(p);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...hexToRgbArr(SLATE_XL));
+        doc.text(`Halaman ${p} dari ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 24, { align: 'right' });
+      }
+
+      doc.save(`daftar-peserta-kemeja-${new Date().toISOString().slice(0,10)}.pdf`);
+      showToast('Dokumen PDF daftar peserta berhasil diunduh — rapi, tajam & siap dibagikan.', 'success');
+    } catch (err){
+      console.error('Gagal membuat PDF daftar peserta:', err);
+      showToast('Terjadi kesalahan saat membuat PDF.', 'error');
+    } finally {
+      adminExportPdfBtn.disabled = false;
+      iconEl?.classList.remove('fa-spin');
+      iconEl?.classList.replace('fa-circle-notch', 'fa-file-pdf');
+    }
+  }
+
+  adminExportPdfBtn?.addEventListener('click', exportPesertaAsPdf);
+
+  /* =========================================================
+     19b. ADMIN — HAPUS / RESET CHAT GRUP PESERTA
+     Menghapus SELURUH pesan di koleksi "chat_pesan" (Firestore),
+     jadi bersih untuk semua orang yang membuka grup chat. Dipakai
+     kalau chat sudah terlalu penuh, banyak spam, atau admin ingin
+     memulai grup baru. Ada konfirmasi 2 langkah supaya tidak
+     terhapus tidak sengaja, karena tindakan ini PERMANEN.
+  ========================================================= */
+  const adminResetChatBtn = document.getElementById('adminResetChatBtn');
+  const resetChatOverlay = document.getElementById('resetChatOverlay');
+  const resetChatCancelBtn = document.getElementById('resetChatCancelBtn');
+  const resetChatConfirmBtn = document.getElementById('resetChatConfirmBtn');
+
+  function openResetChatConfirm(){
+    if (!resetChatOverlay) return;
+    resetChatOverlay.classList.add('active');
+  }
+  function closeResetChatConfirm(){
+    if (!resetChatOverlay) return;
+    resetChatOverlay.classList.remove('active');
+  }
+
+  adminResetChatBtn?.addEventListener('click', openResetChatConfirm);
+  resetChatCancelBtn?.addEventListener('click', closeResetChatConfirm);
+  resetChatOverlay?.addEventListener('click', (e) => { if (e.target === resetChatOverlay) closeResetChatConfirm(); });
+
+  resetChatConfirmBtn?.addEventListener('click', async () => {
+    const fb = window.__lokonFirebase;
+    if (!fb){
+      showToast('Tidak bisa menghapus chat: Firebase belum tersambung.', 'error');
+      return;
+    }
+    resetChatConfirmBtn.disabled = true;
+    const originalHtml = resetChatConfirmBtn.innerHTML;
+    resetChatConfirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menghapus...';
+    try {
+      // Ambil SEMUA dokumen chat langsung dari Firestore, supaya benar-benar bersih.
+      const snap = await fb.getDocs(fb.collection(fb.db, fb.CHAT_COLLECTION));
+      const docs = snap.docs;
+
+      if (!docs.length){
+        showToast('Grup chat memang sudah kosong.', 'success');
+        closeResetChatConfirm();
+        return;
+      }
+
+      // Hapus per-batch (writeBatch) kalau tersedia — jauh lebih cepat &
+      // hemat kuota dibanding menghapus satu-per-satu. Kalau tidak
+      // tersedia (SDK lama), jatuh ke penghapusan satu-per-satu.
+      if (typeof fb.writeBatch === 'function'){
+        const chunkSize = 400; // batas aman writeBatch Firestore adalah 500 operasi
+        for (let i = 0; i < docs.length; i += chunkSize){
+          const batch = fb.writeBatch(fb.db);
+          docs.slice(i, i + chunkSize).forEach(d => {
+            const ref = d.ref || fb.doc(fb.db, fb.CHAT_COLLECTION, d.id);
+            batch.delete(ref);
+          });
+          await batch.commit();
+        }
+      } else {
+        for (const d of docs){
+          const ref = d.ref || fb.doc(fb.db, fb.CHAT_COLLECTION, d.id);
+          await fb.deleteDoc(ref);
+        }
+      }
+
+      showToast(`Berhasil menghapus ${docs.length} pesan. Grup chat sudah bersih.`, 'success');
+      await logAdminAction('chat', `Menghapus seluruh ${docs.length} pesan di grup chat peserta (reset total).`, 'Grup Chat Peserta');
+      closeResetChatConfirm();
+    } catch (err){
+      console.warn('Gagal menghapus chat grup:', err);
+      showToast('Gagal menghapus chat grup. Cek koneksi & Firestore Rules (allow delete: if true).', 'error');
+    } finally {
+      resetChatConfirmBtn.disabled = false;
+      resetChatConfirmBtn.innerHTML = originalHtml;
+    }
+  });
+
+  function renderAdminList(){
+    if (!adminUnlocked || !adminList) return;
+
+    // ---- Statistik dasbor (dihitung dari SELURUH data) ----
+    const total = pesertaData.length;
+    const menunggu = pesertaData.filter(p => (p.pembayaran?.status || 'belum_dp') === 'belum_dp').length;
+    const dpTerbayar = pesertaData.filter(p => p.pembayaran?.status === 'dp').length;
+    const cicilanJalan = pesertaData.filter(p => ['dp','cicilan'].includes(p.pembayaran?.status)).length;
+    const cicilanStatusOnly = pesertaData.filter(p => p.pembayaran?.status === 'cicilan').length;
+    const lunas = pesertaData.filter(p => p.pembayaran?.status === 'lunas').length;
+    const pendapatan = pesertaData.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
+    const totalPesananSeluruh = pesertaData.reduce((sum, p) => sum + (p.total || 0), 0);
+    if (adashTotal) animateStatNumber(adashTotal, total);
+    if (adashMenunggu) animateStatNumber(adashMenunggu, menunggu);
+    if (adashCicilan) animateStatNumber(adashCicilan, cicilanJalan);
+    if (adashLunas) animateStatNumber(adashLunas, lunas);
+    if (adashPendapatan) adashPendapatan.textContent = formatRupiah(pendapatan);
+
+    // Progress bar "Dana Terkumpul": persentase dana yang sudah masuk
+    // dibanding TOTAL NILAI seluruh pesanan (bukan target sembarangan),
+    // supaya bendahara langsung tahu seberapa dekat pengumpulan dana
+    // sudah selesai tanpa perlu menghitung manual.
+    if (adashPendapatanFill && adashPendapatanPct){
+      const pct = totalPesananSeluruh > 0 ? Math.min(100, Math.round((pendapatan / totalPesananSeluruh) * 100)) : 0;
+      adashPendapatanFill.style.width = `${pct}%`;
+      adashPendapatanPct.textContent = totalPesananSeluruh > 0
+        ? `${pct}% dari total ${formatRupiah(totalPesananSeluruh)} pesanan`
+        : 'Belum ada pesanan tercatat';
+    }
+
+    // Badge angka kecil di tiap chip filter — supaya admin langsung
+    // tahu isi tiap kategori tanpa perlu tap satu-satu untuk mengecek.
+    if (chipCountSemua) chipCountSemua.textContent = total;
+    if (chipCountBelumDp) chipCountBelumDp.textContent = menunggu;
+    if (chipCountDp) chipCountDp.textContent = dpTerbayar;
+    if (chipCountCicilan) chipCountCicilan.textContent = cicilanStatusOnly;
+    if (chipCountLunas) chipCountLunas.textContent = lunas;
+
+    // ---- Filter + pencarian ----
+    let list = pesertaData.slice();
+    if (adminFilter !== 'semua'){
+      list = list.filter(p => (p.pembayaran?.status || 'belum_dp') === adminFilter);
+    }
+    if (adminSearch.trim() !== ''){
+      const q = adminSearch.trim().toLowerCase();
+      list = list.filter(p =>
+        (p.nama || '').toLowerCase().includes(q) ||
+        (p.whatsapp || '').toLowerCase().includes(q) ||
+        (p.kodeUnik || '').toLowerCase().includes(q) ||
+        (p.departemen || '').toLowerCase().includes(q)
+      );
+    }
+
+    adminList.innerHTML = '';
+    if (adminEmpty) adminEmpty.style.display = list.length === 0 ? 'block' : 'none';
+
+    list.forEach(p => {
+      const status = p.pembayaran?.status || 'belum_dp';
+      const info = STATUS_LABEL[status] || STATUS_LABEL.belum_dp;
+      const cicilanArr = p.pembayaran?.cicilan || [];
+      const cicilanTerbayar = cicilanArr.filter(c => c.dibayar).length;
+      const isCicilan = p.pembayaran?.metode === 'cicilan';
+      // Sisa pembayaran ke-2 (pelunasan) yang masih perlu ditagih ke peserta.
+      // Diambil dari rencana cicilan tersimpan (paling akurat — ini juga yang
+      // dipakai tombol "Tandai Pelunasan"); kalau entah kenapa tidak ada,
+      // fallback dihitung dari Total Pesanan − yang sudah terbayar.
+      const cicilanBelumLunas = cicilanArr.find(c => !c.dibayar);
+      const sisaCicilan = status === 'dp'
+        ? (cicilanBelumLunas ? (cicilanBelumLunas.nominal || 0) : Math.max((p.total || 0) - (p.pembayaran?.totalDibayar || 0), 0))
+        : 0;
+
+      const row = document.createElement('div');
+      row.className = 'admin-row';
+      row.innerHTML = `
+        <div class="admin-row-top">
+          <div class="admin-row-id">
+            <div class="admin-row-avatar">${initialsOf(p.nama)}</div>
+            <div class="admin-row-head">
+              <strong>${escapeHtml(p.nama || '-')}</strong>
+              <span>${escapeHtml(p.departemen || '-')}</span>
+            </div>
+          </div>
+          <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
+        </div>
+        <div class="admin-row-meta">
+          <div class="admin-row-meta-group">
+            <span class="admin-code-chip"><i class="fa-solid fa-hashtag"></i>${escapeHtml(p.kodeUnik || '-')}</span>
+            <span><i class="fa-solid fa-shirt"></i> ${escapeHtml(p.jenis || '-')} • ${escapeHtml(p.ukuranKemeja || '-')}</span>
+          </div>
+          <div class="admin-row-meta-group">
+            <span><i class="fa-solid fa-cubes"></i> ${p.jumlah || 1} pcs</span>
+            <span><i class="fa-solid fa-wallet"></i> ${isCicilan ? '2x Cicilan' : 'Tunai'}</span>
+            <span class="admin-row-total"><i class="fa-solid fa-tag"></i> ${formatRupiah(p.total || 0)}</span>
+          </div>
+        </div>
+        ${isCicilan ? `
+          <div class="admin-row-progress">
+            <div class="admin-row-progress-bar"><div class="admin-row-progress-fill" style="width:${status==='lunas' ? 100 : status==='belum_dp' ? 0 : 50}%"></div></div>
+            <span>${status==='belum_dp' ? 'Belum bayar sama sekali' : status==='lunas' ? 'Lunas — 2/2 pembayaran selesai' : 'Pembayaran ke-1 (DP) selesai, menunggu ke-2'} • Terkumpul ${formatRupiah(p.pembayaran?.totalDibayar || 0)}</span>
+            ${status === 'dp' ? `<span class="admin-row-sisa"><i class="fa-solid fa-circle-exclamation"></i> Sisa pembayaran ke-2 yang perlu ditagih: <b>${formatRupiah(sisaCicilan)}</b></span>` : ''}
+          </div>` : ''}
+        <div class="admin-row-actions">
+          <div class="admin-row-actions-primary">
+            ${status === 'belum_dp' ? (isCicilan
+              ? `<button class="admin-action-btn" data-action="inputdp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Input Nominal DP (1/2)</button>`
+              : `<button class="admin-action-btn" data-action="dp" data-id="${p.id}"><i class="fa-solid fa-hand-holding-dollar"></i> Tandai Lunas Terbayar</button>`
+            ) : ''}
+            ${isCicilan && cicilanArr.some(c => !c.dibayar) && status !== 'belum_dp' ?
+              `<button class="admin-action-btn" data-action="cicilan" data-id="${p.id}"><i class="fa-solid fa-coins"></i> Tandai Pelunasan (2/2) — ${formatRupiah(sisaCicilan)}</button>` : ''}
+            ${status !== 'lunas' ? `<button class="admin-action-btn admin-action-lunas" data-action="lunas" data-id="${p.id}"><i class="fa-solid fa-circle-check"></i> Tandai Lunas</button>` : ''}
+            <button class="admin-action-btn admin-action-ubahstatus" data-action="ubahstatus" data-id="${p.id}" title="Perbaiki status kalau salah pencet — status bisa diubah lagi kapan saja"><i class="fa-solid fa-rotate-left"></i> Ubah Status</button>
+          </div>
+          <div class="admin-row-actions-icons">
+            ${p.whatsapp ? `<a class="admin-icon-action wa" title="Chat WhatsApp" href="https://wa.me/${encodeURIComponent(normalizeWhatsapp(p.whatsapp))}?text=${encodeURIComponent('Halo ' + p.nama + ', kode unik pendaftaran kemeja Anda: ' + p.kodeUnik)}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+            <button class="admin-icon-action edit" title="Edit data peserta" data-action="edit" data-id="${p.id}"><i class="fa-solid fa-pen"></i></button>
+            <button class="admin-icon-action hapus" title="Hapus peserta" data-action="hapus" data-id="${p.id}"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+      adminList.appendChild(row);
+    });
+
+    adminList.querySelectorAll('[data-action]').forEach(btn => {
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+      if (action === 'edit'){
+        btn.addEventListener('click', () => openEditPesertaModal(id));
+      } else if (action === 'hapus'){
+        const p = pesertaData.find(x => x.id === id);
+        btn.addEventListener('click', () => hapusPesertaAdmin(id, p?.nama || 'peserta ini', p?.kodeUnik));
+      } else if (action === 'ubahstatus'){
+        btn.addEventListener('click', () => openUbahStatusConfirm(id));
+      } else if (action === 'inputdp'){
+        btn.addEventListener('click', () => openInputDPModal(id));
+      } else {
+        btn.addEventListener('click', () => handleAdminAction(id, action));
+      }
+    });
+  }
+
+  /* =========================================================
+     FITUR BARU: INPUT NOMINAL DP PERTAMA SECARA MANUAL
+     Sebelumnya DP pertama SELALU dipaksa memakai rumus baku
+     (50% harga kemeja + Rp5.000 admin). Di dunia nyata, peserta
+     kadang transfer lebih besar/kecil dari saran itu. Fitur ini
+     membiarkan admin mengetik sendiri nominal DP yang BENAR-BENAR
+     diterima, lalu sistem OTOMATIS menghitung sisa pelunasan
+     (cicilan ke-2) = Total Pesanan − Nominal DP tsb. Sisa ini
+     langsung dipakai juga oleh tombol "Tandai Pelunasan (2/2)"
+     yang sudah ada, jadi tidak perlu ubah logika lain.
+  ========================================================= */
+  async function openInputDPModal(id){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const total = p.total || 0;
+    const saran = hitungDPSeharusnya(p);
+
+    // showAdminConfirm() memasang HTML ke dalam modal SECARA SINKRON
+    // sebelum mengembalikan Promise-nya, jadi input di bawah ini sudah
+    // ada di DOM begitu baris berikutnya dijalankan.
+    const confirmPromise = showAdminConfirm({
+      title: 'Input Nominal DP Pertama',
+      messageHtml: `
+        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${escapeHtml(p.nama || '-')} (${escapeHtml(p.kodeUnik || '-')})</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Total Pesanan</span><span>${formatRupiah(total)}</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Saran DP (50% + admin)</span><span>${formatRupiah(saran)}</span></div>
+        <div class="agc-dp-input-wrap">
+          <label for="agcDpNominalInput">Nominal DP yang benar-benar dibayar peserta</label>
+          <input type="number" id="agcDpNominalInput" class="agc-dp-input" inputmode="numeric" min="1" max="${total}" step="1000" value="${saran}">
+          <small class="agc-dp-hint" id="agcDpNominalHint"></small>
+        </div>
+      `,
+      confirmLabel: 'Simpan Nominal DP'
+    });
+
+    const nominalInput = document.getElementById('agcDpNominalInput');
+    const hintEl = document.getElementById('agcDpNominalHint');
+    const updateHint = () => {
+      let v = parseInt(nominalInput?.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      const sisa = Math.max(total - v, 0);
+      if (hintEl){
+        hintEl.innerHTML = v >= total
+          ? 'Nominal ini menutup seluruh total pesanan — status langsung menjadi <b>Lunas</b>, tanpa sisa cicilan ke-2.'
+          : `Sisa pelunasan (cicilan ke-2) otomatis: <b>${formatRupiah(sisa)}</b>`;
+      }
+    };
+    nominalInput?.addEventListener('input', updateHint);
+    updateHint();
+    nominalInput?.focus();
+    nominalInput?.select();
+
+    const confirmed = await confirmPromise;
+    if (!confirmed) return;
+
+    let dpNominal = parseInt(nominalInput?.value, 10);
+    if (isNaN(dpNominal) || dpNominal <= 0){
+      showToast('Nominal DP tidak valid, perubahan dibatalkan.', 'error');
+      return;
+    }
+    if (dpNominal > total) dpNominal = total; // tidak mungkin DP melebihi total pesanan
+
+    const statusLama = STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-';
+    const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
+    const sisa = Math.max(total - dpNominal, 0);
+    pembayaran.dpDibayar = true;
+    pembayaran.dpMinimal = dpNominal;
+    pembayaran.totalDibayar = dpNominal;
+    if (sisa > 0){
+      // Sisa pelunasan (cicilan ke-2) dihitung ulang dari nominal DP manual
+      // ini, menggantikan rencana cicilan lama — inilah "hitung otomatis"
+      // yang diminta: Total Pesanan − DP yang diinput admin.
+      pembayaran.cicilan = [{ ke: 1, nominal: sisa, dibayar: false, tanggalBayar: null }];
+      pembayaran.status = 'dp';
+    } else {
+      const tgl = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+      pembayaran.cicilan = (pembayaran.cicilan || []).map(c => ({ ...c, dibayar: true, tanggalBayar: c.tanggalBayar || tgl }));
+      pembayaran.status = 'lunas';
+      pembayaran.totalDibayar = total;
+    }
+    const statusBaru = STATUS_LABEL[pembayaran.status]?.label || '-';
+
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran, adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date() });
+      showToast(`DP tersimpan: ${formatRupiah(dpNominal)}${sisa > 0 ? `, sisa pelunasan ${formatRupiah(sisa)}` : ' (langsung Lunas)'}.`, 'success');
+      await logAdminAction('status', `DP diinput manual sebesar ${formatRupiah(dpNominal)} dari total ${formatRupiah(total)} (status "${statusLama}" → "${statusBaru}", sisa pelunasan ${formatRupiah(sisa)}).`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
+    } catch (err){
+      console.warn('Gagal menyimpan nominal DP manual:', err.code, err.message);
+      showToast(`Gagal menyimpan nominal DP (${err.code || 'error'}). Coba lagi.`, 'error');
+    }
+  }
+
+  async function handleAdminAction(id, action){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
+    const statusLama = STATUS_LABEL[pembayaran.status || 'belum_dp']?.label || '-';
+
+    if (action === 'dp'){
+      pembayaran.dpDibayar = true;
+      // Hitung ulang DP yang seharusnya (bukan sekadar memakai
+      // pembayaran.dpMinimal yang mungkin sudah usang) supaya Dana
+      // Terkumpul selalu akurat: 50% harga kemeja + Rp5.000 admin
+      // untuk cicilan, atau harga penuh untuk tunai/lunas.
+      const dpBenar = hitungDPSeharusnya(p);
+      pembayaran.dpMinimal = dpBenar;
+      pembayaran.totalDibayar = dpBenar;
+      pembayaran.status = pembayaran.metode === 'cicilan' ? 'dp' : 'lunas';
+      if (pembayaran.status === 'lunas') pembayaran.totalDibayar = p.total;
+    } else if (action === 'cicilan'){
+      const next = (pembayaran.cicilan || []).find(c => !c.dibayar);
+      if (next){
+        next.dibayar = true;
+        next.tanggalBayar = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+        pembayaran.totalDibayar = (pembayaran.totalDibayar || 0) + (next.nominal || 0);
+      }
+      const semuaLunas = (pembayaran.cicilan || []).every(c => c.dibayar);
+      pembayaran.status = semuaLunas ? 'lunas' : 'cicilan';
+      if (semuaLunas) pembayaran.totalDibayar = p.total;
+    } else if (action === 'lunas'){
+      pembayaran.status = 'lunas';
+      pembayaran.totalDibayar = p.total;
+      (pembayaran.cicilan || []).forEach(c => { c.dibayar = true; });
+    }
+
+    const statusBaru = STATUS_LABEL[pembayaran.status || 'belum_dp']?.label || '-';
+    const confirmed = await showAdminConfirm({
+      title: 'Ubah Status Pembayaran?',
+      messageHtml: `
+        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${escapeHtml(p.nama || '-')} (${escapeHtml(p.kodeUnik || '-')})</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Status</span><span>${escapeHtml(statusLama)} <span class="agc-arrow">→</span> ${escapeHtml(statusBaru)}</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Total Dibayar</span><span>${formatRupiah(pembayaran.totalDibayar || 0)}</span></div>
+        <p style="margin-top:12px;">Pastikan sudah benar sebelum disimpan. Status ini masih bisa diubah lagi nanti lewat tombol "Ubah Status" kalau ternyata salah pencet.</p>
+      `,
+      confirmLabel: 'Ya, Simpan Perubahan'
+    });
+    if (!confirmed) return;
+
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran, adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date() });
+      showToast('Status pembayaran berhasil diperbarui.', 'success');
+      await logAdminAction('status', `Status diubah dari "${statusLama}" menjadi "${statusBaru}". Total dibayar: ${formatRupiah(pembayaran.totalDibayar || 0)}.`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
+    } catch (err){
+      console.warn('Gagal memperbarui status pembayaran:', err.code, err.message);
+      showToast(`Gagal memperbarui status (${err.code || 'error'}). Coba lagi.`, 'error');
+    }
+  }
+
+  /* =========================================================
+     PERBAIKAN: UBAH STATUS SECARA MANUAL (bisa dikembalikan lagi)
+     Sebelumnya begitu status jadi "Lunas", tidak ada cara mengubahnya
+     kembali kalau admin salah pencet (mis. seharusnya baru DP/Cicilan
+     ke-1, tapi tombol "Lunas" ke-pencet). Fitur ini membiarkan admin
+     memilih status pembayaran SECARA BEBAS (Belum Bayar / DP / Lunas)
+     kapan saja, lewat tombol "Ubah Status" yang selalu tersedia.
+  ========================================================= */
+  function openUbahStatusConfirm(id){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const isCicilan = p.pembayaran?.metode === 'cicilan';
+    const statusSekarang = p.pembayaran?.status || 'belum_dp';
+    const opsi = isCicilan
+      ? [ ['belum_dp','Belum Bayar Sama Sekali'], ['dp','DP Terbayar (1/2)'], ['lunas','Lunas (2/2)'] ]
+      : [ ['belum_dp','Belum Bayar'], ['lunas','Lunas'] ];
+
+    showAdminConfirm({
+      title: 'Ubah Status Pembayaran Secara Manual',
+      messageHtml: `
+        <div class="agc-diff-row"><span class="agc-diff-label">Peserta</span><span>${escapeHtml(p.nama || '-')} (${escapeHtml(p.kodeUnik || '-')})</span></div>
+        <div class="agc-diff-row"><span class="agc-diff-label">Status saat ini</span><span>${escapeHtml(STATUS_LABEL[statusSekarang]?.label || '-')}</span></div>
+        <p style="margin:10px 0 4px;">Pilih status pembayaran yang benar. Gunakan ini untuk memperbaiki kalau sebelumnya salah pencet tombol status (mis. tidak sengaja ke "Lunas").</p>
+        <select class="agc-status-select" id="agcStatusSelect">
+          ${opsi.map(([val, label]) => `<option value="${val}" ${val === statusSekarang ? 'selected' : ''}>${label}</option>`).join('')}
+        </select>
+      `,
+      confirmLabel: 'Ya, Terapkan Status Ini'
+    }).then((confirmed) => {
+      if (!confirmed) return;
+      const select = document.getElementById('agcStatusSelect');
+      const targetStatus = select ? select.value : statusSekarang;
+      terapkanStatusManual(id, targetStatus);
+    });
+  }
+
+  async function terapkanStatusManual(id, targetStatus){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p) return;
+    const statusLama = STATUS_LABEL[p.pembayaran?.status || 'belum_dp']?.label || '-';
+    const pembayaran = JSON.parse(JSON.stringify(p.pembayaran || {}));
+    const cicilanArr = pembayaran.cicilan || [];
+
+    if (targetStatus === 'belum_dp'){
+      pembayaran.status = 'belum_dp';
+      pembayaran.dpDibayar = false;
+      pembayaran.totalDibayar = 0;
+      cicilanArr.forEach(c => { c.dibayar = false; delete c.tanggalBayar; });
+    } else if (targetStatus === 'dp'){
+      pembayaran.status = 'dp';
+      pembayaran.dpDibayar = true;
+      // PERBAIKAN BUG: sebelumnya baris ini keliru memakai nominal
+      // cicilan ke-2 (sisa pelunasan, TANPA biaya admin) sebagai jumlah
+      // yang sudah terbayar untuk status DP — sehingga "Dana Terkumpul"
+      // di website tampil LEBIH KECIL dari yang sebenarnya sudah
+      // ditransfer peserta (mis. peserta transfer Rp82.500 tapi situs
+      // hanya mencatat Rp77.500). Yang benar: jumlah terbayar untuk
+      // status DP = pembayaran.dpMinimal (DP 50% harga kemeja + biaya
+      // admin cicilan, PERSIS sama dengan angka "BAYAR SEKARANG" di
+      // struk & kartu transfer bank).
+      // Cicilan ke-2 (pelunasan) juga TIDAK ditandai lunas di sini —
+      // sebelumnya ikut tertandai "dibayar" walau baru DP yang masuk,
+      // sehingga tombol "Tandai Pelunasan (2/2)" jadi ikut hilang.
+      cicilanArr.forEach(c => { c.dibayar = false; delete c.tanggalBayar; });
+      // Hitung ulang DP yang seharusnya (50% harga kemeja + Rp5.000
+      // admin untuk cicilan) alih-alih memakai pembayaran.dpMinimal
+      // yang tersimpan, supaya data peserta lama yang nilainya
+      // sempat salah/kurang tetap tercatat benar begitu status
+      // diubah ulang lewat "Ubah Status".
+      const dpBenar = hitungDPSeharusnya(p);
+      pembayaran.dpMinimal = dpBenar;
+      pembayaran.totalDibayar = dpBenar;
+    } else if (targetStatus === 'lunas'){
+      pembayaran.status = 'lunas';
+      pembayaran.dpDibayar = true;
+      cicilanArr.forEach(c => {
+        c.dibayar = true;
+        if (!c.tanggalBayar) c.tanggalBayar = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+      });
+      pembayaran.totalDibayar = p.total;
+    }
+    pembayaran.cicilan = cicilanArr;
+
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      showToast('Firebase tidak aktif, tidak bisa memperbarui status.', 'error');
+      return;
+    }
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), { pembayaran, adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date() });
+      showToast('Status pembayaran berhasil diubah.', 'success');
+      await logAdminAction('status', `Status diubah manual dari "${statusLama}" menjadi "${STATUS_LABEL[targetStatus]?.label}". Total dibayar: ${formatRupiah(pembayaran.totalDibayar || 0)}.`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
+    } catch (err){
+      console.warn('Gagal mengubah status manual:', err.code, err.message);
+      showToast(`Gagal mengubah status (${err.code || 'error'}). Coba lagi.`, 'error');
+    }
+  }
+
+  /* =========================================================
+     DASBOR ADMIN: EDIT & HAPUS PESERTA
+     PERUBAHAN: untuk sementara, Dasbor Admin HANYA bisa mengedit
+     data peserta yang sudah ada dan menghapusnya — tombol "Tambah
+     Peserta" manual dihapus karena pendaftaran publik sekarang
+     SUDAH otomatis tersimpan ke Firestore begitu pengunjung submit
+     formulir (lihat simpanPendaftaranPublik di atas), jadi input
+     manual dobel tidak lagi diperlukan sebagai jalur utama.
+  ========================================================= */
+  const addPesertaOverlay = document.getElementById('addPesertaOverlay');
+  const addPesertaClose = document.getElementById('addPesertaClose');
+  const addPesertaCancelBtn = document.getElementById('addPesertaCancelBtn');
+  const addPesertaForm = document.getElementById('addPesertaForm');
+  const addPesertaError = document.getElementById('addPesertaError');
+  const addPesertaSubmitBtn = document.getElementById('addPesertaSubmitBtn');
+  const apJumlahInput = document.getElementById('apJumlah');
+  const apJenisRadios = document.querySelectorAll('input[name="apJenis"]');
+  const apTotalHargaEl = document.getElementById('apTotalHarga');
+
+  let editingPesertaId = null;
+
+  const apMetodeRadios = document.querySelectorAll('input[name="apMetode"]');
+  const apMetodeNoteEl = document.getElementById('apMetodeNote');
+
+  function getMetodeBayarAdmin(){
+    return document.querySelector('input[name="apMetode"]:checked')?.value || 'tunai';
+  }
+
+  // PERBAIKAN: sebelumnya fungsi ini tidak pernah membaca pilihan Metode
+  // Pembayaran (apMetode) sama sekali, jadi Total Harga di modal Edit
+  // selalu hanya harga x jumlah — biaya admin cicilan tidak pernah ikut
+  // dihitung ulang di sini walau radio-nya kelihatan bisa dipilih.
+  // Sekarang subtotal, biaya admin, dan total dihitung persis sama
+  // seperti di formulir pendaftaran publik (lihat hitungTotal()), supaya
+  // kalau admin memperbaiki metode bayar yang salah dipilih peserta,
+  // angkanya konsisten dari sini sampai ke Firestore.
+  function hitungTotalAdmin(){
+    const checked = document.querySelector('input[name="apJenis"]:checked');
+    const harga = checked ? parseInt(checked.dataset.harga, 10) : 0;
+    const jumlah = parseInt(apJumlahInput?.value, 10) || 0;
+    const subtotal = harga * jumlah;
+    const metode = getMetodeBayarAdmin();
+    const isCicilan = metode === 'cicilan';
+    const biayaAdmin = isCicilan ? ADMIN_FEE_CICILAN : 0;
+    const total = subtotal + biayaAdmin;
+
+    if (apTotalHargaEl) apTotalHargaEl.textContent = formatRupiah(total);
+    if (apMetodeNoteEl){
+      apMetodeNoteEl.innerHTML = isCicilan
+        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
+    }
+    return { harga, jumlah, subtotal, metode, biayaAdmin, total };
+  }
+  apJenisRadios.forEach(r => r.addEventListener('change', hitungTotalAdmin));
+  apJumlahInput?.addEventListener('input', hitungTotalAdmin);
+  apMetodeRadios.forEach(r => r.addEventListener('change', hitungTotalAdmin));
+
+  function openEditPesertaModal(id){
+    const p = pesertaData.find(x => x.id === id);
+    if (!p){
+      showToast('Data peserta tidak ditemukan (mungkin baru saja dihapus/berubah).', 'error');
+      return;
+    }
+    editingPesertaId = id;
+    addPesertaForm.reset();
+    addPesertaError.textContent = '';
+
+    document.getElementById('apKodeUnik').value = p.kodeUnik || '';
+    document.getElementById('apNama').value = p.nama || '';
+    document.getElementById('apNamaBordir').value = p.namaBordir || '';
+    document.getElementById('apWhatsapp').value = p.whatsapp || '';
+    if (p.departemen) document.getElementById('apDepartemen').value = p.departemen;
+    if (p.gender) document.getElementById('apGender').value = p.gender;
+    document.getElementById('apUkuran').value = p.ukuranKemeja || '';
+    apJumlahInput.value = p.jumlah || 1;
+    document.getElementById('apCatatan').value = (p.catatan && p.catatan !== '-') ? p.catatan : '';
+
+    const jenisVal = p.jenis === 'Lengan Panjang' ? 'panjang' : 'pendek';
+    const jenisRadio = document.querySelector(`input[name="apJenis"][value="${jenisVal}"]`);
+    if (jenisRadio) jenisRadio.checked = true;
+
+    const metodeVal = p.pembayaran?.metode === 'cicilan' ? 'cicilan' : 'tunai';
+    const metodeRadio = document.querySelector(`input[name="apMetode"][value="${metodeVal}"]`);
+    if (metodeRadio) metodeRadio.checked = true;
+
+    hitungTotalAdmin();
+    addPesertaOverlay.classList.add('active');
+  }
+  function closeAddPesertaModal(){
+    addPesertaOverlay.classList.remove('active');
+    editingPesertaId = null;
+  }
+  addPesertaClose?.addEventListener('click', closeAddPesertaModal);
+  addPesertaCancelBtn?.addEventListener('click', closeAddPesertaModal);
+  addPesertaOverlay?.addEventListener('click', (e) => { if (e.target === addPesertaOverlay) closeAddPesertaModal(); });
+
+  /* ============ SIMPAN PERUBAHAN (UPDATE) KE FIRESTORE ============
+     Catatan: status pembayaran (pembayaran.status, dpDibayar, dsb)
+     TIDAK disentuh di sini KECUALI admin memang sengaja mengubah
+     Metode Pembayaran (mis. peserta salah pilih "Tunai/Lunas Langsung"
+     padahal maksudnya "2x Cicilan"). Kalau metode-nya tidak diubah,
+     mengedit data biodata/ukuran tetap tidak akan pernah tidak sengaja
+     mereset status DP/Lunas yang sudah tercatat — persis seperti
+     sebelumnya. Ubah status pembayaran (tanpa ganti metode) tetap lewat
+     tombol "Tandai DP/Lunas" / "Ubah Status" di kartu peserta seperti
+     biasa. */
+  async function updatePesertaAdmin(id, data){
+    const fb = await waitForFirebase(10000);
+    if (!fb){
+      showToast('Gagal simpan: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.', 'error');
+      return { ok:false };
+    }
+    const patch = {
+      nama: data.nama,
+      namaBordir: data.namaBordir || data.nama,
+      whatsapp: data.whatsapp || '',
+      departemen: data.departemen,
+      gender: data.gender,
+      ukuranKemeja: data.ukuranKemeja,
+      jenis: data.jenis,
+      jumlah: data.jumlah,
+      harga: data.harga,
+      subtotal: data.subtotal,
+      biayaAdmin: data.biayaAdmin,
+      total: data.total,
+      catatan: data.catatan || '-',
+      adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date()
+    };
+    // Hanya disertakan kalau metode pembayaran benar-benar diubah admin
+    // (lihat pembangunan `dataBaru.pembayaranBaru` di submit handler).
+    if (data.pembayaranBaru){
+      patch.pembayaran = data.pembayaranBaru;
+    }
+    try {
+      await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id), patch);
+      showToast(`Data "${data.nama}" berhasil diperbarui.`, 'success');
+      return { ok:true };
+    } catch (err){
+      console.warn('Gagal memperbarui peserta:', err.code, err.message);
+      let pesan;
+      if (err.code === 'permission-denied'){
+        pesan = 'Gagal simpan: akses Firestore ditolak. Cek Firestore Rules di Firebase Console.';
+      } else {
+        pesan = `Gagal simpan (${err.code || 'error tidak diketahui'}).`;
+      }
+      showToast(pesan, 'error');
+      return { ok:false };
+    }
+  }
+
+  /* ============ HAPUS PESERTA DARI FIRESTORE ============ */
+  // PERBAIKAN BUG: sebelumnya menghapus peserta di sini TIDAK ikut menghapus
+  // profil catur-nya (koleksi "chess_players", dibuat oleh modul chess/).
+  // Karena kode unik selalu dibuat baru setiap kali daftar ulang, peserta yang
+  // sudah dihapus lalu daftar lagi akan tampak "dobel" di ranking/dasbor catur
+  // (profil lama jadi data hantu yang tidak pernah terhapus). Sekarang saat
+  // peserta dihapus di sini, profil catur terkait (jika ada) ikut dihapus.
+  async function hapusPesertaAdmin(id, nama, kodeUnik){
+    const yakin = await showAdminConfirm({
+      title: 'Hapus Data Peserta Ini?',
+      messageHtml: `<p>Anda akan <b>menghapus permanen</b> pendaftaran atas nama <b>${escapeHtml(nama)}</b> (${escapeHtml(kodeUnik || '-')}). Seluruh data pembayaran &amp; profil catur terkait ikut terhapus. Tindakan ini <b>tidak bisa dibatalkan</b>.</p>`,
+      confirmLabel: 'Ya, Hapus Permanen',
+      danger: true
+    });
+    if (!yakin) return;
+    const fb = await waitForFirebase(10000);
+    if (!fb){
+      showToast('Gagal hapus: Firebase belum tersambung. Coba tombol refresh di dasbor dulu.', 'error');
+      return;
+    }
+    try {
+      await fb.deleteDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, id));
+
+      // Best-effort: hapus juga profil catur terkait (kalau pernah main).
+      // Dibungkus try-catch terpisah supaya kalau ini gagal (mis. rules
+      // belum diupdate, atau peserta memang belum pernah buka menu catur
+      // sehingga dokumennya tidak ada), penghapusan peserta di atas TETAP
+      // dianggap berhasil.
+      if (kodeUnik){
+        try {
+          await fb.deleteDoc(fb.doc(fb.db, 'chess_players', String(kodeUnik).toUpperCase()));
+        } catch (chessErr){
+          console.warn('Gagal menghapus profil catur terkait (diabaikan, tidak fatal):', chessErr.code, chessErr.message);
+        }
+      }
+
+      showToast(`Peserta "${nama}" berhasil dihapus.`, 'success');
+      await logAdminAction('hapus', `Data peserta dihapus permanen dari dasbor.`, `${nama} (${kodeUnik || '-'})`);
+    } catch (err){
+      console.warn('Gagal menghapus peserta:', err.code, err.message);
+      let pesan;
+      if (err.code === 'permission-denied'){
+        pesan = 'Gagal hapus: akses Firestore ditolak. Pastikan Firestore Rules mengizinkan "allow delete: if true" pada koleksi pendaftaran, lalu Publish.';
+      } else {
+        pesan = `Gagal hapus (${err.code || 'error tidak diketahui'}).`;
+      }
+      showToast(pesan, 'error');
+    }
+  }
+
+  addPesertaForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    addPesertaError.textContent = '';
+
+    if (!editingPesertaId){
+      addPesertaError.textContent = 'Tidak ada peserta yang sedang diedit. Tutup dan coba lagi dari tombol Edit.';
+      return;
+    }
+
+    const nama = document.getElementById('apNama').value.trim();
+    const namaBordir = document.getElementById('apNamaBordir').value.trim();
+    const whatsappRaw = document.getElementById('apWhatsapp').value.trim();
+    const departemen = document.getElementById('apDepartemen').value;
+    const gender = document.getElementById('apGender').value;
+    const ukuranKemeja = document.getElementById('apUkuran').value;
+    const jumlah = parseInt(apJumlahInput.value, 10) || 1;
+    const jenisChecked = document.querySelector('input[name="apJenis"]:checked');
+    const jenis = jenisChecked?.value === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
+    const catatan = document.getElementById('apCatatan').value.trim();
+    const { harga, subtotal, metode, biayaAdmin, total } = hitungTotalAdmin();
+
+    if (!nama || !ukuranKemeja){
+      addPesertaError.textContent = 'Nama dan Ukuran wajib diisi.';
+      return;
+    }
+
+    const pLama = pesertaData.find(x => x.id === editingPesertaId) || {};
+    const metodeLama = pLama.pembayaran?.metode === 'cicilan' ? 'cicilan' : 'tunai';
+    const metodeBerubah = metodeLama !== metode;
+    const labelMetode = m => m === 'cicilan' ? '2x Cicilan' : 'Tunai / Lunas';
+
+    // ---- FITUR BARU: perbaikan Metode Pembayaran yang salah dipilih peserta ----
+    // Kalau admin mengubah Metode Pembayaran lewat modal Edit ini (mis. peserta
+    // tadinya salah pilih "Tunai/Lunas Langsung" padahal maksudnya "2x Cicilan"),
+    // status pembayaran & biaya admin ikut dihitung ulang dari awal untuk metode
+    // yang baru — memakai fungsi buildPembayaranAwal yang sama persis dipakai
+    // saat peserta pertama kali mendaftar, supaya konsisten dengan sisa kode
+    // (label status, Dana Terkumpul, struk, dsb).
+    let pembayaranBaru = null;
+    if (metodeBerubah){
+      pembayaranBaru = buildPembayaranAwal(subtotal, metode, biayaAdmin);
+    }
+
+    const dataBaru = {
+      nama, namaBordir,
+      whatsapp: whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '',
+      departemen, gender, ukuranKemeja, jenis, jumlah, harga, subtotal, biayaAdmin, total, catatan,
+      pembayaranBaru
+    };
+
+    // ---- Bangun daftar perubahan (diff) untuk ditampilkan di popup konfirmasi ----
+    const bandingan = [
+      ['Nama', pLama.nama || '-', dataBaru.nama || '-'],
+      ['Nama Bordir', pLama.namaBordir || '-', dataBaru.namaBordir || '-'],
+      ['WhatsApp', pLama.whatsapp || '-', dataBaru.whatsapp || '-'],
+      ['Departemen', pLama.departemen || '-', dataBaru.departemen || '-'],
+      ['Ukuran', pLama.ukuranKemeja || '-', dataBaru.ukuranKemeja || '-'],
+      ['Jenis Kemeja', pLama.jenis || '-', dataBaru.jenis || '-'],
+      ['Jumlah', String(pLama.jumlah || 0), String(dataBaru.jumlah || 0)],
+      ['Metode Bayar', labelMetode(metodeLama), labelMetode(metode)],
+      ['Biaya Admin', formatRupiah(pLama.biayaAdmin || pLama.pembayaran?.biayaAdmin || 0), formatRupiah(dataBaru.biayaAdmin || 0)],
+      ['Total', formatRupiah(pLama.total || 0), formatRupiah(dataBaru.total || 0)],
+      ['Catatan', pLama.catatan || '-', dataBaru.catatan || '-']
+    ].filter(([, lama, baru]) => String(lama) !== String(baru));
+
+    if (bandingan.length === 0){
+      addPesertaError.textContent = 'Tidak ada perubahan yang perlu disimpan.';
+      return;
+    }
+
+    const diffHtml = bandingan.map(([label, lama, baru]) =>
+      `<div class="agc-diff-row"><span class="agc-diff-label">${escapeHtml(label)}</span><span>${escapeHtml(lama)} <span class="agc-arrow">→</span> ${escapeHtml(baru)}</span></div>`
+    ).join('');
+
+    // Kalau metode berubah DAN peserta ini sebelumnya sudah punya progres
+    // pembayaran (bukan 'belum_dp'), beri peringatan tegas — status & jumlah
+    // yang sudah tercatat akan direset ke "Menunggu DP" mengikuti metode baru,
+    // supaya admin tidak kaget dan bisa cek ulang manual ke peserta dulu kalau perlu.
+    let peringatanMetodeHtml = '';
+    if (metodeBerubah){
+      const statusLamaLabel = STATUS_LABEL[pLama.pembayaran?.status || 'belum_dp']?.label || 'Menunggu DP';
+      const sudahAdaProgres = (pLama.pembayaran?.status || 'belum_dp') !== 'belum_dp';
+      peringatanMetodeHtml = sudahAdaProgres
+        ? `<p style="margin-top:12px;color:#b45309;"><i class="fa-solid fa-triangle-exclamation"></i> Peserta ini sebelumnya berstatus <b>"${escapeHtml(statusLamaLabel)}"</b> dengan total terbayar <b>${formatRupiah(pLama.pembayaran?.totalDibayar || 0)}</b>. Mengubah Metode Pembayaran akan <b>mereset status ke "Menunggu DP"</b> mengikuti metode baru (${escapeHtml(labelMetode(metode))}). Pastikan sudah dicek ulang ke peserta sebelum disimpan.</p>`
+        : `<p style="margin-top:12px;">Metode Pembayaran akan disesuaikan menjadi <b>${escapeHtml(labelMetode(metode))}</b>, dan status pembayaran akan diatur ke "Menunggu DP" sesuai metode baru.</p>`;
+    }
+
+    const confirmed = await showAdminConfirm({
+      title: 'Simpan Perubahan Data Peserta?',
+      messageHtml: `<p style="margin-bottom:10px;">Data <b>${escapeHtml(pLama.nama || nama)}</b> (${escapeHtml(pLama.kodeUnik || '-')}) akan diubah sebagai berikut:</p>${diffHtml}${peringatanMetodeHtml}`,
+      confirmLabel: 'Ya, Simpan Perubahan',
+      danger: metodeBerubah && (pLama.pembayaran?.status || 'belum_dp') !== 'belum_dp'
+    });
+    if (!confirmed) return;
+
+    addPesertaSubmitBtn.disabled = true;
+    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    const result = await updatePesertaAdmin(editingPesertaId, dataBaru);
+
+    addPesertaSubmitBtn.disabled = false;
+    addPesertaSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan';
+
+    if (result.ok){
+      const ringkasan = bandingan.map(([label, lama, baru]) => `${label}: "${lama}" → "${baru}"`).join('; ');
+      await logAdminAction('edit', ringkasan, `${pLama.nama || nama} (${pLama.kodeUnik || '-'})`);
+      closeAddPesertaModal();
+    } else {
+      addPesertaError.textContent = 'Gagal menyimpan — lihat notifikasi di atas untuk detail.';
+    }
+  });
+
+  /* =========================================================
+     20. ADMIN — ESTIMASI & PROGRES TAHAPAN PROSES
+     -------------------------------------------------
+     Mengelola dokumen Firestore "program_status/estimasi":
+       { currentStage: 1-4,
+         stage1: { estimasiISO, keterangan, selesaiPadaISO },
+         stage2: {...}, stage3: {...}, stage4: {...} }
+     - currentStage dipakai situs publik untuk menandai tahap mana
+       yang aktif di timeline ("Pendaftaran" → ... → "Distribusi").
+     - Tiap stageN punya estimasi tanggal/jam selesai (bisa kosong),
+       keterangan bebas (tampil ke pengunjung), dan selesaiPadaISO
+       (dicatat otomatis begitu tahap itu ditinggalkan/dilewati,
+       supaya badge "Selesai" di situs publik bisa menampilkan
+       tanggal riil selesainya, bukan cuma tanggal estimasi).
+     Semua field disimpan lewat setDoc(..., {merge:true}) supaya
+     dokumen otomatis dibuat kalau belum pernah ada.
+  ========================================================= */
+  const STAGE_LABELS = {
+    1: 'Pendaftaran',
+    2: 'Target Terkumpul',
+    3: 'Produksi Massal',
+    4: 'Distribusi'
+  };
+  const PROGRAM_STATUS_COLLECTION = 'program_status';
+  const PROGRAM_STATUS_DOC_ID = 'estimasi';
+
+  const estimasiBtn = document.getElementById('estimasiBtn');
+  const estimasiOverlay = document.getElementById('estimasiOverlay');
+  const estimasiClose = document.getElementById('estimasiClose');
+  const estimasiStageList = document.getElementById('estimasiStageList');
+  const estCurrentStage = document.getElementById('estCurrentStage');
+  const estCurrentStageSave = document.getElementById('estCurrentStageSave');
+  const estimasiError = document.getElementById('estimasiError');
+
+  let estimasiDataCache = null;
+  let estimasiUnsub = null;
+
+  function programStatusRef(fb){
+    return fb.doc(fb.db, PROGRAM_STATUS_COLLECTION, PROGRAM_STATUS_DOC_ID);
+  }
+
+  // Format Date -> string yang dimengerti <input type="datetime-local">
+  // (butuh "YYYY-MM-DDTHH:mm", tanpa detik/zona, mengikuti waktu lokal browser).
+  function isoToDatetimeLocalValue(iso){
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  // Kebalikannya: value <input datetime-local> -> ISO string (tersimpan di Firestore).
+  function datetimeLocalValueToIso(val){
+    if (!val) return null;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }
+
+  function renderEstimasiForm(){
+    if (!estimasiStageList) return;
+    const data = estimasiDataCache || {};
+    const currentStage = Math.min(4, Math.max(1, parseInt(data.currentStage, 10) || 1));
+    if (estCurrentStage) estCurrentStage.value = String(currentStage);
+
+    estimasiStageList.innerHTML = '';
+    [1,2,3,4].forEach(n => {
+      const stage = data[`stage${n}`] || {};
+      const card = document.createElement('div');
+      card.className = 'estimasi-stage-card' + (n === currentStage ? ' is-current-stage' : '');
+      card.innerHTML = `
+        <div class="estimasi-stage-card-head">
+          <h4><span class="estimasi-stage-num">${n}</span> ${escapeHtml(STAGE_LABELS[n])}</h4>
+          <span class="estimasi-stage-tag">${n === currentStage ? 'Tahap Aktif' : (n < currentStage ? 'Sudah Selesai' : 'Belum Dimulai')}</span>
+        </div>
+        <div class="estimasi-stage-grid">
+          <div class="form-group">
+            <label for="estDate${n}">Estimasi Tanggal &amp; Jam Selesai</label>
+            <input type="datetime-local" id="estDate${n}" value="${isoToDatetimeLocalValue(stage.estimasiISO)}">
+          </div>
+          <div class="form-group">
+            <label for="estNote${n}">Keterangan untuk Peserta</label>
+            <textarea id="estNote${n}" rows="2" placeholder="Contoh: Menunggu 10 peserta lagi sebelum produksi dimulai.">${escapeHtml(stage.keterangan || '')}</textarea>
+          </div>
+        </div>
+        <div class="estimasi-stage-actions">
+          <button class="btn btn-primary ripple" type="button" data-save-stage="${n}"><i class="fa-solid fa-floppy-disk"></i> Simpan Tahap ${n}</button>
+        </div>
+      `;
+      estimasiStageList.appendChild(card);
+    });
+  }
+
+  async function loadEstimasiRealtime(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      if (estimasiError) estimasiError.textContent = 'Tidak bisa memuat data: Firebase belum tersambung.';
+      return;
+    }
+    if (estimasiUnsub) return; // listener sudah aktif, tidak perlu pasang ulang
+    try {
+      estimasiUnsub = fb.onSnapshot(programStatusRef(fb), (snap) => {
+        estimasiDataCache = snap.exists() ? snap.data() : null;
+        renderEstimasiForm();
+      }, (err) => {
+        console.warn('Gagal memantau program_status/estimasi:', err.code, err.message);
+        if (estimasiError) estimasiError.textContent = 'Gagal memuat data — cek Firestore Rules koleksi "program_status".';
+      });
+    } catch (err){
+      console.warn('Gagal memasang listener program_status/estimasi:', err);
+    }
+  }
+
+  estimasiBtn?.addEventListener('click', () => {
+    estimasiOverlay?.classList.add('active');
+    if (estimasiError) estimasiError.textContent = '';
+    loadEstimasiRealtime();
+  });
+  estimasiClose?.addEventListener('click', () => estimasiOverlay?.classList.remove('active'));
+  estimasiOverlay?.addEventListener('click', (e) => { if (e.target === estimasiOverlay) estimasiOverlay.classList.remove('active'); });
+
+  // Simpan 1 kartu tahap (estimasi tanggal/jam + keterangan) — event delegation
+  // supaya tetap berfungsi walau kartu di-render ulang oleh listener realtime.
+  estimasiStageList?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-save-stage]');
+    if (!btn) return;
+    const n = parseInt(btn.dataset.saveStage, 10);
+    const dateInput = document.getElementById(`estDate${n}`);
+    const noteInput = document.getElementById(`estNote${n}`);
+    const estimasiISO = datetimeLocalValueToIso(dateInput?.value || '');
+    const keterangan = (noteInput?.value || '').trim();
+
+    const confirmed = await showAdminConfirm({
+      title: `Simpan Estimasi Tahap ${n} — ${STAGE_LABELS[n]}?`,
+      messageHtml: `<p>Estimasi tanggal/jam &amp; keterangan untuk tahap <b>${escapeHtml(STAGE_LABELS[n])}</b> akan diperbarui dan langsung tampil ke semua pengunjung situs. Pastikan tanggalnya sudah benar.</p>`,
+      confirmLabel: 'Ya, Simpan'
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      await fb.setDoc(programStatusRef(fb), {
+        [`stage${n}`]: { estimasiISO, keterangan },
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      }, { merge: true });
+      await logAdminAction('edit', `Estimasi: ${estimasiISO ? new Date(estimasiISO).toLocaleString('id-ID') : 'kosong'} • Keterangan: ${keterangan || '-'}`, `Tahap ${n} — ${STAGE_LABELS[n]}`);
+      showToast(`Estimasi tahap "${STAGE_LABELS[n]}" berhasil disimpan.`, 'success');
+    } catch (err){
+      console.warn('Gagal menyimpan estimasi tahap:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+
+  // Ubah tahap aktif program (dipakai di bagian "Progress Iuran Bersama" situs publik).
+  // Tahap-tahap yang dilewati (dari tahap lama sampai sebelum tahap baru) otomatis
+  // ditandai selesai dengan timestamp saat ini, supaya riwayatnya tercatat rapi.
+  estCurrentStageSave?.addEventListener('click', async () => {
+    const target = parseInt(estCurrentStage?.value, 10) || 1;
+    const current = Math.min(4, Math.max(1, parseInt(estimasiDataCache?.currentStage, 10) || 1));
+    if (target === current){
+      showToast('Tahap aktif tidak berubah.', 'error');
+      return;
+    }
+    const confirmed = await showAdminConfirm({
+      title: 'Update Tahap Aktif Program?',
+      messageHtml: `<p>Tahap aktif akan diubah dari <b>"${escapeHtml(STAGE_LABELS[current])}"</b> menjadi <b>"${escapeHtml(STAGE_LABELS[target])}"</b>. Semua pengunjung situs akan langsung melihat perubahan ini di bagian "Progress Iuran Bersama".</p>`,
+      confirmLabel: 'Ya, Update Tahap',
+      danger: target < current
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    estCurrentStageSave.disabled = true;
+    const originalHtml = estCurrentStageSave.innerHTML;
+    estCurrentStageSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      const patch = {
+        currentStage: target,
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      };
+      // Maju melewati beberapa tahap sekaligus? Tandai semua tahap yang
+      // dilewati sebagai selesai pada waktu yang sama (saat ini).
+      if (target > current){
+        const now = new Date().toISOString();
+        for (let n = current; n < target; n++){
+          const prevStage = estimasiDataCache?.[`stage${n}`] || {};
+          patch[`stage${n}`] = { ...prevStage, selesaiPadaISO: now };
+        }
+      }
+      await fb.setDoc(programStatusRef(fb), patch, { merge: true });
+      await logAdminAction('edit', `Tahap aktif: "${STAGE_LABELS[current]}" → "${STAGE_LABELS[target]}"`, 'Progres Program');
+      showToast('Tahap aktif berhasil diperbarui.', 'success');
+    } catch (err){
+      console.warn('Gagal update tahap aktif:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "program_status".', 'error');
+    } finally {
+      estCurrentStageSave.disabled = false;
+      estCurrentStageSave.innerHTML = originalHtml;
+    }
+  });
+
+  /* =========================================================
+     MENU BARU: TURNAMEN CATUR 17 AGUSTUS 2026
+     -------------------------------------------------
+     Dua koleksi Firestore terpisah dari data pendaftaran/kemeja:
+       - chess_tournament_config/agustus17_2026 : 1 dokumen berisi
+         judul, tanggal/jam mulai, hadiah juara 1/2/3, & status aktif
+         (dibaca real-time oleh modul catur di halaman publik).
+       - chess_tournament_agustus17              : 1 dokumen PER
+         PESERTA (docId = kodeUnik), berisi nomor WhatsApp & status
+         pendaftaran ("pending" | "approved" | "rejected") yang
+         diubah admin lewat tombol Terima/Tolak di bawah.
+  ========================================================= */
+  const TOURNEY_CONFIG_COLLECTION = 'chess_tournament_config';
+  const TOURNEY_ID = 'agustus17_2026';
+  const TOURNEY_REG_COLLECTION = 'chess_tournament_agustus17';
+  const TOURNEY_DEFAULTS = {
+    title: 'Turnamen Catur Kemerdekaan 17 Agustus 2026',
+    startAtISO: '2026-08-17T09:00:00+07:00',
+    prize1: 'Rp 1.000.000 + Trofi + Sertifikat',
+    prize2: 'Rp 600.000 + Sertifikat',
+    prize3: 'Rp 300.000 + Sertifikat',
+    active: true
+  };
+  const TOURNEY_STATUS_LABEL = {
+    pending:  { label: 'Menunggu',  cls: 'badge-warn',    icon: 'fa-hourglass-half' },
+    approved: { label: 'Diterima',  cls: 'badge-success', icon: 'fa-circle-check' },
+    rejected: { label: 'Ditolak',   cls: 'badge-danger',  icon: 'fa-circle-xmark' }
+  };
+
+  const chessTourneyBtn = document.getElementById('chessTourneyBtn');
+  const chessTourneyOverlay = document.getElementById('chessTourneyOverlay');
+  const chessTourneyClose = document.getElementById('chessTourneyClose');
+  const ctourTitle = document.getElementById('ctourTitle');
+  const ctourStart = document.getElementById('ctourStart');
+  const ctourPrize1 = document.getElementById('ctourPrize1');
+  const ctourPrize2 = document.getElementById('ctourPrize2');
+  const ctourPrize3 = document.getElementById('ctourPrize3');
+  const ctourActive = document.getElementById('ctourActive');
+  const ctourSaveConfig = document.getElementById('ctourSaveConfig');
+  const ctourConfigError = document.getElementById('ctourConfigError');
+  const ctourFilters = document.getElementById('ctourFilters');
+  const ctourList = document.getElementById('ctourList');
+  const ctourEmpty = document.getElementById('ctourEmpty');
+
+  let ctourConfigCache = null;
+  let ctourRegCache = [];
+  let ctourConfigUnsub = null;
+  let ctourRegUnsub = null;
+  let ctourActiveFilter = 'semua';
+
+  function tourneyConfigRef(fb){ return fb.doc(fb.db, TOURNEY_CONFIG_COLLECTION, TOURNEY_ID); }
+  function tourneyRegRef(fb, kodeUnik){ return fb.doc(fb.db, TOURNEY_REG_COLLECTION, kodeUnik); }
+
+  function renderCtourConfigForm(){
+    const c = { ...TOURNEY_DEFAULTS, ...(ctourConfigCache || {}) };
+    if (ctourTitle) ctourTitle.value = c.title;
+    if (ctourStart) ctourStart.value = isoToDatetimeLocalValue(c.startAtISO);
+    if (ctourPrize1) ctourPrize1.value = c.prize1;
+    if (ctourPrize2) ctourPrize2.value = c.prize2;
+    if (ctourPrize3) ctourPrize3.value = c.prize3;
+    if (ctourActive) ctourActive.checked = c.active !== false;
+  }
+
+  function renderCtourList(){
+    if (!ctourList) return;
+    const counts = { semua: ctourRegCache.length, pending: 0, approved: 0, rejected: 0 };
+    ctourRegCache.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+    setCount('ctourCountSemua', counts.semua);
+    setCount('ctourCountPending', counts.pending);
+    setCount('ctourCountApproved', counts.approved);
+    setCount('ctourCountRejected', counts.rejected);
+
+    const filtered = ctourActiveFilter === 'semua' ? ctourRegCache : ctourRegCache.filter(r => r.status === ctourActiveFilter);
+
+    if (!filtered.length){
+      ctourList.innerHTML = '';
+      if (ctourEmpty) ctourEmpty.style.display = 'block';
+      return;
+    }
+    if (ctourEmpty) ctourEmpty.style.display = 'none';
+
+    ctourList.innerHTML = filtered.map(r => {
+      const info = TOURNEY_STATUS_LABEL[r.status] || TOURNEY_STATUS_LABEL.pending;
+      const waLink = `https://wa.me/${(r.whatsapp || '').replace(/[^\d]/g, '')}`;
+      const tanggal = r.registeredAt?.toDate ? r.registeredAt.toDate().toLocaleString('id-ID') : '-';
+      return `
+        <div class="admin-row" data-kode="${escapeHtml(r.kodeUnik)}">
+          <div class="admin-row-top">
+            <div class="admin-row-id">
+              <div class="admin-row-avatar">${initialsOf(r.nama)}</div>
+              <div class="admin-row-head">
+                <strong>${escapeHtml(r.nama || '-')}</strong>
+                <span><i class="fa-solid fa-hashtag"></i> ${escapeHtml(r.kodeUnik || '-')}</span>
+              </div>
+            </div>
+            <span class="admin-row-badge ${info.cls}"><i class="fa-solid ${info.icon}"></i> ${info.label}</span>
+          </div>
+          <div class="admin-row-meta">
+            <div class="admin-row-meta-group">
+              <a class="ctour-wa-link" href="${waLink}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(r.whatsapp || '-')}</a>
+              <span><i class="fa-solid fa-clock"></i> Daftar: ${tanggal}</span>
+            </div>
+          </div>
+          <div class="ctour-row-actions">
+            ${r.status !== 'approved' ? `<button class="btn btn-primary ripple" data-caction="approve" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-check"></i> Terima</button>` : ''}
+            ${r.status !== 'rejected' ? `<button class="btn btn-danger ripple" data-caction="reject" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-xmark"></i> Tolak</button>` : ''}
+            ${r.status !== 'pending' ? `<button class="btn btn-outline-dark ripple" data-caction="pending" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-rotate-left"></i> Batalkan</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadCtourRealtime(){
+    const fb = await waitForFirebase(8000);
+    if (!fb){
+      if (ctourConfigError) ctourConfigError.textContent = 'Tidak bisa memuat data: Firebase belum tersambung.';
+      return;
+    }
+    if (!ctourConfigUnsub){
+      ctourConfigUnsub = fb.onSnapshot(tourneyConfigRef(fb), (snap) => {
+        ctourConfigCache = snap.exists() ? snap.data() : null;
+        renderCtourConfigForm();
+      }, (err) => console.warn('Gagal memantau chess_tournament_config:', err.code, err.message));
+    }
+    if (!ctourRegUnsub){
+      try {
+        const q = fb.query(fb.collection(fb.db, TOURNEY_REG_COLLECTION), fb.orderBy('registeredAt', 'desc'));
+        ctourRegUnsub = fb.onSnapshot(q, (snap) => {
+          ctourRegCache = snap.docs.map(d => d.data());
+          renderCtourList();
+        }, (err) => {
+          console.warn('Gagal memantau chess_tournament_agustus17:', err.code, err.message);
+          if (ctourConfigError) ctourConfigError.textContent = 'Gagal memuat pendaftar — cek Firestore Rules koleksi "chess_tournament_agustus17".';
+        });
+      } catch (err){
+        console.warn('Gagal memasang listener turnamen catur:', err);
+      }
+    }
+  }
+
+  chessTourneyBtn?.addEventListener('click', () => {
+    chessTourneyOverlay?.classList.add('active');
+    if (ctourConfigError) ctourConfigError.textContent = '';
+    loadCtourRealtime();
+  });
+  chessTourneyClose?.addEventListener('click', () => chessTourneyOverlay?.classList.remove('active'));
+  chessTourneyOverlay?.addEventListener('click', (e) => { if (e.target === chessTourneyOverlay) chessTourneyOverlay.classList.remove('active'); });
+
+  ctourFilters?.addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-cfilter]');
+    if (!chip) return;
+    ctourActiveFilter = chip.dataset.cfilter;
+    ctourFilters.querySelectorAll('.adash-chip').forEach(c => c.classList.toggle('active', c === chip));
+    renderCtourList();
+  });
+
+  // Simpan pengaturan event (judul, tanggal/jam, hadiah, tampil/sembunyikan banner)
+  ctourSaveConfig?.addEventListener('click', async () => {
+    const title = (ctourTitle?.value || '').trim() || TOURNEY_DEFAULTS.title;
+    const startAtISO = datetimeLocalValueToIso(ctourStart?.value || '') || TOURNEY_DEFAULTS.startAtISO;
+    const prize1 = (ctourPrize1?.value || '').trim() || TOURNEY_DEFAULTS.prize1;
+    const prize2 = (ctourPrize2?.value || '').trim() || TOURNEY_DEFAULTS.prize2;
+    const prize3 = (ctourPrize3?.value || '').trim() || TOURNEY_DEFAULTS.prize3;
+    const active = !!ctourActive?.checked;
+
+    const confirmed = await showAdminConfirm({
+      title: 'Simpan Pengaturan Turnamen Catur?',
+      messageHtml: `<p>Perubahan akan langsung tampil real-time ke semua peserta yang membuka Lokon Chess Arena — termasuk countdown, hadiah, dan status tampil/sembunyi banner.</p>`,
+      confirmLabel: 'Ya, Simpan'
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.setDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    ctourSaveConfig.disabled = true;
+    const originalHtml = ctourSaveConfig.innerHTML;
+    ctourSaveConfig.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+    try {
+      await fb.setDoc(tourneyConfigRef(fb), {
+        title, startAtISO, prize1, prize2, prize3, active,
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      }, { merge: true });
+      await logAdminAction('edit', `Judul: "${title}" • Mulai: ${new Date(startAtISO).toLocaleString('id-ID')} • Tampil: ${active ? 'Ya' : 'Tidak'}`, 'Turnamen Catur 17 Agustus');
+      showToast('Pengaturan turnamen berhasil disimpan.', 'success');
+    } catch (err){
+      console.warn('Gagal menyimpan pengaturan turnamen:', err.code, err.message);
+      if (ctourConfigError) ctourConfigError.textContent = 'Gagal menyimpan — cek Firestore Rules koleksi "chess_tournament_config".';
+    } finally {
+      ctourSaveConfig.disabled = false;
+      ctourSaveConfig.innerHTML = originalHtml;
+    }
+  });
+
+  // Terima / Tolak / Batalkan (kembalikan ke menunggu) — event delegation
+  // supaya tetap berfungsi walau daftar di-render ulang oleh listener realtime.
+  ctourList?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-caction]');
+    if (!btn) return;
+    const action = btn.dataset.caction;
+    const kode = btn.dataset.kode;
+    const reg = ctourRegCache.find(r => r.kodeUnik === kode);
+    if (!reg) return;
+
+    const ACTION_META = {
+      approve: { newStatus: 'approved', title: 'Terima Pendaftaran Turnamen?', confirmLabel: 'Ya, Terima', danger: false,
+        msg: `<p><b>${escapeHtml(reg.nama)}</b> akan resmi terdaftar sebagai peserta Turnamen Catur 17 Agustus dan namanya akan tampil di daftar peserta publik.</p>` },
+      reject: { newStatus: 'rejected', title: 'Tolak Pendaftaran Turnamen?', confirmLabel: 'Ya, Tolak', danger: true,
+        msg: `<p>Pendaftaran <b>${escapeHtml(reg.nama)}</b> akan ditandai ditolak. Peserta akan melihat status ini di halaman catur dan bisa mendaftar ulang kalau perlu.</p>` },
+      pending: { newStatus: 'pending', title: 'Batalkan Keputusan & Kembalikan ke Menunggu?', confirmLabel: 'Ya, Batalkan', danger: false,
+        msg: `<p>Status <b>${escapeHtml(reg.nama)}</b> akan dikembalikan ke "Menunggu" seperti sebelum diputuskan.</p>` }
+    };
+    const meta = ACTION_META[action];
+    if (!meta) return;
+
+    const confirmed = await showAdminConfirm({ title: meta.title, messageHtml: meta.msg, confirmLabel: meta.confirmLabel, danger: meta.danger });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.updateDoc){
+      showToast('Gagal menyimpan: Firebase belum tersambung.', 'error');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await fb.updateDoc(tourneyRegRef(fb, kode), {
+        status: meta.newStatus,
+        reviewedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      });
+      await logAdminAction('status', `Status pendaftaran turnamen catur diubah menjadi "${TOURNEY_STATUS_LABEL[meta.newStatus].label}".`, `${reg.nama || '-'} (${kode})`);
+      showToast(`Status "${escapeHtml(reg.nama)}" berhasil diubah.`, 'success');
+    } catch (err){
+      console.warn('Gagal mengubah status pendaftaran turnamen:', err.code, err.message);
+      showToast('Gagal menyimpan — cek Firestore Rules koleksi "chess_tournament_agustus17".', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+});
