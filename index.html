@@ -1592,6 +1592,54 @@
   await loadFirebaseSDK();
 })();
 </script>
+     
+<style>
+.catur-flag-wave{
+  position:absolute;
+  top:-16px;
+  left:50%;
+  transform:translateX(-50%);
+  width:22px;
+  height:15px;
+  border-radius:1px;
+  overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+  z-index:5;
+  pointer-events:none;
+  animation:curFlagWave 1.6s ease-in-out infinite;
+}
+.catur-flag-wave::before,
+.catur-flag-wave::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;
+  height:50%;
+}
+.catur-flag-wave::before{ top:0; background:#FF0000; }
+.catur-flag-wave::after{ bottom:0; background:#FFFFFF; }
+
+@keyframes curFlagWave{
+  0%,100%{ transform:translateX(-50%) skewX(0deg) rotate(0deg); }
+  25%{ transform:translateX(-50%) skewX(-6deg) rotate(-2deg); }
+  50%{ transform:translateX(-50%) skewX(0deg) rotate(0deg); }
+  75%{ transform:translateX(-50%) skewX(6deg) rotate(2deg); }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var chessBtn = document.querySelector('a[href*="chess/index.html"]');
+  if (chessBtn) {
+    var wrap = chessBtn.parentElement;
+    if (getComputedStyle(wrap).position === 'static') {
+      wrap.style.position = 'relative';
+    }
+    var flag = document.createElement('div');
+    flag.className = 'catur-flag-wave';
+    wrap.appendChild(flag);
+  }
+});
+</script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
 <script src="script.min.js?v=29" defer></script>
