@@ -237,6 +237,10 @@ export class Chess3DScene{
     this._boardLightMesh = lightMesh;
     this._boardDarkMesh = darkMesh;
 
+    // Plakat nama di sisi kanan & kiri papan (menyatu dengan alas board,
+    // dibuat dari canvas texture ringan — tidak menambah draw call berarti).
+    this._addSidePlaques(boardGroup);
+
     this.boardGroup = boardGroup;
     this.scene.add(boardGroup);
 
@@ -245,6 +249,95 @@ export class Chess3DScene{
 
     this.highlightGroup = new THREE.Group();
     this.scene.add(this.highlightGroup);
+  }
+
+  /**
+   * Plakat teks di sisi kanan & kiri papan — dibangun dari CanvasTexture
+   * (bukan model 3D/font-loader), jadi tetap ringan di HP. Teks dirender
+   * memanjang mengikuti sisi papan (sumbu Z), lalu di-mapping ke plane
+   * datar yang "menempel" di alas board persis di luar bingkai kotak.
+   * GANTI teks di sini bila suatu saat perlu diperbarui.
+   */
+  _addSidePlaques(boardGroup){
+    const makePlaque = (lines, xPos) => {
+      const cw = 240, ch = 1800; // lebar (radial/tebal) x panjang (sepanjang sisi papan)
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+
+      const draw = () => {
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.save();
+        ctx.translate(cw / 2, ch / 2);
+        ctx.rotate(Math.PI / 2); // teks mengalir sepanjang sumbu panjang canvas (jadi sumbu Z dunia)
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Cari ukuran font terbesar yang muat: dibatasi panjang baris
+        // terpanjang (sumbu Z) DAN tinggi blok multi-baris (sumbu tebal).
+        let size = 140, lineHeight = 0;
+        const maxW = ch - 90;
+        const maxBlockH = cw - 40;
+        for (;;){
+          ctx.font = `700 ${size}px Outfit, sans-serif`;
+          const maxLineW = Math.max(...lines.map(l => ctx.measureText(l).width));
+          lineHeight = size * 1.15;
+          const blockH = lineHeight * lines.length;
+          if ((maxLineW <= maxW && blockH <= maxBlockH) || size <= 14) break;
+          size -= 2;
+        }
+
+        const startY = -((lines.length - 1) * lineHeight) / 2;
+        const maxLineW = Math.max(...lines.map(l => ctx.measureText(l).width));
+        const barLen = Math.min(maxW, ch - 20);
+        const topY = startY - lineHeight * 0.72;
+        const botY = startY + lineHeight * (lines.length - 1) + lineHeight * 0.72;
+
+        // Garis aksen emas di atas & bawah teks — kesan plakat/nameplate.
+        ctx.strokeStyle = 'rgba(242,193,78,0.55)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-barLen / 2, topY); ctx.lineTo(barLen / 2, topY);
+        ctx.moveTo(-barLen / 2, botY); ctx.lineTo(barLen / 2, botY);
+        ctx.stroke();
+
+        ctx.shadowColor = 'rgba(23,230,230,0.85)';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#F2C14E';
+        lines.forEach((line, i) => ctx.fillText(line, 0, startY + i * lineHeight));
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(23,230,230,0.35)';
+        lines.forEach((line, i) => ctx.strokeText(line, 0, startY + i * lineHeight));
+        ctx.restore();
+      };
+      draw();
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+
+      // Kalau font "Outfit" belum sempat termuat saat draw pertama,
+      // gambar ulang begitu font siap (tetap 1x saja, tidak per-frame).
+      if (document.fonts && document.fonts.load){
+        document.fonts.load('700 140px Outfit').then(() => {
+          draw();
+          tex.needsUpdate = true;
+        }).catch(() => {});
+      }
+
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+      const geo = new THREE.PlaneGeometry(0.95, 7.0); // 0.95 = tebal radial, 7.0 = panjang sepanjang sisi
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = -Math.PI / 2; // rebahkan menghadap ke atas, menyatu dengan alas
+      mesh.position.set(xPos, -0.155, 0);
+      return mesh;
+    };
+
+    // Sisi kanan (mengarah ke file h saat orientasi putih di bawah)
+    boardGroup.add(makePlaque(['PT. LOKON PRIMA DEPO PARUNG', 'ARENA DUEL CATUR'], 5.55));
+    // Sisi kiri (mengarah ke file a)
+    boardGroup.add(makePlaque(['WEBSITE DEVELOPER', '@BENYORIKI'], -5.55));
   }
 
   _setupAmbientParticles(){
