@@ -383,3 +383,75 @@ export function showEmoteBubble(layerEl, emoji, isSelf){
   layerEl.appendChild(bubble);
   setTimeout(() => bubble.remove(), 2300);
 }
+
+/* =========================================================
+   TURNAMEN 17 AGUSTUS 2026
+========================================================= */
+
+/** Render daftar peserta yang statusnya SUDAH 'approved' (diterima admin). */
+export function renderTourneyParticipants(listEl, emptyEl, countChipEl, approvedList){
+  if (countChipEl) countChipEl.textContent = `${approvedList.length} peserta`;
+  if (!listEl) return;
+  if (!approvedList.length){
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = approvedList.map(p => `
+    <div class="tourney-participant-row">
+      <span class="tourney-p-avatar" style="background:${avatarColor(p.kodeUnik || p.nama || '')}">${initials(p.nama)}</span>
+      <b>${escapeHtml(p.nama || 'Peserta')}</b>
+      <i class="fa-solid fa-circle-check" title="Terkonfirmasi"></i>
+    </div>`).join('');
+}
+
+/** Pecah selisih ms jadi {d,h,m,s}, dibulatkan ke bawah, tidak pernah negatif. */
+export function splitCountdown(diffMs){
+  const total = Math.max(0, Math.floor(diffMs / 1000));
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return { d, h, m, s };
+}
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+/** Update kotak hitung mundur (dipakai baik untuk kartu modal maupun chip ringkas di banner). */
+export function renderCountdownCells(cellEls, diffMs){
+  const { d, h, m, s } = splitCountdown(diffMs);
+  if (cellEls.d) cellEls.d.textContent = pad2(d);
+  if (cellEls.h) cellEls.h.textContent = pad2(h);
+  if (cellEls.m) cellEls.m.textContent = pad2(m);
+  if (cellEls.s) cellEls.s.textContent = pad2(s);
+}
+
+export function fmtCountdownShort(diffMs){
+  if (diffMs <= 0) return 'Sedang berlangsung!';
+  const { d, h, m } = splitCountdown(diffMs);
+  if (d > 0) return `${d}H ${pad2(h)}J ${pad2(m)}M`;
+  return `${pad2(h)}J ${pad2(m)}M`;
+}
+
+/** Render banner status pendaftaran milik peserta sendiri (pending/approved/rejected). */
+export function renderTourneyStatus(blockEl, bannerEl, titleEl, descEl, regDoc){
+  if (!blockEl || !bannerEl) return;
+  if (!regDoc){ blockEl.style.display = 'none'; return; }
+  blockEl.style.display = 'block';
+  bannerEl.className = `tourney-status-banner ${regDoc.status}`;
+  const icon = bannerEl.querySelector('i');
+  if (regDoc.status === 'approved'){
+    if (icon) icon.className = 'fa-solid fa-circle-check';
+    titleEl.textContent = 'Kamu terdaftar! 🎉';
+    descEl.textContent = `Sampai jumpa di hari-H. Konfirmasi teknis akan dikirim ke WhatsApp ${regDoc.whatsapp}.`;
+  } else if (regDoc.status === 'rejected'){
+    if (icon) icon.className = 'fa-solid fa-circle-xmark';
+    titleEl.textContent = 'Pendaftaran belum bisa diterima';
+    descEl.textContent = 'Hubungi admin untuk info lebih lanjut, atau daftar ulang dengan nomor WhatsApp yang aktif.';
+  } else {
+    if (icon) icon.className = 'fa-solid fa-hourglass-half';
+    titleEl.textContent = 'Menunggu konfirmasi admin';
+    descEl.textContent = `Pendaftaran dengan WhatsApp ${regDoc.whatsapp} sudah masuk, tunggu diterima admin ya.`;
+  }
+}

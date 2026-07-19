@@ -73,6 +73,17 @@ gampang — komentar di kedua file menjelaskan persis di mana.
 - Tombol catur mengambang di website utama, sejajar di atas tombol
   chat, dengan animasi pulse neon.
 - PWA dasar: bisa "Tambahkan ke Layar Utama", app shell ter-cache.
+- **Turnamen Catur Kemerdekaan 17 Agustus 2026** (fitur baru): banner
+  meriah bertema merah-putih di dasbor, popup info lengkap (countdown
+  hari/jam/menit/detik, hadiah juara 1–3, daftar peserta yang sudah
+  diterima admin). Hanya peserta login yang bisa mendaftar (tamu
+  diarahkan ke modal ajakan daftar yang sama seperti mode lain);
+  pendaftaran wajib mengisi nomor WhatsApp aktif, tersimpan sebagai
+  status "menunggu" sampai diterima/ditolak admin lewat menu baru
+  **Turnamen Catur** di Dasbor Admin (yang juga mengatur tanggal/jam
+  & hadiah — semuanya real-time, tanpa perlu edit kode). Semua animasi
+  bertema (kembang api, kelap-kelip) murni CSS (opacity/transform),
+  bukan canvas/particle-system JS, supaya tetap ringan di HP & PC.
 
 ## Yang disederhanakan dari spesifikasi awal (jujur, biar tidak ada kejutan)
 
@@ -118,6 +129,19 @@ match /chess_challenges/{challengeId} {
   allow create: if true;
   allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','roomId']);
   allow delete: if false;
+}
+
+// --- Turnamen Catur 17 Agustus 2026 (fitur baru) ---
+match /chess_tournament_config/{configId} {
+  allow read: if true;   // dibaca semua orang (banner + modal turnamen di dasbor catur)
+  allow write: if true;  // ditulis dari Dasbor Admin (menu "Turnamen Catur 17 Agustus")
+}
+match /chess_tournament_agustus17/{kodeUnik} {
+  allow read: if true;   // daftar peserta "approved" tampil publik di modal turnamen
+  allow write: if true;  // peserta menulis pendaftarannya sendiri; admin mengubah status
+                          // (approve/reject) dari Dasbor Admin. Sama seperti koleksi lain
+                          // di atas, rules ini tidak memverifikasi identitas kriptografis
+                          // karena situs tidak memakai Firebase Authentication.
 }
 ```
 

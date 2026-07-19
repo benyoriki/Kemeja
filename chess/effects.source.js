@@ -252,64 +252,79 @@ export class Chess3DScene{
   }
 
   /**
-   * Plakat teks di sisi kanan & kiri papan — dibangun dari CanvasTexture
-   * (bukan model 3D/font-loader), jadi tetap ringan di HP. Teks dirender
-   * memanjang mengikuti sisi papan (sumbu Z), lalu di-mapping ke plane
-   * datar yang "menempel" di alas board persis di luar bingkai kotak.
+   * Papan sponsor berdiri di sisi kanan & kiri board — seperti papan iklan
+   * di pinggir lapangan sepak bola. Dibangun dari satu CanvasTexture per
+   * papan (bukan model 3D/font-loader), jadi tetap ringan di HP maupun PC.
+   * Panel menghadap ke tengah board (arah kamera default) supaya terbaca,
+   * dan posisinya dihitung supaya kedua ujung panel tetap berada di atas
+   * alas bulat (tidak melayang di luar lingkaran base).
    * GANTI teks di sini bila suatu saat perlu diperbarui.
    */
   _addSidePlaques(boardGroup){
-    const makePlaque = (lines, xPos) => {
-      const cw = 240, ch = 1800; // lebar (radial/tebal) x panjang (sepanjang sisi papan)
+    const roundedRectPath = (ctx, x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    };
+
+    // panjang papan di dunia nyata (sepanjang sisi board, sumbu Z) &
+    // tinggi papan (sumbu Y) — rasio ini dipakai supaya teks di canvas
+    // tidak gepeng/melar saat dipetakan ke plane.
+    const boardLen = 7.2, boardHeight = 0.95;
+
+    const makePlaque = (lines, xPos, faceSign) => {
+      const cw = 2400, ch = Math.round(cw * (boardHeight / boardLen));
       const canvas = document.createElement('canvas');
       canvas.width = cw; canvas.height = ch;
       const ctx = canvas.getContext('2d');
 
       const draw = () => {
         ctx.clearRect(0, 0, cw, ch);
-        ctx.save();
-        ctx.translate(cw / 2, ch / 2);
-        ctx.rotate(Math.PI / 2); // teks mengalir sepanjang sumbu panjang canvas (jadi sumbu Z dunia)
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Cari ukuran font terbesar yang muat: dibatasi panjang baris
-        // terpanjang (sumbu Z) DAN tinggi blok multi-baris (sumbu tebal).
-        let size = 140, lineHeight = 0;
-        const maxW = ch - 90;
-        const maxBlockH = cw - 40;
+        // Cari ukuran font terbesar yang muat (baris terpanjang & tinggi blok).
+        let size = 220, lineHeight = 0;
+        const maxW = cw - 160;
+        const maxBlockH = ch - 46;
         for (;;){
           ctx.font = `700 ${size}px Outfit, sans-serif`;
           const maxLineW = Math.max(...lines.map(l => ctx.measureText(l).width));
-          lineHeight = size * 1.15;
+          lineHeight = size * 1.12;
           const blockH = lineHeight * lines.length;
-          if ((maxLineW <= maxW && blockH <= maxBlockH) || size <= 14) break;
+          if ((maxLineW <= maxW && blockH <= maxBlockH) || size <= 16) break;
           size -= 2;
         }
 
-        const startY = -((lines.length - 1) * lineHeight) / 2;
+        const cx = cw / 2, cy = ch / 2;
+        const startY = cy - ((lines.length - 1) * lineHeight) / 2;
         const maxLineW = Math.max(...lines.map(l => ctx.measureText(l).width));
-        const barLen = Math.min(maxW, ch - 20);
-        const topY = startY - lineHeight * 0.72;
-        const botY = startY + lineHeight * (lines.length - 1) + lineHeight * 0.72;
 
-        // Garis aksen emas di atas & bawah teks — kesan plakat/nameplate.
-        ctx.strokeStyle = 'rgba(242,193,78,0.55)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(-barLen / 2, topY); ctx.lineTo(barLen / 2, topY);
-        ctx.moveTo(-barLen / 2, botY); ctx.lineTo(barLen / 2, botY);
+        // Alas panel — lempeng gelap + tepi emas, kesan papan sponsor logam.
+        roundedRectPath(ctx, 10, 10, cw - 20, ch - 20, 22);
+        ctx.fillStyle = 'rgba(9,15,30,0.55)';
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'rgba(242,193,78,0.6)';
+        ctx.stroke();
+        // Garis aksen tipis kedua di dalamnya — kesan bingkai ganda/premium.
+        roundedRectPath(ctx, 22, 22, cw - 44, ch - 44, 16);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(23,230,230,0.4)';
         ctx.stroke();
 
         ctx.shadowColor = 'rgba(23,230,230,0.85)';
-        ctx.shadowBlur = 18;
+        ctx.shadowBlur = 22;
         ctx.fillStyle = '#F2C14E';
-        lines.forEach((line, i) => ctx.fillText(line, 0, startY + i * lineHeight));
+        lines.forEach((line, i) => ctx.fillText(line, cx, startY + i * lineHeight));
         ctx.shadowBlur = 0;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.strokeStyle = 'rgba(23,230,230,0.35)';
-        lines.forEach((line, i) => ctx.strokeText(line, 0, startY + i * lineHeight));
-        ctx.restore();
+        lines.forEach((line, i) => ctx.strokeText(line, cx, startY + i * lineHeight));
       };
       draw();
 
@@ -320,24 +335,42 @@ export class Chess3DScene{
       // Kalau font "Outfit" belum sempat termuat saat draw pertama,
       // gambar ulang begitu font siap (tetap 1x saja, tidak per-frame).
       if (document.fonts && document.fonts.load){
-        document.fonts.load('700 140px Outfit').then(() => {
+        document.fonts.load('700 200px Outfit').then(() => {
           draw();
           tex.needsUpdate = true;
         }).catch(() => {});
       }
 
+      const group = new THREE.Group();
+
       const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide });
-      const geo = new THREE.PlaneGeometry(0.95, 7.0); // 0.95 = tebal radial, 7.0 = panjang sepanjang sisi
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.rotation.x = -Math.PI / 2; // rebahkan menghadap ke atas, menyatu dengan alas
-      mesh.position.set(xPos, -0.155, 0);
-      return mesh;
+      const geo = new THREE.PlaneGeometry(boardLen, boardHeight);
+      const panel = new THREE.Mesh(geo, mat);
+      // faceSign menentukan arah hadap panel: -1 → menghadap -X (dipakai
+      // panel di sisi kanan, x positif, agar menghadap ke tengah board),
+      // +1 → menghadap +X (panel di sisi kiri, x negatif).
+      panel.rotation.y = faceSign * Math.PI / 2;
+      panel.position.y = 0.02;
+      group.add(panel);
+
+      // Rel tipis di kaki panel — kesan dudukan/penyangga papan sponsor,
+      // sekaligus menyatu dengan cahaya neon tema board.
+      const railMat = new THREE.MeshStandardMaterial({
+        color: 0x1c2438, emissive: 0x17e6e6, emissiveIntensity: 0.9, metalness: 0.4, roughness: 0.4
+      });
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, boardLen - 0.1), railMat);
+      rail.position.y = -0.46;
+      group.add(rail);
+
+      group.position.set(xPos, 0.32, 0);
+      return group;
     };
 
-    // Sisi kanan (mengarah ke file h saat orientasi putih di bawah)
-    boardGroup.add(makePlaque(['PT. LOKON PRIMA DEPO PARUNG', 'ARENA DUEL CATUR'], 5.55));
-    // Sisi kiri (mengarah ke file a)
-    boardGroup.add(makePlaque(['WEBSITE DEVELOPER', '@BENYORIKI'], -5.55));
+    // Sisi kanan (mengarah ke file h saat orientasi putih di bawah) —
+    // panel menghadap -X (ke tengah board).
+    boardGroup.add(makePlaque(['PT. LOKON PRIMA DEPO PARUNG', 'ARENA DUEL CATUR'], 5.15, -1));
+    // Sisi kiri (mengarah ke file a) — panel menghadap +X (ke tengah board).
+    boardGroup.add(makePlaque(['WEBSITE DEVELOPER @BENYORIKI'], -5.15, 1));
   }
 
   _setupAmbientParticles(){

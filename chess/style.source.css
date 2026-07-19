@@ -83,14 +83,27 @@ body::before{
   transition:opacity .25s ease, transform .25s ease;
 }
 body.in-game .topbar{ opacity:0; transform:translateY(-16px); pointer-events:none; }
+.topbar-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+.topbar-hamburger{
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  width:40px; height:40px; border-radius:12px; font-size:16px; color:var(--ink);
+  transition:transform .18s ease, color .18s ease, border-color .18s ease;
+}
+.topbar-hamburger:hover{ color:var(--cyan); border-color:rgba(23,230,230,.4); }
+.topbar-hamburger:active{ transform:scale(.92); }
 .topbar-back{
   display:flex; align-items:center; gap:10px;
   padding:8px 16px 8px 10px; border-radius:999px;
   font-family:var(--font-display); font-weight:700; font-size:14px;
-  color:var(--ink); text-decoration:none;
+  color:var(--ink); text-decoration:none; min-width:0;
 }
 .topbar-back i{ font-size:15px; color:var(--cyan); }
 .topbar-back span b{ color:var(--cyan); }
+@media (max-width:520px){
+  .topbar-back span{ display:none; }
+  .topbar-back{ padding:10px; }
+  .topbar-back i{ font-size:15px; }
+}
 
 .topbar-badges{ display:flex; align-items:center; gap:10px; }
 .member-badge{
@@ -346,6 +359,12 @@ body.in-game .topbar{ opacity:0; transform:translateY(-16px); pointer-events:non
   transform:scale(.92) translateY(10px); transition:.3s;
   max-height:88vh; overflow-y:auto;
 }
+/* Di browser yang mendukung dvh, tinggi modal ikut menyesuaikan saat
+   keyboard HP muncul (vh statis tidak berubah, jadi input di bawah
+   bisa "tersembunyi" di balik keyboard tanpa ini). */
+@supports (max-height: 88dvh){
+  .modal-box{ max-height:88dvh; }
+}
 .modal-backdrop.open .modal-box{ transform:scale(1) translateY(0); }
 .modal-close{ position:absolute; top:14px; right:14px; font-size:18px; color:var(--ink-faint); }
 
@@ -598,4 +617,312 @@ input[type="range"].level-range{ width:100%; margin:10px 0 20px; }
 @media (prefers-reduced-motion: reduce){
   .loading-knight{ animation:none; }
   .hud-timer.timer-critical{ animation:none; }
+}
+
+/* =========================================================
+   TURNAMEN CATUR — KEMERDEKAAN 17 AGUSTUS 2026
+   -------------------------------------------------
+   Tema merah-putih, meriah tapi RINGAN: semua animasi di sini
+   cuma memindahkan opacity/transform (murah, jalan di GPU),
+   TIDAK ada canvas/particle-system JS seperti percobaan
+   sebelumnya di dasbor admin yang sempat bikin patah-patah —
+   pelajaran itu diterapkan dari awal di sini. Semua animasi
+   otomatis mati kalau prefers-reduced-motion aktif.
+========================================================= */
+:root{
+  --merah:#FF3B3B;
+  --merah-deep:#C81E1E;
+  --silver:#C7D1E0;
+  --bronze:#D98B4A;
+}
+
+/* ---------- Banner CTA di dasbor ----------
+   Dibungkus 2 baris (atas: ikon+judul, bawah: info+countdown) supaya
+   tidak pernah kepepet/kepotong di layar sempit — sebelumnya semua
+   dipaksa satu baris flex dan gampang tabrakan di HP kecil. Border
+   "cahaya" pakai teknik padding+gradient (bukan box-shadow raksasa)
+   supaya tidak terpotong tajam oleh overflow:hidden pada sudut
+   membulat, dan dekorasi kelap-kelip dipisah ke layer sendiri yang
+   mengikuti radius parent. Semua animasi tetap murah (opacity/transform
+   only, GPU) — tidak ada canvas/particle JS. */
+.tourney-banner{
+  position:relative; width:100%; margin:22px 0 4px; border-radius:var(--radius);
+  text-align:left; display:flex; flex-direction:column; gap:12px;
+  padding:2px; border:none; isolation:isolate;
+  background:linear-gradient(135deg, rgba(255,59,59,.55), rgba(242,193,78,.5), rgba(255,59,59,.55));
+  background-size:220% 220%; animation:tourneyBorderFlow 7s ease-in-out infinite;
+  transition:transform .25s cubic-bezier(.2,.8,.3,1), box-shadow .25s ease;
+  box-shadow:0 14px 32px rgba(200,30,30,.16);
+}
+.tourney-banner:hover{ transform:translateY(-3px); box-shadow:0 18px 40px rgba(255,59,59,.24); }
+.tourney-banner:active{ transform:translateY(-1px); }
+@keyframes tourneyBorderFlow{ 0%,100%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } }
+
+/* Lapisan isi: solid, di atas border gradient, radius sedikit lebih kecil dari parent */
+.tourney-banner-top, .tourney-banner-bottom{ position:relative; z-index:1; }
+.tourney-banner-top{
+  display:flex; align-items:center; gap:14px; padding:14px 16px 0;
+}
+.tourney-banner-bottom{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  padding:0 16px 14px; margin-left:66px;
+}
+.tourney-banner::before{
+  content:''; position:absolute; inset:0; border-radius:inherit; z-index:0;
+  background:
+    linear-gradient(120deg, rgba(255,59,59,.14), rgba(255,255,255,.04) 45%, rgba(242,193,78,.12)),
+    var(--glass);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+}
+
+/* Dekorasi kelap-kelip — layer sendiri, radius ngikut parent, jadi ujungnya
+   selalu halus/lembut walau di dalam overflow:hidden (tidak ada "potongan tajam"). */
+.tourney-banner-decor{
+  position:absolute; inset:0; border-radius:inherit; overflow:hidden; z-index:0; pointer-events:none;
+}
+.tourney-banner-flecks{
+  position:absolute; inset:0; opacity:.5;
+  background-image:
+    radial-gradient(2px 2px at 8% 30%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 22% 75%, var(--gold), transparent 60%),
+    radial-gradient(1.5px 1.5px at 40% 20%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 60% 68%, var(--merah), transparent 60%),
+    radial-gradient(1.5px 1.5px at 78% 25%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 92% 60%, var(--gold), transparent 60%);
+  animation:tourneyFleckTwinkle 3.4s ease-in-out infinite;
+}
+@keyframes tourneyFleckTwinkle{ 0%,100%{ opacity:.3; } 50%{ opacity:.7; } }
+
+.tourney-banner-icon{
+  width:52px; height:52px; min-width:52px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--gold), var(--merah)); color:#2A0A0A; font-size:22px;
+  box-shadow:0 4px 16px rgba(255,59,59,.4); animation:tourneyIconBob 2.6s ease-in-out infinite;
+}
+@keyframes tourneyIconBob{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-3px) rotate(-6deg); } }
+
+.tourney-banner-heading{ display:flex; flex-direction:column; gap:3px; min-width:0; flex:1; }
+.tourney-banner-eyebrow{
+  display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--gold); width:fit-content;
+}
+.tourney-banner-heading b{
+  font-size:15px; font-family:var(--font-display); line-height:1.3;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.tourney-banner-arrow{
+  flex-shrink:0; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.06); color:var(--merah); font-size:12px;
+}
+.tourney-banner-sub{
+  display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-dim); min-width:0;
+}
+.tourney-banner-sub i{ color:var(--gold); flex-shrink:0; }
+.tourney-banner-cta{
+  display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-dim);
+  padding:5px 10px; border-radius:999px; background:rgba(255,59,59,.12); flex-shrink:0;
+}
+.tourney-banner-cta i{ color:var(--merah); font-size:11px; }
+#tourneyBannerCountdown{ font-family:var(--font-hud); font-weight:700; font-size:13px; color:var(--ink); white-space:nowrap; }
+@media (prefers-reduced-motion: reduce){
+  .tourney-banner, .tourney-banner-flecks, .tourney-banner-icon{ animation:none; }
+}
+@media (max-width:520px){
+  .tourney-banner-bottom{ margin-left:0; }
+  .tourney-banner-heading b{ font-size:14px; }
+}
+
+/* ---------- Modal turnamen ----------
+   PERBAIKAN: sebelumnya overflow:hidden di sini menimpa overflow-y:auto
+   dari .modal-box (base), jadi modal ini SAMA SEKALI tidak bisa
+   digeser begitu form WhatsApp dibuka — kolom input di bawah jadi
+   tidak terjangkau. Sekarang cuma kunci overflow-x (biar dekorasi
+   kembang api/kelap-kelip tetap rapi di sudut), overflow-y tetap
+   auto dari .modal-box supaya bisa discroll normal. */
+.tourney-modal-box{ width:min(560px, 100%); text-align:left; position:relative; overflow-x:hidden; }
+.tourney-modal-flecks{
+  position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.4;
+  background-image:
+    radial-gradient(1.5px 1.5px at 10% 15%, #fff, transparent),
+    radial-gradient(2px 2px at 30% 45%, var(--gold), transparent),
+    radial-gradient(1.5px 1.5px at 50% 10%, #fff, transparent),
+    radial-gradient(2px 2px at 70% 40%, var(--merah), transparent),
+    radial-gradient(1.5px 1.5px at 90% 20%, #fff, transparent),
+    radial-gradient(2px 2px at 15% 80%, var(--gold), transparent),
+    radial-gradient(1.5px 1.5px at 85% 75%, #fff, transparent);
+  animation:tourneyFleckTwinkle 4s ease-in-out infinite;
+}
+.tourney-modal-box > *:not(.tourney-modal-flecks):not(.tourney-modal-fireworks){ position:relative; z-index:1; }
+
+/* Kembang api: 3 ledakan radial-gradient statis posisinya, cuma
+   opacity+scale yang beranimasi (2 properti = murah), berulang
+   dengan jeda berbeda supaya terasa organik, bukan robotik. */
+.tourney-modal-fireworks{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.tw-burst{
+  position:absolute; width:90px; height:90px; border-radius:50%; opacity:0; transform:scale(0);
+  background:radial-gradient(circle, #fff 0%, var(--gold) 22%, var(--merah) 45%, transparent 72%);
+  animation:tourneyBurst 4.5s ease-out infinite;
+}
+.tw-burst.b1{ top:6%; left:12%; animation-delay:.2s; }
+.tw-burst.b2{ top:10%; right:16%; animation-delay:1.6s; }
+.tw-burst.b3{ top:2%; left:52%; animation-delay:3s; }
+@keyframes tourneyBurst{
+  0%{ opacity:0; transform:scale(0); }
+  12%{ opacity:.55; transform:scale(1); }
+  30%{ opacity:0; transform:scale(1.3); }
+  100%{ opacity:0; transform:scale(1.3); }
+}
+@media (prefers-reduced-motion: reduce){
+  .tourney-modal-flecks, .tw-burst{ animation:none; display:none; }
+}
+
+.tourney-head{ text-align:center; padding-right:6px; }
+.tourney-head-eyebrow{
+  display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--merah); background:rgba(255,59,59,.12); border:1px solid rgba(255,59,59,.3);
+  padding:6px 14px; border-radius:20px; margin-bottom:10px;
+}
+.tourney-head h3{ font-size:19.5px; font-family:var(--font-display); line-height:1.3; }
+.tourney-date-label{ font-size:12.5px; color:var(--ink-dim); margin-top:6px; }
+.tourney-date-label i{ color:var(--gold); margin-right:4px; }
+
+.tourney-countdown{ display:flex; align-items:center; justify-content:center; gap:8px; margin:18px 0 4px; }
+.tc-cell{ display:flex; flex-direction:column; align-items:center; min-width:52px; }
+.tc-cell b{
+  font-family:var(--font-hud); font-size:26px; font-weight:700; line-height:1; color:var(--ink);
+  background:rgba(255,255,255,.05); border:1px solid var(--glass-border); border-radius:10px;
+  padding:8px 6px; width:100%; text-align:center;
+}
+.tc-cell span{ font-size:9.5px; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.05em; margin-top:4px; }
+.tc-sep{ font-family:var(--font-hud); font-size:22px; font-weight:700; color:var(--merah); margin-top:-14px; }
+.tourney-countdown-caption{ text-align:center; font-size:11.5px; color:var(--ink-dim); margin-bottom:6px; }
+.tourney-countdown.is-live .tc-cell b{ color:var(--win); border-color:rgba(51,226,154,.4); }
+
+.tourney-prize-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
+.tourney-prize-card{
+  display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center;
+  padding:14px 8px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid var(--glass-border);
+}
+.tourney-prize-card i{ font-size:20px; }
+.tourney-prize-card.p1{ border-color:rgba(242,193,78,.4); background:rgba(242,193,78,.08); }
+.tourney-prize-card.p1 i{ color:var(--gold); }
+.tourney-prize-card.p2 i{ color:var(--silver); }
+.tourney-prize-card.p3 i{ color:var(--bronze); }
+.tp-label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); }
+.tp-value{ font-size:12px; font-weight:700; line-height:1.35; overflow-wrap:anywhere; }
+
+.tourney-section{ margin-top:18px; }
+.tourney-section-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; }
+.tourney-section-head h4{ font-size:13.5px; display:flex; align-items:center; gap:7px; }
+.tourney-section-head h4 i{ color:var(--merah); }
+.tourney-count-chip{
+  font-family:var(--font-mono); font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:999px;
+  background:rgba(255,59,59,.12); color:var(--merah);
+}
+.tourney-participant-list{ display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; }
+.tourney-participant-row{
+  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.03);
+}
+.tourney-p-avatar{
+  width:28px; height:28px; min-width:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:10.5px; font-weight:700; color:#fff;
+}
+.tourney-participant-row b{ font-size:12.5px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tourney-participant-row i{ color:var(--win); font-size:12px; }
+
+.tourney-status-banner{
+  display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:14px;
+  background:rgba(23,230,230,.08); border:1px solid rgba(23,230,230,.25);
+}
+.tourney-status-banner i{ font-size:18px; color:var(--cyan); margin-top:2px; }
+.tourney-status-banner b{ display:block; font-size:13.5px; margin-bottom:2px; }
+.tourney-status-banner span{ font-size:12px; color:var(--ink-dim); line-height:1.5; }
+.tourney-status-banner.pending{ background:rgba(242,193,78,.08); border-color:rgba(242,193,78,.28); }
+.tourney-status-banner.pending i{ color:var(--gold); }
+.tourney-status-banner.approved{ background:rgba(51,226,154,.08); border-color:rgba(51,226,154,.28); }
+.tourney-status-banner.approved i{ color:var(--win); }
+.tourney-status-banner.rejected{ background:rgba(255,67,97,.08); border-color:rgba(255,67,97,.28); }
+.tourney-status-banner.rejected i{ color:var(--danger); }
+
+.tourney-register-btn{ width:100%; padding:14px; font-size:14px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.tourney-register-btn:disabled{ opacity:.45; cursor:not-allowed; }
+.tourney-form{ margin-top:12px; display:flex; flex-direction:column; gap:6px; }
+.tourney-form label{ font-size:12px; font-weight:700; color:var(--ink-dim); display:flex; align-items:center; gap:6px; }
+.tourney-form label i{ color:var(--win); }
+.tourney-form input{
+  padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.05); border:1.5px solid var(--glass-border);
+  color:var(--ink); font-size:14px; outline:none; transition:.2s;
+}
+.tourney-form input:focus{ border-color:var(--cyan); background:rgba(23,230,230,.06); }
+.tourney-form-hint{ font-size:11px; color:var(--ink-faint); line-height:1.5; }
+.tourney-form-error{ color:var(--danger); font-size:11.5px; min-height:14px; }
+.tourney-form-actions{ display:flex; gap:10px; margin-top:6px; }
+
+@media (max-width:640px){
+  .tourney-prize-row{ gap:7px; }
+  .tourney-prize-card{ padding:11px 5px; }
+  .tp-value{ font-size:10.5px; }
+  .tc-cell{ min-width:44px; }
+  .tc-cell b{ font-size:20px; padding:6px 4px; }
+}
+
+/* =========================================================
+   MENU DASBOR (HAMBURGER DRAWER)
+   -------------------------------------------------
+   Drawer geser dari kiri, animasi cuma transform+opacity
+   (murah, GPU) supaya tetap RINGAN. Konsisten dgn bahasa
+   desain glass/gradient modul ini.
+========================================================= */
+.dash-menu-overlay{
+  position:fixed; inset:0; z-index:90; background:rgba(2,4,10,.6);
+  opacity:0; visibility:hidden; transition:opacity .25s ease, visibility .25s ease;
+}
+.dash-menu-overlay.open{ opacity:1; visibility:visible; }
+
+.dash-menu-drawer{
+  position:fixed; top:0; bottom:0; left:0; z-index:95;
+  width:min(300px, 84vw); padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+  padding-top:calc(18px + env(safe-area-inset-top));
+  display:flex; flex-direction:column; gap:18px;
+  border-radius:0 20px 20px 0; border-left:none;
+  transform:translateX(-104%); transition:transform .3s cubic-bezier(.2,.8,.3,1);
+  overflow-y:auto;
+}
+.dash-menu-drawer.open{ transform:translateX(0); }
+
+.dash-menu-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.dash-menu-user{ display:flex; align-items:center; gap:10px; min-width:0; }
+.dash-menu-user .avatar-chip{
+  width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-hud); font-weight:700; font-size:15px; background:var(--cyan); color:#fff; flex-shrink:0;
+}
+.dash-menu-user-text{ display:flex; flex-direction:column; min-width:0; line-height:1.3; }
+.dash-menu-user-text b{ font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dash-menu-user-text span{ font-family:var(--font-hud); font-size:12px; color:var(--gold); font-weight:600; }
+.dash-menu-close{
+  width:32px; height:32px; min-width:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.06); color:var(--ink-dim); font-size:13px; transition:.18s;
+}
+.dash-menu-close:hover{ color:var(--ink); background:rgba(255,255,255,.1); }
+
+.dash-menu-section{ display:flex; flex-direction:column; gap:4px; }
+.dash-menu-label{
+  font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-faint); padding:0 10px; margin-bottom:2px;
+}
+.dash-menu-item{
+  display:flex; align-items:center; gap:12px; width:100%; padding:12px 10px; border-radius:12px;
+  font-size:13.5px; font-weight:600; color:var(--ink); text-decoration:none; text-align:left;
+  transition:background .18s ease, color .18s ease;
+}
+.dash-menu-item i{ width:18px; text-align:center; font-size:15px; color:var(--cyan); flex-shrink:0; }
+.dash-menu-item:hover{ background:rgba(255,255,255,.06); }
+.dash-menu-item:active{ background:rgba(255,255,255,.1); }
+.dash-menu-item-badge{
+  margin-left:auto; font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+  padding:3px 8px; border-radius:999px; background:rgba(255,59,59,.18); color:var(--merah); flex-shrink:0;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .dash-menu-drawer{ transition:none; }
+  .dash-menu-overlay{ transition:none; }
 }

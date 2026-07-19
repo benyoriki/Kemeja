@@ -8,7 +8,7 @@
    ini tidak menyimpan/mengubah data apa pun, murni cache file.
 ========================================================= */
 
-const CACHE_NAME = 'lokon-arena-v2';
+const CACHE_NAME = 'lokon-arena-v6';
 const APP_SHELL = [
   './index.html',
   './style.css',

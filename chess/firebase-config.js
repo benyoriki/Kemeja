@@ -35,6 +35,29 @@ export const COL_CHESS_ROOMS      = "chess_rooms";       // ruang permainan akti
 export const COL_CHESS_MATCHES    = "chess_matches";     // arsip histori pertandingan selesai
 export const COL_CHESS_CHALLENGES = "chess_challenges";  // notifikasi tantangan duel realtime
 
+/* ---- Turnamen 17 Agustus 2026 (event spesial, terpisah dari
+        ranking/main harian) ----
+   - COL_TOURNEY_REG   : 1 dokumen per pendaftar, docId = kodeUnik
+                         (mencegah dobel daftar), status diubah admin
+                         lewat Dasbor Admin -> menu "Turnamen Catur".
+   - COL_TOURNEY_CONFIG: 1 dokumen tunggal (docId TOURNEY_ID) berisi
+                         tanggal/jam mulai & hadiah juara 1/2/3 —
+                         SEMUA bisa diubah admin dari Dasbor Admin,
+                         tanpa perlu edit kode. Nilai di bawah ini
+                         cuma FALLBACK kalau dokumen config belum
+                         pernah disimpan admin sama sekali. */
+export const COL_TOURNEY_REG     = "chess_tournament_agustus17";
+export const COL_TOURNEY_CONFIG  = "chess_tournament_config";
+export const TOURNEY_ID          = "agustus17_2026";
+export const TOURNEY_DEFAULTS = {
+  title: "Turnamen Catur Kemerdekaan 17 Agustus 2026",
+  startAtISO: "2026-08-17T09:00:00+07:00",
+  prize1: "Rp 1.000.000 + Trofi + Sertifikat",
+  prize2: "Rp 600.000 + Sertifikat",
+  prize3: "Rp 300.000 + Sertifikat",
+  active: true
+};
+
 /* ---- Parameter permainan (satu metode saja, sesuai permintaan) ---- */
 export const GAME_TIME_MS   = 10 * 60 * 1000;  // 10 menit per pemain, tidak ada mode lain
 export const ELO_K_FACTOR   = 32;

@@ -10,6 +10,7 @@
 import {
   firebaseConfig, SESSION_KEY, FIRESTORE_COLLECTION,
   COL_CHESS_PLAYERS, COL_CHESS_ROOMS, COL_CHESS_MATCHES, COL_CHESS_CHALLENGES,
+  COL_TOURNEY_REG, COL_TOURNEY_CONFIG, TOURNEY_ID, TOURNEY_DEFAULTS,
   GAME_TIME_MS, ELO_K_FACTOR, HEARTBEAT_MS, ONLINE_TIMEOUT_MS, IDLE_TIMEOUT_MS
 } from './firebase-config.js';
 import { loadChessRules, ChessMatch, ComputerOpponent, calcElo } from './chess-engine.js';
@@ -32,6 +33,18 @@ const el = {
   memberName: $('memberName'),
   memberRating: $('memberRating'),
   topAvatarChip: $('topAvatarChip'),
+
+  btnHamburger: $('btnHamburger'),
+  btnDashMenuClose: $('btnDashMenuClose'),
+  dashMenuOverlay: $('dashMenuOverlay'),
+  dashMenuDrawer: $('dashMenuDrawer'),
+  dashMenuAvatar: $('dashMenuAvatar'),
+  dashMenuName: $('dashMenuName'),
+  dashMenuRating: $('dashMenuRating'),
+  menuItemDashboard: $('menuItemDashboard'),
+  menuItemTourney: $('menuItemTourney'),
+  menuItemHistory: $('menuItemHistory'),
+  menuItemSettings: $('menuItemSettings'),
 
   rankingList: $('rankingList'),
   onlineList: $('onlineList'),
@@ -80,6 +93,30 @@ const el = {
 
   settingVolume: $('settingVolume'), settingMuted: $('settingMuted'),
   settingShadow: $('settingShadow'), settingBloom: $('settingBloom'),
+
+  btnOpenTourney: $('btnOpenTourney'),
+  tourneyBannerCountdown: $('tourneyBannerCountdown'),
+  tourneyBannerTitle: $('tourneyBannerTitle'),
+  tourneyModal: $('tourneyModal'),
+  tourneyTitle: $('tourneyTitle'),
+  tourneyDateLabel: $('tourneyDateLabel'),
+  tourneyCountdown: $('tourneyCountdown'),
+  tourneyCountdownCaption: $('tourneyCountdownCaption'),
+  tourneyPrize1: $('tourneyPrize1'), tourneyPrize2: $('tourneyPrize2'), tourneyPrize3: $('tourneyPrize3'),
+  tourneyParticipantList: $('tourneyParticipantList'),
+  tourneyParticipantEmpty: $('tourneyParticipantEmpty'),
+  tourneyParticipantCount: $('tourneyParticipantCount'),
+  tourneyStatusBlock: $('tourneyStatusBlock'),
+  tourneyStatusBanner: $('tourneyStatusBanner'),
+  tourneyStatusTitle: $('tourneyStatusTitle'),
+  tourneyStatusDesc: $('tourneyStatusDesc'),
+  tourneyRegisterBlock: $('tourneyRegisterBlock'),
+  tourneyRegisterBtn: $('tourneyRegisterBtn'),
+  tourneyForm: $('tourneyForm'),
+  tourneyWaInput: $('tourneyWaInput'),
+  tourneyFormError: $('tourneyFormError'),
+  tourneyFormCancel: $('tourneyFormCancel'),
+  tourneyFormSubmit: $('tourneyFormSubmit'),
 };
 
 /* ---------------- State global ---------------- */
@@ -112,6 +149,12 @@ const state = {
                           // SEBELUM fitur auto-hapus profil catur ada) tidak lagi
                           // "berhantu" di Lokon Chess Arena walau dokumen
                           // chess_players miliknya masih tersisa di Firestore.
+
+  tourneyConfig: null,      // { title, startAtISO, prize1, prize2, prize3, active } — dari Firestore, fallback TOURNEY_DEFAULTS
+  tourneyStartMs: 0,        // cache waktu mulai (ms) supaya tidak parsing ISO tiap detik di interval
+  tourneyApproved: [],      // daftar pendaftar berstatus 'approved' (realtime)
+  tourneyMyReg: null,       // dokumen pendaftaran turnamen milik sendiri (realtime) | null
+  tourneyCountdownTimer: null,
 };
 
 /* =========================================================
@@ -268,6 +311,12 @@ function updateSelfBadge(mine){
   if (el.topAvatarChip){
     el.topAvatarChip.textContent = UI.initials(mine.nama);
     el.topAvatarChip.style.background = UI.avatarColor(mine.kodeUnik || mine.nama || '');
+  }
+  if (el.dashMenuName) el.dashMenuName.textContent = mine.nama;
+  if (el.dashMenuRating) el.dashMenuRating.textContent = `Rating ${mine.rating}`;
+  if (el.dashMenuAvatar){
+    el.dashMenuAvatar.textContent = UI.initials(mine.nama);
+    el.dashMenuAvatar.style.background = UI.avatarColor(mine.kodeUnik || mine.nama || '');
   }
 }
 
@@ -527,6 +576,229 @@ function pick(p){ return { kodeUnik: p.kodeUnik, nama: p.nama, rating: p.rating 
 ========================================================= */
 function openGuestLock(){
   el.guestLockModal && el.guestLockModal.classList.add('open');
+}
+
+/* =========================================================
+   6b. TURNAMEN 17 AGUSTUS 2026
+   -------------------------------------------------
+   Alur: siapa saja (termasuk tamu) bisa melihat banner & info
+   turnamen di dasbor (countdown, hadiah, daftar peserta yang
+   sudah diterima) — tapi tombol "Daftar Turnamen Sekarang"
+   memakai guard yang SAMA seperti mode Lawan Komputer/Player:
+   tamu diarahkan ke openGuestLock(), bukan langsung ke form.
+========================================================= */
+
+/** Ambil konfigurasi turnamen dari Firestore (tanggal & hadiah yang
+ *  diatur admin di Dasbor Admin). Kalau dokumennya belum pernah
+ *  disimpan admin sama sekali, pakai TOURNEY_DEFAULTS supaya modul
+ *  tetap tampil normal (bukan kosong/error). */
+async function loadTourneyConfig(){
+  const { db, fns } = state.fb;
+  try {
+    const snap = await fns.getDoc(fns.doc(db, COL_TOURNEY_CONFIG, TOURNEY_ID));
+    state.tourneyConfig = snap.exists() ? { ...TOURNEY_DEFAULTS, ...snap.data() } : { ...TOURNEY_DEFAULTS };
+  } catch {
+    state.tourneyConfig = { ...TOURNEY_DEFAULTS };
+  }
+  state.tourneyStartMs = new Date(state.tourneyConfig.startAtISO).getTime() || 0;
+  applyTourneyConfigToDom();
+}
+
+function applyTourneyConfigToDom(){
+  const c = state.tourneyConfig;
+  if (!c) return;
+  if (el.tourneyBannerTitle) el.tourneyBannerTitle.textContent = c.title;
+  if (el.tourneyTitle) el.tourneyTitle.textContent = c.title;
+  if (el.tourneyDateLabel){
+    const d = new Date(c.startAtISO);
+    const label = isNaN(d.getTime()) ? '-' : d.toLocaleString('id-ID', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) + ' WIB';
+    el.tourneyDateLabel.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${label}`;
+  }
+  if (el.tourneyPrize1) el.tourneyPrize1.textContent = c.prize1;
+  if (el.tourneyPrize2) el.tourneyPrize2.textContent = c.prize2;
+  if (el.tourneyPrize3) el.tourneyPrize3.textContent = c.prize3;
+}
+
+/** Peserta yang sudah DITERIMA admin — ditampilkan ke semua orang
+ *  (termasuk tamu) sebagai bukti sosial turnamen sungguhan berjalan. */
+function listenTourneyApproved(){
+  const { db, fns } = state.fb;
+  const q = fns.query(fns.collection(db, COL_TOURNEY_REG), fns.where('status', '==', 'approved'));
+  fns.onSnapshot(q, (snap) => {
+    state.tourneyApproved = snap.docs.map(d => d.data());
+    UI.renderTourneyParticipants(el.tourneyParticipantList, el.tourneyParticipantEmpty, el.tourneyParticipantCount, state.tourneyApproved);
+  }, (err) => console.error('[turnamen] listener peserta error', err));
+}
+
+/** Status pendaftaran turnamen milik SENDIRI (realtime) — supaya kalau
+ *  admin klik Terima/Tolak di Dasbor Admin, tampilan di sini langsung
+ *  berubah tanpa perlu reload halaman. */
+function listenMyTourneyReg(){
+  if (!state.session) return;
+  const { db, fns } = state.fb;
+  const kode = state.session.kodeUnik.toUpperCase();
+  fns.onSnapshot(fns.doc(db, COL_TOURNEY_REG, kode), (snap) => {
+    state.tourneyMyReg = snap.exists() ? snap.data() : null;
+    renderTourneyOwnStatus();
+  }, (err) => console.error('[turnamen] listener status sendiri error', err));
+}
+
+function renderTourneyOwnStatus(){
+  UI.renderTourneyStatus(el.tourneyStatusBlock, el.tourneyStatusBanner, el.tourneyStatusTitle, el.tourneyStatusDesc, state.tourneyMyReg);
+  // Kalau sudah pernah daftar (apapun statusnya), sembunyikan tombol
+  // "Daftar Sekarang" dan form-nya — status cukup diwakili banner di atas.
+  const already = !!state.tourneyMyReg;
+  if (el.tourneyRegisterBlock) el.tourneyRegisterBlock.style.display = already ? 'none' : 'block';
+}
+
+function startTourneyCountdown(){
+  if (state.tourneyCountdownTimer) clearInterval(state.tourneyCountdownTimer);
+  const tick = () => {
+    const diff = state.tourneyStartMs - Date.now();
+    const cells = el.tourneyCountdown ? {
+      d: el.tourneyCountdown.querySelector('[data-f="d"]'),
+      h: el.tourneyCountdown.querySelector('[data-f="h"]'),
+      m: el.tourneyCountdown.querySelector('[data-f="m"]'),
+      s: el.tourneyCountdown.querySelector('[data-f="s"]')
+    } : {};
+    UI.renderCountdownCells(cells, diff);
+    if (el.tourneyBannerCountdown) el.tourneyBannerCountdown.textContent = UI.fmtCountdownShort(diff);
+    if (el.tourneyCountdownCaption){
+      el.tourneyCountdownCaption.textContent = diff <= 0 ? 'Turnamen sedang berlangsung! 🔥' : 'Menuju hari-H…';
+    }
+    el.tourneyCountdown && el.tourneyCountdown.classList.toggle('is-live', diff <= 0);
+  };
+  tick();
+  state.tourneyCountdownTimer = setInterval(tick, 1000);
+}
+
+function openTourneyModal(){
+  if (!state.session){ openGuestLock(); return; }
+  el.tourneyModal && el.tourneyModal.classList.add('open');
+  renderTourneyOwnStatus();
+  resetTourneyForm();
+}
+
+function resetTourneyForm(){
+  if (el.tourneyForm) el.tourneyForm.style.display = 'none';
+  if (el.tourneyWaInput) el.tourneyWaInput.value = '';
+  if (el.tourneyFormError) el.tourneyFormError.textContent = '';
+  if (el.tourneyFormSubmit){ el.tourneyFormSubmit.disabled = false; el.tourneyFormSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran'; }
+}
+
+/** Terima format lokal (0812…), internasional (+62812… / 62812…),
+ *  angka 9–14 digit setelah kode area — cukup longgar untuk berbagai
+ *  operator tapi tetap menolak input yang jelas bukan nomor HP. */
+function normalizeWhatsapp(raw){
+  const digits = String(raw || '').replace(/[^\d+]/g, '');
+  const cleaned = digits.replace(/^\+/, '');
+  if (/^0\d{9,13}$/.test(cleaned)) return '62' + cleaned.slice(1);
+  if (/^62\d{8,13}$/.test(cleaned)) return cleaned;
+  return null;
+}
+
+async function submitTourneyRegistration(){
+  const waNorm = normalizeWhatsapp(el.tourneyWaInput.value);
+  if (!waNorm){
+    el.tourneyFormError.textContent = 'Nomor WhatsApp tidak valid. Contoh: 081234567890.';
+    return;
+  }
+  el.tourneyFormError.textContent = '';
+  el.tourneyFormSubmit.disabled = true;
+  el.tourneyFormSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim…';
+  try {
+    const { db, fns } = state.fb;
+    const kode = state.session.kodeUnik.toUpperCase();
+    await fns.setDoc(fns.doc(db, COL_TOURNEY_REG, kode), {
+      kodeUnik: kode,
+      nama: state.session.nama || 'Peserta',
+      whatsapp: waNorm,
+      status: 'pending',
+      registeredAt: fns.serverTimestamp()
+    });
+    UI.toast(el.toastContainer, 'Pendaftaran terkirim! Menunggu konfirmasi admin.', 'success');
+    resetTourneyForm();
+  } catch (err){
+    console.error('[turnamen] gagal daftar', err);
+    el.tourneyFormError.textContent = 'Gagal mengirim pendaftaran. Periksa koneksi lalu coba lagi.';
+    el.tourneyFormSubmit.disabled = false;
+    el.tourneyFormSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran';
+  }
+}
+
+/* =========================================================
+   MENU DASBOR (HAMBURGER)
+   Drawer navigasi ringan — cuma toggle class, animasinya
+   murni CSS transform (lihat style.css), tidak ada logika berat.
+========================================================= */
+function openDashMenu(){
+  el.dashMenuDrawer && el.dashMenuDrawer.classList.add('open');
+  el.dashMenuOverlay && el.dashMenuOverlay.classList.add('open');
+  el.dashMenuDrawer && el.dashMenuDrawer.setAttribute('aria-hidden', 'false');
+  el.btnHamburger && el.btnHamburger.setAttribute('aria-expanded', 'true');
+}
+function closeDashMenu(){
+  el.dashMenuDrawer && el.dashMenuDrawer.classList.remove('open');
+  el.dashMenuOverlay && el.dashMenuOverlay.classList.remove('open');
+  el.dashMenuDrawer && el.dashMenuDrawer.setAttribute('aria-hidden', 'true');
+  el.btnHamburger && el.btnHamburger.setAttribute('aria-expanded', 'false');
+}
+function wireDashMenu(){
+  el.btnHamburger && el.btnHamburger.addEventListener('click', openDashMenu);
+  el.btnDashMenuClose && el.btnDashMenuClose.addEventListener('click', closeDashMenu);
+  el.dashMenuOverlay && el.dashMenuOverlay.addEventListener('click', closeDashMenu);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDashMenu();
+  });
+
+  el.menuItemDashboard && el.menuItemDashboard.addEventListener('click', () => {
+    closeDashMenu();
+    el.lobby && el.lobby.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  el.menuItemTourney && el.menuItemTourney.addEventListener('click', () => {
+    closeDashMenu();
+    el.btnOpenTourney && el.btnOpenTourney.click();
+  });
+  el.menuItemHistory && el.menuItemHistory.addEventListener('click', () => {
+    closeDashMenu();
+    el.btnMatchHistory ? el.btnMatchHistory.click() : openMatchHistory();
+  });
+  el.menuItemSettings && el.menuItemSettings.addEventListener('click', () => {
+    closeDashMenu();
+    el.settingsModal && el.settingsModal.classList.add('open');
+  });
+}
+
+function wireTourneyActions(){
+  el.btnOpenTourney && el.btnOpenTourney.addEventListener('click', openTourneyModal);
+
+  el.tourneyRegisterBtn && el.tourneyRegisterBtn.addEventListener('click', () => {
+    if (!state.session){ openGuestLock(); return; }
+    if (el.tourneyForm) el.tourneyForm.style.display = el.tourneyForm.style.display === 'none' ? 'flex' : 'none';
+  });
+  el.tourneyFormCancel && el.tourneyFormCancel.addEventListener('click', resetTourneyForm);
+  el.tourneyFormSubmit && el.tourneyFormSubmit.addEventListener('click', submitTourneyRegistration);
+  el.tourneyWaInput && el.tourneyWaInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitTourneyRegistration();
+  });
+}
+
+/* Saat keyboard HP muncul, pastikan input yang lagi difokus tetap
+   kelihatan (tidak ketutup keyboard) — beberapa WebView tidak
+   auto-scroll input ke dalam viewport dengan baik, terutama saat
+   inputnya ada di dalam modal yang sudah scrollable sendiri. */
+function wireModalInputFocusScroll(){
+  document.addEventListener('focusin', (e) => {
+    const target = e.target;
+    if (!target || !(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+    const modalBox = target.closest('.modal-box');
+    if (!modalBox) return;
+    setTimeout(() => {
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 300);
+  });
 }
 
 /* =========================================================
@@ -1141,15 +1413,25 @@ async function boot(){
     startHeartbeat(myPlayerRef);
     listenMyProfile(myPlayerRef);
     listenIncomingChallenges();
+    listenMyTourneyReg();
   } else {
     el.guestBadge && (el.guestBadge.style.display = 'flex');
     el.memberBadge && (el.memberBadge.style.display = 'none');
+    if (el.dashMenuName) el.dashMenuName.textContent = 'Tamu';
+    if (el.dashMenuRating) el.dashMenuRating.textContent = 'Mode Tamu — hanya melihat';
   }
 
   UI.setLoadingProgress(el.loading, 80, 'Memuat papan 3D…');
   listenRanking();
   listenValidPeserta();
   wireGameActions();
+  wireDashMenu();
+  wireModalInputFocusScroll();
+
+  await loadTourneyConfig();
+  listenTourneyApproved();
+  startTourneyCountdown();
+  wireTourneyActions();
 
   el.searchInput && el.searchInput.addEventListener('input', renderLists);
   el.computerLevelRange && el.computerLevelRange.addEventListener('input', (e) => {

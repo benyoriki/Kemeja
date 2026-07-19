@@ -12,7 +12,7 @@
 
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></noscript>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=5">
 
 <!-- Three.js sudah di-bundle & di-tree-shake langsung ke dalam effects.js (lihat effects.source.js untuk versi asli/edit) -->
 </head>
@@ -28,10 +28,15 @@
 
 <!-- ============ TOPBAR ============ -->
 <header class="topbar" id="topbar">
-  <a href="../index.html#home" class="topbar-back glass">
-    <i class="fa-solid fa-arrow-left"></i>
-    <span>Kembali ke <b>LOKON PRIMA</b></span>
-  </a>
+  <div class="topbar-left">
+    <button id="btnHamburger" class="topbar-hamburger glass" type="button" aria-label="Buka menu dasbor" aria-expanded="false" aria-controls="dashMenuDrawer">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <a href="../index.html#home" class="topbar-back glass">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Kembali ke <b>LOKON PRIMA</b></span>
+    </a>
+  </div>
   <div class="topbar-badges">
     <div id="guestBadge" class="guest-badge glass">
       <i class="fa-solid fa-eye"></i> Mode Tamu — hanya melihat
@@ -95,6 +100,28 @@
       <span class="mode-card-foot">Real-time • ELO <i class="fa-solid fa-arrow-right"></i></span>
     </button>
   </div>
+
+  <!-- ============ BANNER EVENT: TURNAMEN 17 AGUSTUS 2026 ============ -->
+  <button id="btnOpenTourney" class="tourney-banner glass" type="button">
+    <span class="tourney-banner-decor" aria-hidden="true">
+      <span class="tourney-banner-flecks"></span>
+    </span>
+    <span class="tourney-banner-top">
+      <span class="tourney-banner-icon"><i class="fa-solid fa-trophy"></i></span>
+      <span class="tourney-banner-heading">
+        <span class="tourney-banner-eyebrow"><i class="fa-solid fa-star"></i> Event Spesial HUT RI ke-81</span>
+        <b id="tourneyBannerTitle">Turnamen Catur Kemerdekaan 17 Agustus 2026</b>
+      </span>
+      <span class="tourney-banner-arrow"><i class="fa-solid fa-chevron-right"></i></span>
+    </span>
+    <span class="tourney-banner-bottom">
+      <span class="tourney-banner-sub"><i class="fa-solid fa-gift"></i> Hadiah jutaan rupiah • Klik untuk info & daftar</span>
+      <span class="tourney-banner-cta">
+        <i class="fa-solid fa-hourglass-half"></i>
+        <span id="tourneyBannerCountdown">--H --M --S</span>
+      </span>
+    </span>
+  </button>
 
   <div class="lobby-grid">
     <section class="panel glass">
@@ -294,9 +321,133 @@
   </div>
 </div>
 
+<!-- ============ MODAL: TURNAMEN CATUR 17 AGUSTUS 2026 ============ -->
+<div id="tourneyModal" class="modal-backdrop">
+  <div class="modal-box glass tourney-modal-box">
+    <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+
+    <div class="tourney-modal-flecks" aria-hidden="true"></div>
+    <div class="tourney-modal-fireworks" aria-hidden="true">
+      <span class="tw-burst b1"></span><span class="tw-burst b2"></span><span class="tw-burst b3"></span>
+    </div>
+
+    <div class="tourney-head">
+      <span class="tourney-head-eyebrow"><i class="fa-solid fa-flag"></i> HUT KEMERDEKAAN RI KE-81</span>
+      <h3 id="tourneyTitle">Turnamen Catur Kemerdekaan 17 Agustus 2026</h3>
+      <p id="tourneyDateLabel" class="tourney-date-label"><i class="fa-solid fa-calendar-days"></i> -</p>
+    </div>
+
+    <div class="tourney-countdown" id="tourneyCountdown">
+      <div class="tc-cell"><b data-f="d">00</b><span>Hari</span></div>
+      <div class="tc-sep">:</div>
+      <div class="tc-cell"><b data-f="h">00</b><span>Jam</span></div>
+      <div class="tc-sep">:</div>
+      <div class="tc-cell"><b data-f="m">00</b><span>Menit</span></div>
+      <div class="tc-sep">:</div>
+      <div class="tc-cell"><b data-f="s">00</b><span>Detik</span></div>
+    </div>
+    <p class="tourney-countdown-caption" id="tourneyCountdownCaption">Menuju hari-H…</p>
+
+    <div class="tourney-prize-row">
+      <div class="tourney-prize-card p1">
+        <i class="fa-solid fa-trophy"></i>
+        <span class="tp-label">Juara 1</span>
+        <span class="tp-value" id="tourneyPrize1">-</span>
+      </div>
+      <div class="tourney-prize-card p2">
+        <i class="fa-solid fa-medal"></i>
+        <span class="tp-label">Juara 2</span>
+        <span class="tp-value" id="tourneyPrize2">-</span>
+      </div>
+      <div class="tourney-prize-card p3">
+        <i class="fa-solid fa-medal"></i>
+        <span class="tp-label">Juara 3</span>
+        <span class="tp-value" id="tourneyPrize3">-</span>
+      </div>
+    </div>
+
+    <div class="tourney-section">
+      <div class="tourney-section-head">
+        <h4><i class="fa-solid fa-users"></i> Peserta Terdaftar</h4>
+        <span class="tourney-count-chip" id="tourneyParticipantCount">0 peserta</span>
+      </div>
+      <div id="tourneyParticipantList" class="tourney-participant-list"></div>
+      <p class="empty-hint" id="tourneyParticipantEmpty" style="display:none;">Belum ada peserta yang diterima — jadilah yang pertama!</p>
+    </div>
+
+    <div class="tourney-section" id="tourneyStatusBlock" style="display:none;">
+      <div class="tourney-status-banner" id="tourneyStatusBanner">
+        <i class="fa-solid fa-circle-info"></i>
+        <div>
+          <b id="tourneyStatusTitle">Status Pendaftaran</b>
+          <span id="tourneyStatusDesc">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tourney-section" id="tourneyRegisterBlock">
+      <button class="btn-solid tourney-register-btn" id="tourneyRegisterBtn" type="button">
+        <i class="fa-solid fa-flag-checkered"></i> Daftar Turnamen Sekarang
+      </button>
+
+      <div class="tourney-form" id="tourneyForm" style="display:none;">
+        <label for="tourneyWaInput"><i class="fa-brands fa-whatsapp"></i> Nomor WhatsApp Aktif</label>
+        <input type="tel" id="tourneyWaInput" placeholder="Contoh: 081234567890" autocomplete="tel" inputmode="numeric">
+        <small class="tourney-form-hint">Nomor ini dipakai admin untuk konfirmasi jadwal & teknis pertandingan. Pastikan aktif.</small>
+        <small class="admin-error tourney-form-error" id="tourneyFormError"></small>
+        <div class="tourney-form-actions">
+          <button class="btn-outline" id="tourneyFormCancel" type="button">Batal</button>
+          <button class="btn-solid" id="tourneyFormSubmit" type="button"><i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MENU DASBOR (HAMBURGER) ============ -->
+<div id="dashMenuOverlay" class="dash-menu-overlay"></div>
+<nav id="dashMenuDrawer" class="dash-menu-drawer glass" aria-hidden="true">
+  <div class="dash-menu-head">
+    <div class="dash-menu-user">
+      <span class="avatar-chip" id="dashMenuAvatar">?</span>
+      <div class="dash-menu-user-text">
+        <b id="dashMenuName">Tamu</b>
+        <span id="dashMenuRating">Mode Tamu</span>
+      </div>
+    </div>
+    <button id="btnDashMenuClose" class="dash-menu-close" type="button" aria-label="Tutup menu">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <div class="dash-menu-section">
+    <span class="dash-menu-label">Dasbor</span>
+    <button class="dash-menu-item" id="menuItemDashboard" type="button">
+      <i class="fa-solid fa-chess-board"></i> Beranda Arena
+    </button>
+    <button class="dash-menu-item" id="menuItemTourney" type="button">
+      <i class="fa-solid fa-trophy"></i> Event & Turnamen
+      <span class="dash-menu-item-badge">Baru</span>
+    </button>
+    <button class="dash-menu-item" id="menuItemHistory" type="button">
+      <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Pertandingan
+    </button>
+  </div>
+
+  <div class="dash-menu-section">
+    <span class="dash-menu-label">Akun</span>
+    <button class="dash-menu-item" id="menuItemSettings" type="button">
+      <i class="fa-solid fa-gear"></i> Pengaturan
+    </button>
+    <a class="dash-menu-item" href="../index.html#home">
+      <i class="fa-solid fa-arrow-left"></i> Kembali ke LOKON PRIMA
+    </a>
+  </div>
+</nav>
+
 <div id="toastContainer"></div>
 <div id="challengeContainer"></div>
 
-<script type="module" src="script.js?v=2"></script>
+<script type="module" src="script.js?v=5"></script>
 </body>
 </html>

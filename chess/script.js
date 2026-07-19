@@ -1,4 +1,1472 @@
-import{firebaseConfig as ne,SESSION_KEY as ae,FIRESTORE_COLLECTION as oe,COL_CHESS_PLAYERS as y,COL_CHESS_ROOMS as b,COL_CHESS_MATCHES as _,COL_CHESS_CHALLENGES as w,GAME_TIME_MS as k,ELO_K_FACTOR as se,HEARTBEAT_MS as re,ONLINE_TIMEOUT_MS as ie,IDLE_TIMEOUT_MS as ce}from"./firebase-config.js";import{loadChessRules as G,ChessMatch as F,ComputerOpponent as le,calcElo as me}from"./chess-engine.js";import{Chess3DScene as de}from"./effects.js";import{sound as p}from"./sound.js";import*as m from"./ui.js";const N="10.12.2",i=t=>document.getElementById(t),n={loading:i("loadingScreen"),lobby:i("lobbyScreen"),game:i("gameScreen"),board3d:i("board3d"),guestBadge:i("guestBadge"),memberBadge:i("memberBadge"),memberName:i("memberName"),memberRating:i("memberRating"),topAvatarChip:i("topAvatarChip"),rankingList:i("rankingList"),onlineList:i("onlineList"),searchInput:i("searchPlayerInput"),statTotalPlayers:i("statTotalPlayers"),statOnlineNow:i("statOnlineNow"),statTopRating:i("statTopRating"),onlineCountChip:i("onlineCountChip"),btnVsComputer:i("btnVsComputer"),btnVsPlayer:i("btnVsPlayerPanel"),computerLevelRange:i("computerLevelRange"),computerLevelValue:i("computerLevelValue"),startComputerBtn:i("startComputerBtn"),profileModal:i("profileModal"),victoryModal:i("victoryModal"),victoryPeekBtn:i("victoryPeekBtn"),victoryPeekBackBtn:i("victoryPeekBackBtn"),settingsModal:i("settingsModal"),guestLockModal:i("guestLockModal"),drawOfferBox:i("drawOfferBox"),btnMatchHistory:i("btnMatchHistory"),matchHistoryModal:i("matchHistoryModal"),matchHistoryList:i("matchHistoryList"),matchHistoryEmpty:i("matchHistoryEmpty"),matchHistoryLoading:i("matchHistoryLoading"),btnEmote:i("btnEmote"),emotePicker:i("emotePicker"),emoteBubbleLayer:i("emoteBubbleLayer"),toastContainer:i("toastContainer"),challengeContainer:i("challengeContainer"),hudSelfName:i("hudSelfName"),hudSelfRating:i("hudSelfRating"),hudSelfTimer:i("hudSelfTimer"),hudSelfCaptured:i("hudSelfCaptured"),hudSelfAvatar:i("hudSelfAvatar"),hudOppName:i("hudOppName"),hudOppRating:i("hudOppRating"),hudOppTimer:i("hudOppTimer"),hudOppCaptured:i("hudOppCaptured"),hudOppAvatar:i("hudOppAvatar"),duelFillSelf:i("duelFillSelf"),duelFillOpp:i("duelFillOpp"),moveHistoryList:i("moveHistoryList"),gameModeLabel:i("gameModeLabel"),btnResign:i("btnResign"),btnDraw:i("btnDraw"),btnUndo:i("btnUndo"),btnZoomIn:i("btnZoomIn"),btnZoomOut:i("btnZoomOut"),btnMute:i("btnMute"),btnFullscreen:i("btnFullscreen"),btnSettings:i("btnSettings"),btnExit:i("btnExitGame"),settingVolume:i("settingVolume"),settingMuted:i("settingMuted"),settingShadow:i("settingShadow"),settingBloom:i("settingBloom")},e={fb:null,session:null,me:null,rankingCache:[],scene:null,match:null,computer:null,vsComputer:!1,roomId:null,roomUnsub:null,myColor:"w",selectedSquare:null,timerInterval:null,localTimers:{w:k,b:k},turnStartedAtMs:0,opponentProfile:null,gameStartedAt:0,watchdogLastOpponentActive:0,incrementMs:0,timeControlLabel:"Rapid 10+5",lastEmoteTs:null,validKodeSet:null};async function ue(){const[{initializeApp:t},a]=await Promise.all([import(`https://www.gstatic.com/firebasejs/${N}/firebase-app.js`),import(`https://www.gstatic.com/firebasejs/${N}/firebase-firestore.js`)]),s=t(ne),o=a.getFirestore(s);return{app:s,db:o,fns:a}}function pe(){try{const t=localStorage.getItem(ae);if(!t)return null;const a=JSON.parse(t);return!a||!a.kodeUnik?null:a}catch{return null}}async function fe(){const{db:t,fns:a}=e.fb,s=e.session.kodeUnik.toUpperCase(),o=a.doc(t,y,s),r=await a.getDoc(o);return r.exists()?await a.updateDoc(o,{nama:e.session.nama||r.data().nama}):await a.setDoc(o,{kodeUnik:s,nama:e.session.nama||"Peserta",rating:1e3,totalMatch:0,menang:0,kalah:0,seri:0,kabur:0,winStreak:0,bestWinStreak:0,totalPlayMs:0,inGame:!1,currentRoomId:null,joinedAt:a.serverTimestamp(),lastActiveAt:a.serverTimestamp()}),o}function he(t){const{fns:a}=e.fb,s=()=>a.updateDoc(t,{lastActiveAt:a.serverTimestamp()}).catch(()=>{});s(),setInterval(s,re),window.addEventListener("visibilitychange",()=>{document.hidden||s()}),window.addEventListener("beforeunload",()=>{a.updateDoc(t,{lastActiveAt:a.serverTimestamp()}).catch(()=>{})})}function P(t){if(!t)return"offline";const a=t.toMillis?t.toMillis():new Date(t).getTime(),s=Date.now()-a;return s<=ie?"online":s<=ce?"idle":"offline"}function ge(){const{db:t,fns:a}=e.fb,s=a.query(a.collection(t,y),a.orderBy("rating","desc"),a.limit(100));a.onSnapshot(s,o=>{const r=o.docs.map(l=>{const c=l.data();return{...c,status:P(c.lastActiveAt)}});if(e.rankingCache=r,B(),e.session){const l=r.find(c=>c.kodeUnik===e.session.kodeUnik.toUpperCase());l&&V(l)}},o=>console.error("[ranking] listener error",o))}function be(){const{db:t,fns:a}=e.fb;a.onSnapshot(a.collection(t,oe),s=>{const o=new Set;s.docs.forEach(r=>{var c;const l=(c=r.data())==null?void 0:c.kodeUnik;l&&o.add(String(l).toUpperCase())}),e.validKodeSet=o,B()},s=>console.error("[valid-peserta] listener error",s))}function ye(){return e.validKodeSet?e.rankingCache.filter(t=>e.validKodeSet.has(String(t.kodeUnik||"").toUpperCase())):e.rankingCache}function B(){var l;const t=ye(),a=(((l=n.searchInput)==null?void 0:l.value)||"").trim().toLowerCase(),s=a?t.filter(c=>c.nama.toLowerCase().includes(a)):t;m.renderRankingList(n.rankingList,s,{onOpenProfile:K}),m.renderOnlineList(n.onlineList,t,{onOpenProfile:K,myKode:e.session?e.session.kodeUnik.toUpperCase():null});const o=t.filter(c=>c.status==="online").length,r=t.length?t[0].rating:0;n.statTotalPlayers&&(n.statTotalPlayers.textContent=t.length),n.statOnlineNow&&(n.statOnlineNow.textContent=o),n.statTopRating&&(n.statTopRating.textContent=r||"-"),n.onlineCountChip&&(n.onlineCountChip.textContent=o)}function V(t){e.me=t,n.memberName&&(n.memberName.textContent=t.nama),n.memberRating&&(n.memberRating.textContent=`Rating ${t.rating}`),n.topAvatarChip&&(n.topAvatarChip.textContent=m.initials(t.nama),n.topAvatarChip.style.background=m.avatarColor(t.kodeUnik||t.nama||""))}function we(t){const{fns:a}=e.fb;a.onSnapshot(t,s=>{if(!s.exists())return;const o=s.data();V({...o,status:P(o.lastActiveAt)})},s=>console.error("[profil-sendiri] listener error",s))}async function ke(t){const{db:a,fns:s}=e.fb;try{const o=await s.getDoc(t);if(!o.exists())return;const r=o.data();if(!r.inGame||!r.currentRoomId)return;const l=await s.getDoc(s.doc(a,b,r.currentRoomId));l.exists()&&l.data().status==="ongoing"?(m.toast(n.toastContainer,"Menyambungkan kembali ke permainan yang tertunda\u2026","info"),R(r.currentRoomId)):await s.updateDoc(t,{inGame:!1,currentRoomId:null})}catch(o){console.error("[recoverActiveSession] gagal memulihkan sesi",o)}}async function ve(){if(!e.session){v();return}n.matchHistoryModal.classList.add("open"),n.matchHistoryList.innerHTML="",n.matchHistoryEmpty.style.display="none",n.matchHistoryLoading.style.display="block";const{db:t,fns:a}=e.fb,s=e.session.kodeUnik.toUpperCase();try{const o=a.query(a.collection(t,_),a.where("players","array-contains",s),a.limit(60));let l=(await a.getDocs(o)).docs.map(c=>c.data());if(l.sort((c,u)=>{var d,f,h,g;return(((f=(d=u.endedAt)==null?void 0:d.toMillis)==null?void 0:f.call(d))||0)-(((g=(h=c.endedAt)==null?void 0:h.toMillis)==null?void 0:g.call(h))||0)}),l=l.slice(0,30),n.matchHistoryLoading.style.display="none",!l.length){n.matchHistoryEmpty.style.display="block";return}m.renderMatchHistory(n.matchHistoryList,l,s)}catch(o){console.warn("Gagal memuat riwayat pertandingan:",o),n.matchHistoryLoading.style.display="none",n.matchHistoryEmpty.textContent="Gagal memuat riwayat. Coba lagi sesaat.",n.matchHistoryEmpty.style.display="block"}}function K(t){p.click();const a=e.session?e.session.kodeUnik.toUpperCase():null;m.openProfileModal(n.profileModal,t,{myKode:a,canChallenge:!!e.session,onChallenge:(s,o)=>{if(!e.session){v();return}j(s,o),m.closeModal(n.profileModal)}})}async function j(t,a){const{db:s,fns:o}=e.fb,r=e.me;if(!r){m.toast(n.toastContainer,"Profil kamu belum siap, coba lagi sesaat.","error");return}if(r.inGame){m.toast(n.toastContainer,"Kamu sedang dalam permainan.","error");return}const l=a||m.TIME_CONTROLS.rapid,c=await o.addDoc(o.collection(s,w),{from:{kodeUnik:r.kodeUnik,nama:r.nama,rating:r.rating},to:t.kodeUnik,status:"pending",timeControlMs:l.ms,incrementMs:l.inc,timeControlLabel:l.label,createdAt:o.serverTimestamp()});m.toast(n.toastContainer,`Tantangan ${l.label} dikirim ke ${t.nama}, menunggu respons\u2026`,"info"),p.challenge();let u=()=>{};const d=setTimeout(async()=>{const f=await o.getDoc(c);f.exists()&&f.data().status==="pending"&&(await o.updateDoc(c,{status:"expired"}),m.toast(n.toastContainer,`${t.nama} tidak merespons tantangan.`,"error")),u()},3e4);u=o.onSnapshot(c,f=>{if(!f.exists())return;const h=f.data();h.status==="accepted"&&h.roomId?(clearTimeout(d),u(),m.toast(n.toastContainer,`${t.nama} menerima tantanganmu!`,"success"),R(h.roomId)):h.status==="rejected"&&(clearTimeout(d),u(),m.toast(n.toastContainer,`${t.nama} menolak tantangan.`,"error"))})}function Ce(){const{db:t,fns:a}=e.fb,s=e.session.kodeUnik.toUpperCase(),o=a.query(a.collection(t,w),a.where("to","==",s),a.where("status","==","pending")),r=new Set;a.onSnapshot(o,l=>{l.docChanges().forEach(c=>{if(c.type!=="added")return;const u=c.doc.id;if(r.has(u))return;r.add(u);const d=c.doc.data();if(e.me&&e.me.inGame){a.updateDoc(c.doc.ref,{status:"rejected"});return}p.notification(),m.showChallengeToast(n.challengeContainer,d.from,{onAccept:()=>Le(u,d),onReject:()=>a.updateDoc(c.doc.ref,{status:"rejected"})})})})}async function Le(t,a){const{db:s,fns:o}=e.fb;let r=e.me;if(!r)try{const h=e.session.kodeUnik.toUpperCase(),g=await o.getDoc(o.doc(s,y,h));g.exists()&&(r={...g.data(),status:P(g.data().lastActiveAt)})}catch(h){console.error("[acceptChallenge] gagal ambil profil sendiri",h)}if(!r){m.toast(n.toastContainer,"Profil kamu belum siap, coba lagi sesaat.","error"),o.updateDoc(o.doc(s,w,t),{status:"rejected"}).catch(()=>{});return}if(r.inGame){m.toast(n.toastContainer,"Kamu sedang dalam permainan lain.","error"),o.updateDoc(o.doc(s,w,t),{status:"rejected"}).catch(()=>{});return}const l=Math.random()<.5,c=a.timeControlMs||k,u=a.incrementMs||0,d=a.timeControlLabel||"Rapid 10+5",f=await o.addDoc(o.collection(s,b),{players:{w:S(l?r:a.from),b:S(l?a.from:r)},playersKode:[r.kodeUnik,a.from.kodeUnik],fen:"start",pgn:[],turn:"w",whiteTimeMs:c,blackTimeMs:c,timeControlMs:c,incrementMs:u,timeControlLabel:d,turnStartedAt:o.serverTimestamp(),status:"ongoing",drawOfferBy:null,emote:null,vsComputer:!1,createdAt:o.serverTimestamp(),updatedAt:o.serverTimestamp()});await o.updateDoc(o.doc(s,w,t),{status:"accepted",roomId:f.id}),await Promise.all([o.updateDoc(o.doc(s,y,r.kodeUnik),{inGame:!0,currentRoomId:f.id}),o.updateDoc(o.doc(s,y,a.from.kodeUnik),{inGame:!0,currentRoomId:f.id})]),R(f.id)}function S(t){return{kodeUnik:t.kodeUnik,nama:t.nama,rating:t.rating}}function v(){n.guestLockModal&&n.guestLockModal.classList.add("open")}async function $(){if(!e.session){v();return}const t=parseInt(n.computerLevelRange.value,10)||10;m.switchScreen({lobbyScreen:n.lobby,gameScreen:n.game},"gameScreen"),n.gameModeLabel.textContent=`Lawan Komputer \u2022 Level ${t} (latihan, rating tidak berubah)`,e.vsComputer=!0,e.roomId=null,e.myColor="w",e.opponentProfile={nama:`Komputer Lv.${t}`,rating:800+t*60,kodeUnik:"__CPU__"},await W(),e.computer=new le(t),await e.computer.init(),e.computer.usingFallback&&m.toast(n.toastContainer,"Mesin Stockfish online tidak tersedia \u2014 memakai AI cadangan bawaan.","info"),J()}function R(t){const{db:a,fns:s}=e.fb;e.vsComputer=!1,e.roomId=t,m.switchScreen({lobbyScreen:n.lobby,gameScreen:n.game},"gameScreen"),n.gameModeLabel.textContent="Lawan Player \u2022 Menyambung\u2026",e.roomUnsub&&e.roomUnsub();const o=s.doc(a,b,t);let r=!1;e.roomUnsub=s.onSnapshot(o,async l=>{var u;if(!l.exists())return;const c=l.data();if(!r){r=!0;const d=e.session.kodeUnik.toUpperCase();e.myColor=c.players.w.kodeUnik===d?"w":"b",e.opponentProfile=e.myColor==="w"?c.players.b:c.players.w,e.incrementMs=c.incrementMs||0,e.timeControlLabel=c.timeControlLabel||"Rapid 10+5",e.lastEmoteTs=((u=c.emote)==null?void 0:u.ts)||null,n.gameModeLabel.textContent=`Lawan Player \u2022 ${e.timeControlLabel}`,await W(c.fen==="start"?void 0:c.fen),e.scene.setOrientation(e.myColor),J()}Me(c),c.status==="finished"&&Te(c)})}function Me(t){var o;e.localTimers.w=t.whiteTimeMs,e.localTimers.b=t.blackTimeMs,e.turnStartedAtMs=(o=t.turnStartedAt)!=null&&o.toMillis?t.turnStartedAt.toMillis():Date.now(),e.currentTurn=t.turn;const a=t.fen==="start"?void 0:t.fen,s=e.match?e.match.fen:null;if(a&&a!==s){const r=t.pgn&&t.pgn.length?t.pgn[t.pgn.length-1]:null;e.match=new F(a),e.scene.setPosition(e.match.board()),r&&e.scene.showLastMove(r.from,r.to),Y(),r&&r.captured?p.capture():r&&p.move()}if(T(),m.renderMoveHistory(n.moveHistoryList,e.match.history),t.drawOfferBy&&t.drawOfferBy!==e.myColor?Se(t):n.drawOfferBox&&n.drawOfferBox.classList.remove("show"),t.emote&&t.emote.ts&&t.emote.ts!==e.lastEmoteTs){e.lastEmoteTs=t.emote.ts;const r=t.emote.by===e.myColor;if(m.showEmoteBubble(n.emoteBubbleLayer,t.emote.emoji,r),!r&&navigator.vibrate)try{navigator.vibrate(35)}catch{}}}function Se(t){n.drawOfferBox&&(n.drawOfferBox.classList.add("show"),n.drawOfferBox.innerHTML=`
+/* =========================================================
+   SCRIPT.JS — Orkestrator Modul Catur
+   -------------------------------------------------
+   Menghubungkan: sesi login peserta (dari website utama),
+   Firestore (koleksi baru khusus catur, project SAMA),
+   aturan main (chess-engine.js), papan 3D (effects.js),
+   tampilan (ui.js), dan suara (sound.js).
+========================================================= */
+
+import {
+  firebaseConfig, SESSION_KEY, FIRESTORE_COLLECTION,
+  COL_CHESS_PLAYERS, COL_CHESS_ROOMS, COL_CHESS_MATCHES, COL_CHESS_CHALLENGES,
+  COL_TOURNEY_REG, COL_TOURNEY_CONFIG, TOURNEY_ID, TOURNEY_DEFAULTS,
+  GAME_TIME_MS, ELO_K_FACTOR, HEARTBEAT_MS, ONLINE_TIMEOUT_MS, IDLE_TIMEOUT_MS
+} from './firebase-config.js';
+import { loadChessRules, ChessMatch, ComputerOpponent, calcElo } from './chess-engine.js';
+import { Chess3DScene } from './effects.js';
+import { sound } from './sound.js';
+import * as UI from './ui.js';
+
+const SDK_VER = '10.12.2';
+
+/* ---------------- DOM refs ---------------- */
+const $ = (id) => document.getElementById(id);
+
+const el = {
+  loading: $('loadingScreen'),
+  lobby: $('lobbyScreen'),
+  game: $('gameScreen'),
+  board3d: $('board3d'),
+  guestBadge: $('guestBadge'),
+  memberBadge: $('memberBadge'),
+  memberName: $('memberName'),
+  memberRating: $('memberRating'),
+  topAvatarChip: $('topAvatarChip'),
+
+  btnHamburger: $('btnHamburger'),
+  btnDashMenuClose: $('btnDashMenuClose'),
+  dashMenuOverlay: $('dashMenuOverlay'),
+  dashMenuDrawer: $('dashMenuDrawer'),
+  dashMenuAvatar: $('dashMenuAvatar'),
+  dashMenuName: $('dashMenuName'),
+  dashMenuRating: $('dashMenuRating'),
+  menuItemDashboard: $('menuItemDashboard'),
+  menuItemTourney: $('menuItemTourney'),
+  menuItemHistory: $('menuItemHistory'),
+  menuItemSettings: $('menuItemSettings'),
+
+  rankingList: $('rankingList'),
+  onlineList: $('onlineList'),
+  searchInput: $('searchPlayerInput'),
+  statTotalPlayers: $('statTotalPlayers'), statOnlineNow: $('statOnlineNow'), statTopRating: $('statTopRating'),
+  onlineCountChip: $('onlineCountChip'),
+
+  btnVsComputer: $('btnVsComputer'),
+  btnVsPlayer: $('btnVsPlayerPanel'),
+  computerLevelRange: $('computerLevelRange'),
+  computerLevelValue: $('computerLevelValue'),
+  startComputerBtn: $('startComputerBtn'),
+
+  profileModal: $('profileModal'),
+  victoryModal: $('victoryModal'),
+  victoryPeekBtn: $('victoryPeekBtn'),
+  victoryPeekBackBtn: $('victoryPeekBackBtn'),
+  settingsModal: $('settingsModal'),
+  guestLockModal: $('guestLockModal'),
+  drawOfferBox: $('drawOfferBox'),
+
+  btnMatchHistory: $('btnMatchHistory'),
+  matchHistoryModal: $('matchHistoryModal'),
+  matchHistoryList: $('matchHistoryList'),
+  matchHistoryEmpty: $('matchHistoryEmpty'),
+  matchHistoryLoading: $('matchHistoryLoading'),
+
+  btnEmote: $('btnEmote'),
+  emotePicker: $('emotePicker'),
+  emoteBubbleLayer: $('emoteBubbleLayer'),
+
+  toastContainer: $('toastContainer'),
+  challengeContainer: $('challengeContainer'),
+
+  hudSelfName: $('hudSelfName'), hudSelfRating: $('hudSelfRating'),
+  hudSelfTimer: $('hudSelfTimer'), hudSelfCaptured: $('hudSelfCaptured'), hudSelfAvatar: $('hudSelfAvatar'),
+  hudOppName: $('hudOppName'), hudOppRating: $('hudOppRating'),
+  hudOppTimer: $('hudOppTimer'), hudOppCaptured: $('hudOppCaptured'), hudOppAvatar: $('hudOppAvatar'),
+  duelFillSelf: $('duelFillSelf'), duelFillOpp: $('duelFillOpp'),
+  moveHistoryList: $('moveHistoryList'),
+  gameModeLabel: $('gameModeLabel'),
+
+  btnResign: $('btnResign'), btnDraw: $('btnDraw'), btnUndo: $('btnUndo'),
+  btnZoomIn: $('btnZoomIn'), btnZoomOut: $('btnZoomOut'),
+  btnMute: $('btnMute'), btnFullscreen: $('btnFullscreen'), btnSettings: $('btnSettings'), btnExit: $('btnExitGame'),
+
+  settingVolume: $('settingVolume'), settingMuted: $('settingMuted'),
+  settingShadow: $('settingShadow'), settingBloom: $('settingBloom'),
+
+  btnOpenTourney: $('btnOpenTourney'),
+  tourneyBannerCountdown: $('tourneyBannerCountdown'),
+  tourneyBannerTitle: $('tourneyBannerTitle'),
+  tourneyModal: $('tourneyModal'),
+  tourneyTitle: $('tourneyTitle'),
+  tourneyDateLabel: $('tourneyDateLabel'),
+  tourneyCountdown: $('tourneyCountdown'),
+  tourneyCountdownCaption: $('tourneyCountdownCaption'),
+  tourneyPrize1: $('tourneyPrize1'), tourneyPrize2: $('tourneyPrize2'), tourneyPrize3: $('tourneyPrize3'),
+  tourneyParticipantList: $('tourneyParticipantList'),
+  tourneyParticipantEmpty: $('tourneyParticipantEmpty'),
+  tourneyParticipantCount: $('tourneyParticipantCount'),
+  tourneyStatusBlock: $('tourneyStatusBlock'),
+  tourneyStatusBanner: $('tourneyStatusBanner'),
+  tourneyStatusTitle: $('tourneyStatusTitle'),
+  tourneyStatusDesc: $('tourneyStatusDesc'),
+  tourneyRegisterBlock: $('tourneyRegisterBlock'),
+  tourneyRegisterBtn: $('tourneyRegisterBtn'),
+  tourneyForm: $('tourneyForm'),
+  tourneyWaInput: $('tourneyWaInput'),
+  tourneyFormError: $('tourneyFormError'),
+  tourneyFormCancel: $('tourneyFormCancel'),
+  tourneyFormSubmit: $('tourneyFormSubmit'),
+};
+
+/* ---------------- State global ---------------- */
+const state = {
+  fb: null,           // { app, db, fns }
+  session: null,      // { nama, kodeUnik } | null (guest)
+  me: null,           // dokumen chess_players milik sendiri (realtime)
+  rankingCache: [],
+  scene: null,
+  match: null,        // ChessMatch aktif
+  computer: null,     // ComputerOpponent aktif (mode vs komputer)
+  vsComputer: false,
+  roomId: null,
+  roomUnsub: null,
+  myColor: 'w',
+  selectedSquare: null,
+  timerInterval: null,
+  localTimers: { w: GAME_TIME_MS, b: GAME_TIME_MS },
+  turnStartedAtMs: 0,
+  opponentProfile: null,
+  gameStartedAt: 0,
+  watchdogLastOpponentActive: 0,
+  incrementMs: 0,        // increment waktu per-langkah (Fischer) — hanya PvP
+  timeControlLabel: 'Rapid 10+5',
+  lastEmoteTs: null,     // dedupe reaksi emoji supaya tidak diputar ulang
+  validKodeSet: null,    // Set berisi kodeUnik peserta yang MASIH TERDAFTAR di
+                          // koleksi "pendaftaran" (null = belum dimuat sama sekali).
+                          // Dipakai buat menyaring ranking/online list supaya
+                          // peserta yang sudah dihapus admin (atau dulu dihapus
+                          // SEBELUM fitur auto-hapus profil catur ada) tidak lagi
+                          // "berhantu" di Lokon Chess Arena walau dokumen
+                          // chess_players miliknya masih tersisa di Firestore.
+
+  tourneyConfig: null,      // { title, startAtISO, prize1, prize2, prize3, active } — dari Firestore, fallback TOURNEY_DEFAULTS
+  tourneyStartMs: 0,        // cache waktu mulai (ms) supaya tidak parsing ISO tiap detik di interval
+  tourneyApproved: [],      // daftar pendaftar berstatus 'approved' (realtime)
+  tourneyMyReg: null,       // dokumen pendaftaran turnamen milik sendiri (realtime) | null
+  tourneyCountdownTimer: null,
+};
+
+/* =========================================================
+   1. FIREBASE INIT (pola sama seperti index.html utama)
+========================================================= */
+async function initFirebase(){
+  const [{ initializeApp }, fs] = await Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-firestore.js`)
+  ]);
+  const app = initializeApp(firebaseConfig);
+  const db = fs.getFirestore(app);
+  return { app, db, fns: fs };
+}
+
+/* =========================================================
+   2. SESI PESERTA (dibaca dari localStorage — TIDAK membuat
+      login baru, murni membaca sesi yang sudah dibuat oleh
+      index.html website utama)
+========================================================= */
+function readSession(){
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.kodeUnik) return null;
+    return parsed;
+  } catch { return null; }
+}
+
+/* =========================================================
+   3. PROFIL CATUR PESERTA (chess_players/{kodeUnik})
+========================================================= */
+async function ensurePlayerDoc(){
+  const { db, fns } = state.fb;
+  const kode = state.session.kodeUnik.toUpperCase();
+  const ref = fns.doc(db, COL_CHESS_PLAYERS, kode);
+  const snap = await fns.getDoc(ref);
+  if (!snap.exists()){
+    await fns.setDoc(ref, {
+      kodeUnik: kode,
+      nama: state.session.nama || 'Peserta',
+      rating: 1000,
+      totalMatch: 0, menang: 0, kalah: 0, seri: 0, kabur: 0,
+      winStreak: 0, bestWinStreak: 0,
+      totalPlayMs: 0,
+      inGame: false, currentRoomId: null,
+      joinedAt: fns.serverTimestamp(),
+      lastActiveAt: fns.serverTimestamp()
+    });
+  } else {
+    // Sinkronkan nama terbaru dari pendaftaran (kalau berubah)
+    await fns.updateDoc(ref, { nama: state.session.nama || snap.data().nama });
+  }
+  return ref;
+}
+
+function startHeartbeat(ref){
+  const { fns } = state.fb;
+  const beat = () => fns.updateDoc(ref, { lastActiveAt: fns.serverTimestamp() }).catch(() => {});
+  beat();
+  setInterval(beat, HEARTBEAT_MS);
+  window.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+  window.addEventListener('beforeunload', () => { fns.updateDoc(ref, { lastActiveAt: fns.serverTimestamp() }).catch(() => {}); });
+}
+
+/** Hitung status realtime dari lastActiveAt (bukan field status statis). */
+function computeStatus(lastActiveAt){
+  if (!lastActiveAt) return 'offline';
+  const ms = lastActiveAt.toMillis ? lastActiveAt.toMillis() : new Date(lastActiveAt).getTime();
+  const diff = Date.now() - ms;
+  if (diff <= ONLINE_TIMEOUT_MS) return 'online';
+  if (diff <= IDLE_TIMEOUT_MS) return 'idle';
+  return 'offline';
+}
+
+/* =========================================================
+   4. RANKING & PLAYER ONLINE (realtime, top 100 by rating)
+========================================================= */
+function listenRanking(){
+  const { db, fns } = state.fb;
+  const q = fns.query(fns.collection(db, COL_CHESS_PLAYERS), fns.orderBy('rating', 'desc'), fns.limit(100));
+  fns.onSnapshot(q, (snap) => {
+    const players = snap.docs.map(d => {
+      const data = d.data();
+      return { ...data, status: computeStatus(data.lastActiveAt) };
+    });
+    state.rankingCache = players;
+    renderLists();
+    if (state.session){
+      const mine = players.find(p => p.kodeUnik === state.session.kodeUnik.toUpperCase());
+      if (mine) updateSelfBadge(mine);
+    }
+  }, (err) => console.error('[ranking] listener error', err));
+}
+
+/* Menyaring "chess_players" hantu: peserta yang sudah dihapus dari koleksi
+   "pendaftaran" (baik lewat tombol hapus admin, ATAU lebih dulu dihapus
+   sebelum fitur auto-hapus profil catur ditambahkan) tidak akan pernah
+   ikut terhapus otomatis dari chess_players jika penghapusannya terjadi
+   di luar tombol hapus dasbor. Daripada mengandalkan penghapusan itu selalu
+   sempurna, di sini kita dengarkan LANGSUNG koleksi "pendaftaran" (sumber
+   kebenaran) secara realtime, dan tampilkan ranking/online HANYA untuk
+   kodeUnik yang benar-benar masih terdaftar di sana. Jadi begitu admin
+   menghapus peserta di dasbor, orangnya langsung hilang juga dari Lokon
+   Chess Arena — real-time, tanpa perlu bersih-bersih manual di Firestore. */
+function listenValidPeserta(){
+  const { db, fns } = state.fb;
+  fns.onSnapshot(fns.collection(db, FIRESTORE_COLLECTION), (snap) => {
+    const set = new Set();
+    snap.docs.forEach(d => {
+      const kode = d.data()?.kodeUnik;
+      if (kode) set.add(String(kode).toUpperCase());
+    });
+    state.validKodeSet = set;
+    renderLists();
+  }, (err) => console.error('[valid-peserta] listener error', err));
+}
+
+/* Daftar pemain yang sudah disaring terhadap peserta aktif. Selama
+   validKodeSet belum sempat dimuat (null), tampilkan apa adanya dulu
+   supaya arena tidak terlihat kosong sesaat — begitu data pendaftaran
+   datang (biasanya hampir bersamaan), daftar langsung tersaring rapi. */
+function getActivePlayers(){
+  if (!state.validKodeSet) return state.rankingCache;
+  return state.rankingCache.filter(p => state.validKodeSet.has(String(p.kodeUnik || '').toUpperCase()));
+}
+
+function renderLists(){
+  const activePlayers = getActivePlayers();
+  const filterTxt = (el.searchInput?.value || '').trim().toLowerCase();
+  const filtered = filterTxt
+    ? activePlayers.filter(p => p.nama.toLowerCase().includes(filterTxt))
+    : activePlayers;
+
+  UI.renderRankingList(el.rankingList, filtered, { onOpenProfile: openProfile });
+  UI.renderOnlineList(el.onlineList, activePlayers, {
+    onOpenProfile: openProfile,
+    myKode: state.session ? state.session.kodeUnik.toUpperCase() : null
+  });
+
+  const onlineCount = activePlayers.filter(p => p.status === 'online').length;
+  const topRating = activePlayers.length ? activePlayers[0].rating : 0;
+  if (el.statTotalPlayers) el.statTotalPlayers.textContent = activePlayers.length;
+  if (el.statOnlineNow) el.statOnlineNow.textContent = onlineCount;
+  if (el.statTopRating) el.statTopRating.textContent = topRating || '-';
+  if (el.onlineCountChip) el.onlineCountChip.textContent = onlineCount;
+}
+
+function updateSelfBadge(mine){
+  state.me = mine;
+  if (el.memberName) el.memberName.textContent = mine.nama;
+  if (el.memberRating) el.memberRating.textContent = `Rating ${mine.rating}`;
+  if (el.topAvatarChip){
+    el.topAvatarChip.textContent = UI.initials(mine.nama);
+    el.topAvatarChip.style.background = UI.avatarColor(mine.kodeUnik || mine.nama || '');
+  }
+  if (el.dashMenuName) el.dashMenuName.textContent = mine.nama;
+  if (el.dashMenuRating) el.dashMenuRating.textContent = `Rating ${mine.rating}`;
+  if (el.dashMenuAvatar){
+    el.dashMenuAvatar.textContent = UI.initials(mine.nama);
+    el.dashMenuAvatar.style.background = UI.avatarColor(mine.kodeUnik || mine.nama || '');
+  }
+}
+
+/**
+ * PENTING (perbaikan bug utama): profil catur milik sendiri (state.me)
+ * dulunya HANYA diisi lewat listener ranking Top-100. Kalau peserta
+ * belum masuk Top-100 (rating rendah/baru daftar dengan banyak pemain
+ * lain), atau listener ranking itu belum sempat memuat waktu peserta
+ * buru-buru klik "Terima" di tantangan duel yang masuk, state.me tetap
+ * null -> acceptChallenge() crash diam-diam (game tidak pernah jalan).
+ * Listener khusus 1 dokumen ini jauh lebih cepat & selalu akurat
+ * berapa pun rating/posisi peserta di ranking.
+ */
+function listenMyProfile(ref){
+  const { fns } = state.fb;
+  fns.onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    updateSelfBadge({ ...data, status: computeStatus(data.lastActiveAt) });
+  }, (err) => console.error('[profil-sendiri] listener error', err));
+}
+
+/**
+ * PERBAIKAN BUG: kalau sesi sebelumnya terputus mendadak (tab ditutup,
+ * koneksi putus) SEBELUM finishRoom() sempat jalan, field inGame di
+ * Firestore bisa "nyangkut" true selamanya. Akibatnya peserta terkunci
+ * permanen: semua tantangan masuk otomatis ditolak diam-diam, dan dia
+ * sendiri tidak bisa mengirim tantangan baru. Dipanggil sekali saat
+ * boot untuk memulihkan keadaan:
+ * - Kalau room-nya ternyata masih berjalan -> otomatis disambungkan
+ *   kembali ke papan (reconnect), bukan cuma direset.
+ * - Kalau room sudah selesai/hilang -> reset inGame supaya tidak
+ *   terkunci permanen.
+ */
+async function recoverActiveSession(ref){
+  const { db, fns } = state.fb;
+  try {
+    const snap = await fns.getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!data.inGame || !data.currentRoomId) return;
+
+    const roomSnap = await fns.getDoc(fns.doc(db, COL_CHESS_ROOMS, data.currentRoomId));
+    if (roomSnap.exists() && roomSnap.data().status === 'ongoing'){
+      UI.toast(el.toastContainer, 'Menyambungkan kembali ke permainan yang tertunda…', 'info');
+      enterRoom(data.currentRoomId);
+    } else {
+      await fns.updateDoc(ref, { inGame: false, currentRoomId: null });
+    }
+  } catch (err){
+    console.error('[recoverActiveSession] gagal memulihkan sesi', err);
+  }
+}
+
+/* =========================================================
+   5b. RIWAYAT PERTANDINGAN SAYA
+   Datanya sebenarnya SUDAH lama disimpan tiap game PvP selesai
+   (koleksi chess_matches, lihat finishRoom) tapi belum pernah
+   ditampilkan ke pemain — di sini baru dibaca & dirender.
+========================================================= */
+async function openMatchHistory(){
+  if (!state.session){ openGuestLock(); return; }
+  el.matchHistoryModal.classList.add('open');
+  el.matchHistoryList.innerHTML = '';
+  el.matchHistoryEmpty.style.display = 'none';
+  el.matchHistoryLoading.style.display = 'block';
+
+  const { db, fns } = state.fb;
+  const myKode = state.session.kodeUnik.toUpperCase();
+  try {
+    // Sengaja TANPA orderBy digabung where(array-contains) — kombinasi itu
+    // butuh composite index tambahan di Firestore Console. Diambil lalu
+    // diurutkan di sisi klien saja (jumlahnya kecil, ringan).
+    const q = fns.query(
+      fns.collection(db, COL_CHESS_MATCHES),
+      fns.where('players', 'array-contains', myKode),
+      fns.limit(60)
+    );
+    const snap = await fns.getDocs(q);
+    let matches = snap.docs.map(d => d.data());
+    matches.sort((a, b) => (b.endedAt?.toMillis?.() || 0) - (a.endedAt?.toMillis?.() || 0));
+    matches = matches.slice(0, 30);
+
+    el.matchHistoryLoading.style.display = 'none';
+    if (!matches.length){
+      el.matchHistoryEmpty.style.display = 'block';
+      return;
+    }
+    UI.renderMatchHistory(el.matchHistoryList, matches, myKode);
+  } catch (err){
+    console.warn('Gagal memuat riwayat pertandingan:', err);
+    el.matchHistoryLoading.style.display = 'none';
+    el.matchHistoryEmpty.textContent = 'Gagal memuat riwayat. Coba lagi sesaat.';
+    el.matchHistoryEmpty.style.display = 'block';
+  }
+}
+
+/* =========================================================
+   5. PROFIL POPUP + KIRIM TANTANGAN
+========================================================= */
+function openProfile(player){
+  sound.click();
+  const myKode = state.session ? state.session.kodeUnik.toUpperCase() : null;
+  UI.openProfileModal(el.profileModal, player, {
+    myKode,
+    canChallenge: !!state.session,
+    onChallenge: (target, tc) => {
+      if (!state.session){ openGuestLock(); return; }
+      sendChallenge(target, tc);
+      UI.closeModal(el.profileModal);
+    }
+  });
+}
+
+async function sendChallenge(target, tc){
+  const { db, fns } = state.fb;
+  const me = state.me;
+  if (!me){ UI.toast(el.toastContainer, 'Profil kamu belum siap, coba lagi sesaat.', 'error'); return; }
+  if (me.inGame){ UI.toast(el.toastContainer, 'Kamu sedang dalam permainan.', 'error'); return; }
+  const timeControl = tc || UI.TIME_CONTROLS.rapid;
+
+  const ref = await fns.addDoc(fns.collection(db, COL_CHESS_CHALLENGES), {
+    from: { kodeUnik: me.kodeUnik, nama: me.nama, rating: me.rating },
+    to: target.kodeUnik,
+    status: 'pending',
+    timeControlMs: timeControl.ms,
+    incrementMs: timeControl.inc,
+    timeControlLabel: timeControl.label,
+    createdAt: fns.serverTimestamp()
+  });
+  UI.toast(el.toastContainer, `Tantangan ${timeControl.label} dikirim ke ${target.nama}, menunggu respons…`, 'info');
+  sound.challenge();
+
+  // Batas waktu tunggu di sisi penantang
+  let unsub = () => {};
+  const timeout = setTimeout(async () => {
+    const snap = await fns.getDoc(ref);
+    if (snap.exists() && snap.data().status === 'pending'){
+      await fns.updateDoc(ref, { status: 'expired' });
+      UI.toast(el.toastContainer, `${target.nama} tidak merespons tantangan.`, 'error');
+    }
+    unsub(); // PERBAIKAN BUG: dulu listener ini tidak pernah dilepas saat expired (kebocoran listener)
+  }, 30000);
+
+  unsub = fns.onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const d = snap.data();
+    if (d.status === 'accepted' && d.roomId){
+      clearTimeout(timeout); unsub();
+      UI.toast(el.toastContainer, `${target.nama} menerima tantanganmu!`, 'success');
+      enterRoom(d.roomId);
+    } else if (d.status === 'rejected'){
+      clearTimeout(timeout); unsub();
+      UI.toast(el.toastContainer, `${target.nama} menolak tantangan.`, 'error');
+    }
+  });
+}
+
+/** Dengarkan tantangan MASUK ditujukan ke saya. */
+function listenIncomingChallenges(){
+  const { db, fns } = state.fb;
+  const myKode = state.session.kodeUnik.toUpperCase();
+  const q = fns.query(
+    fns.collection(db, COL_CHESS_CHALLENGES),
+    fns.where('to', '==', myKode),
+    fns.where('status', '==', 'pending')
+  );
+  const seen = new Set();
+  fns.onSnapshot(q, (snap) => {
+    snap.docChanges().forEach(change => {
+      if (change.type !== 'added') return;
+      const id = change.doc.id;
+      if (seen.has(id)) return;
+      seen.add(id);
+      const data = change.doc.data();
+      if (state.me && state.me.inGame) {
+        fns.updateDoc(change.doc.ref, { status: 'rejected' });
+        return;
+      }
+      sound.notification();
+      UI.showChallengeToast(el.challengeContainer, data.from, {
+        onAccept: () => acceptChallenge(id, data),
+        onReject: () => fns.updateDoc(change.doc.ref, { status: 'rejected' })
+      });
+    });
+  });
+}
+
+async function acceptChallenge(challengeId, data){
+  const { db, fns } = state.fb;
+  let me = state.me;
+
+  // PERBAIKAN BUG: dulu kalau state.me belum siap, baris di bawah
+  // langsung crash (me.kodeUnik pada null) dan permainan tidak pernah
+  // jalan sama sekali tanpa pesan apa pun ke peserta. Sekarang: coba
+  // ambil profil langsung sekali sebagai fallback, dan kalau tetap
+  // gagal, tolak tantangan dengan pesan yang jelas alih-alih diam saja.
+  if (!me){
+    try {
+      const myKode = state.session.kodeUnik.toUpperCase();
+      const snap = await fns.getDoc(fns.doc(db, COL_CHESS_PLAYERS, myKode));
+      if (snap.exists()) me = { ...snap.data(), status: computeStatus(snap.data().lastActiveAt) };
+    } catch (err){ console.error('[acceptChallenge] gagal ambil profil sendiri', err); }
+  }
+  if (!me){
+    UI.toast(el.toastContainer, 'Profil kamu belum siap, coba lagi sesaat.', 'error');
+    fns.updateDoc(fns.doc(db, COL_CHESS_CHALLENGES, challengeId), { status: 'rejected' }).catch(() => {});
+    return;
+  }
+  if (me.inGame){
+    UI.toast(el.toastContainer, 'Kamu sedang dalam permainan lain.', 'error');
+    fns.updateDoc(fns.doc(db, COL_CHESS_CHALLENGES, challengeId), { status: 'rejected' }).catch(() => {});
+    return;
+  }
+
+  const iAmWhite = Math.random() < 0.5;
+  // Fallback GAME_TIME_MS/0 kalau ini tantangan format lama (sebelum fitur
+  // kontrol waktu ada) yang kebetulan masih 'pending' saat fitur ini dirilis.
+  const timeControlMs = data.timeControlMs || GAME_TIME_MS;
+  const incrementMs = data.incrementMs || 0;
+  const timeControlLabel = data.timeControlLabel || 'Rapid 10+5';
+  const roomRef = await fns.addDoc(fns.collection(db, COL_CHESS_ROOMS), {
+    players: {
+      w: iAmWhite ? pick(me) : pick(data.from),
+      b: iAmWhite ? pick(data.from) : pick(me)
+    },
+    playersKode: [me.kodeUnik, data.from.kodeUnik],
+    fen: 'start',
+    pgn: [],
+    turn: 'w',
+    whiteTimeMs: timeControlMs,
+    blackTimeMs: timeControlMs,
+    timeControlMs, incrementMs, timeControlLabel,
+    turnStartedAt: fns.serverTimestamp(),
+    status: 'ongoing',
+    drawOfferBy: null,
+    emote: null,
+    vsComputer: false,
+    createdAt: fns.serverTimestamp(),
+    updatedAt: fns.serverTimestamp()
+  });
+
+  await fns.updateDoc(fns.doc(db, COL_CHESS_CHALLENGES, challengeId), { status: 'accepted', roomId: roomRef.id });
+
+  await Promise.all([
+    fns.updateDoc(fns.doc(db, COL_CHESS_PLAYERS, me.kodeUnik), { inGame: true, currentRoomId: roomRef.id }),
+    fns.updateDoc(fns.doc(db, COL_CHESS_PLAYERS, data.from.kodeUnik), { inGame: true, currentRoomId: roomRef.id })
+  ]);
+
+  enterRoom(roomRef.id);
+}
+
+function pick(p){ return { kodeUnik: p.kodeUnik, nama: p.nama, rating: p.rating }; }
+
+/* =========================================================
+   6. GUEST LOCK
+========================================================= */
+function openGuestLock(){
+  el.guestLockModal && el.guestLockModal.classList.add('open');
+}
+
+/* =========================================================
+   6b. TURNAMEN 17 AGUSTUS 2026
+   -------------------------------------------------
+   Alur: siapa saja (termasuk tamu) bisa melihat banner & info
+   turnamen di dasbor (countdown, hadiah, daftar peserta yang
+   sudah diterima) — tapi tombol "Daftar Turnamen Sekarang"
+   memakai guard yang SAMA seperti mode Lawan Komputer/Player:
+   tamu diarahkan ke openGuestLock(), bukan langsung ke form.
+========================================================= */
+
+/** Ambil konfigurasi turnamen dari Firestore (tanggal & hadiah yang
+ *  diatur admin di Dasbor Admin). Kalau dokumennya belum pernah
+ *  disimpan admin sama sekali, pakai TOURNEY_DEFAULTS supaya modul
+ *  tetap tampil normal (bukan kosong/error). */
+async function loadTourneyConfig(){
+  const { db, fns } = state.fb;
+  try {
+    const snap = await fns.getDoc(fns.doc(db, COL_TOURNEY_CONFIG, TOURNEY_ID));
+    state.tourneyConfig = snap.exists() ? { ...TOURNEY_DEFAULTS, ...snap.data() } : { ...TOURNEY_DEFAULTS };
+  } catch {
+    state.tourneyConfig = { ...TOURNEY_DEFAULTS };
+  }
+  state.tourneyStartMs = new Date(state.tourneyConfig.startAtISO).getTime() || 0;
+  applyTourneyConfigToDom();
+}
+
+function applyTourneyConfigToDom(){
+  const c = state.tourneyConfig;
+  if (!c) return;
+  if (el.tourneyBannerTitle) el.tourneyBannerTitle.textContent = c.title;
+  if (el.tourneyTitle) el.tourneyTitle.textContent = c.title;
+  if (el.tourneyDateLabel){
+    const d = new Date(c.startAtISO);
+    const label = isNaN(d.getTime()) ? '-' : d.toLocaleString('id-ID', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) + ' WIB';
+    el.tourneyDateLabel.innerHTML = `<i class="fa-solid fa-calendar-days"></i> ${label}`;
+  }
+  if (el.tourneyPrize1) el.tourneyPrize1.textContent = c.prize1;
+  if (el.tourneyPrize2) el.tourneyPrize2.textContent = c.prize2;
+  if (el.tourneyPrize3) el.tourneyPrize3.textContent = c.prize3;
+}
+
+/** Peserta yang sudah DITERIMA admin — ditampilkan ke semua orang
+ *  (termasuk tamu) sebagai bukti sosial turnamen sungguhan berjalan. */
+function listenTourneyApproved(){
+  const { db, fns } = state.fb;
+  const q = fns.query(fns.collection(db, COL_TOURNEY_REG), fns.where('status', '==', 'approved'));
+  fns.onSnapshot(q, (snap) => {
+    state.tourneyApproved = snap.docs.map(d => d.data());
+    UI.renderTourneyParticipants(el.tourneyParticipantList, el.tourneyParticipantEmpty, el.tourneyParticipantCount, state.tourneyApproved);
+  }, (err) => console.error('[turnamen] listener peserta error', err));
+}
+
+/** Status pendaftaran turnamen milik SENDIRI (realtime) — supaya kalau
+ *  admin klik Terima/Tolak di Dasbor Admin, tampilan di sini langsung
+ *  berubah tanpa perlu reload halaman. */
+function listenMyTourneyReg(){
+  if (!state.session) return;
+  const { db, fns } = state.fb;
+  const kode = state.session.kodeUnik.toUpperCase();
+  fns.onSnapshot(fns.doc(db, COL_TOURNEY_REG, kode), (snap) => {
+    state.tourneyMyReg = snap.exists() ? snap.data() : null;
+    renderTourneyOwnStatus();
+  }, (err) => console.error('[turnamen] listener status sendiri error', err));
+}
+
+function renderTourneyOwnStatus(){
+  UI.renderTourneyStatus(el.tourneyStatusBlock, el.tourneyStatusBanner, el.tourneyStatusTitle, el.tourneyStatusDesc, state.tourneyMyReg);
+  // Kalau sudah pernah daftar (apapun statusnya), sembunyikan tombol
+  // "Daftar Sekarang" dan form-nya — status cukup diwakili banner di atas.
+  const already = !!state.tourneyMyReg;
+  if (el.tourneyRegisterBlock) el.tourneyRegisterBlock.style.display = already ? 'none' : 'block';
+}
+
+function startTourneyCountdown(){
+  if (state.tourneyCountdownTimer) clearInterval(state.tourneyCountdownTimer);
+  const tick = () => {
+    const diff = state.tourneyStartMs - Date.now();
+    const cells = el.tourneyCountdown ? {
+      d: el.tourneyCountdown.querySelector('[data-f="d"]'),
+      h: el.tourneyCountdown.querySelector('[data-f="h"]'),
+      m: el.tourneyCountdown.querySelector('[data-f="m"]'),
+      s: el.tourneyCountdown.querySelector('[data-f="s"]')
+    } : {};
+    UI.renderCountdownCells(cells, diff);
+    if (el.tourneyBannerCountdown) el.tourneyBannerCountdown.textContent = UI.fmtCountdownShort(diff);
+    if (el.tourneyCountdownCaption){
+      el.tourneyCountdownCaption.textContent = diff <= 0 ? 'Turnamen sedang berlangsung! 🔥' : 'Menuju hari-H…';
+    }
+    el.tourneyCountdown && el.tourneyCountdown.classList.toggle('is-live', diff <= 0);
+  };
+  tick();
+  state.tourneyCountdownTimer = setInterval(tick, 1000);
+}
+
+function openTourneyModal(){
+  if (!state.session){ openGuestLock(); return; }
+  el.tourneyModal && el.tourneyModal.classList.add('open');
+  renderTourneyOwnStatus();
+  resetTourneyForm();
+}
+
+function resetTourneyForm(){
+  if (el.tourneyForm) el.tourneyForm.style.display = 'none';
+  if (el.tourneyWaInput) el.tourneyWaInput.value = '';
+  if (el.tourneyFormError) el.tourneyFormError.textContent = '';
+  if (el.tourneyFormSubmit){ el.tourneyFormSubmit.disabled = false; el.tourneyFormSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran'; }
+}
+
+/** Terima format lokal (0812…), internasional (+62812… / 62812…),
+ *  angka 9–14 digit setelah kode area — cukup longgar untuk berbagai
+ *  operator tapi tetap menolak input yang jelas bukan nomor HP. */
+function normalizeWhatsapp(raw){
+  const digits = String(raw || '').replace(/[^\d+]/g, '');
+  const cleaned = digits.replace(/^\+/, '');
+  if (/^0\d{9,13}$/.test(cleaned)) return '62' + cleaned.slice(1);
+  if (/^62\d{8,13}$/.test(cleaned)) return cleaned;
+  return null;
+}
+
+async function submitTourneyRegistration(){
+  const waNorm = normalizeWhatsapp(el.tourneyWaInput.value);
+  if (!waNorm){
+    el.tourneyFormError.textContent = 'Nomor WhatsApp tidak valid. Contoh: 081234567890.';
+    return;
+  }
+  el.tourneyFormError.textContent = '';
+  el.tourneyFormSubmit.disabled = true;
+  el.tourneyFormSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim…';
+  try {
+    const { db, fns } = state.fb;
+    const kode = state.session.kodeUnik.toUpperCase();
+    await fns.setDoc(fns.doc(db, COL_TOURNEY_REG, kode), {
+      kodeUnik: kode,
+      nama: state.session.nama || 'Peserta',
+      whatsapp: waNorm,
+      status: 'pending',
+      registeredAt: fns.serverTimestamp()
+    });
+    UI.toast(el.toastContainer, 'Pendaftaran terkirim! Menunggu konfirmasi admin.', 'success');
+    resetTourneyForm();
+  } catch (err){
+    console.error('[turnamen] gagal daftar', err);
+    el.tourneyFormError.textContent = 'Gagal mengirim pendaftaran. Periksa koneksi lalu coba lagi.';
+    el.tourneyFormSubmit.disabled = false;
+    el.tourneyFormSubmit.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim Pendaftaran';
+  }
+}
+
+/* =========================================================
+   MENU DASBOR (HAMBURGER)
+   Drawer navigasi ringan — cuma toggle class, animasinya
+   murni CSS transform (lihat style.css), tidak ada logika berat.
+========================================================= */
+function openDashMenu(){
+  el.dashMenuDrawer && el.dashMenuDrawer.classList.add('open');
+  el.dashMenuOverlay && el.dashMenuOverlay.classList.add('open');
+  el.dashMenuDrawer && el.dashMenuDrawer.setAttribute('aria-hidden', 'false');
+  el.btnHamburger && el.btnHamburger.setAttribute('aria-expanded', 'true');
+}
+function closeDashMenu(){
+  el.dashMenuDrawer && el.dashMenuDrawer.classList.remove('open');
+  el.dashMenuOverlay && el.dashMenuOverlay.classList.remove('open');
+  el.dashMenuDrawer && el.dashMenuDrawer.setAttribute('aria-hidden', 'true');
+  el.btnHamburger && el.btnHamburger.setAttribute('aria-expanded', 'false');
+}
+function wireDashMenu(){
+  el.btnHamburger && el.btnHamburger.addEventListener('click', openDashMenu);
+  el.btnDashMenuClose && el.btnDashMenuClose.addEventListener('click', closeDashMenu);
+  el.dashMenuOverlay && el.dashMenuOverlay.addEventListener('click', closeDashMenu);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDashMenu();
+  });
+
+  el.menuItemDashboard && el.menuItemDashboard.addEventListener('click', () => {
+    closeDashMenu();
+    el.lobby && el.lobby.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  el.menuItemTourney && el.menuItemTourney.addEventListener('click', () => {
+    closeDashMenu();
+    el.btnOpenTourney && el.btnOpenTourney.click();
+  });
+  el.menuItemHistory && el.menuItemHistory.addEventListener('click', () => {
+    closeDashMenu();
+    el.btnMatchHistory ? el.btnMatchHistory.click() : openMatchHistory();
+  });
+  el.menuItemSettings && el.menuItemSettings.addEventListener('click', () => {
+    closeDashMenu();
+    el.settingsModal && el.settingsModal.classList.add('open');
+  });
+}
+
+function wireTourneyActions(){
+  el.btnOpenTourney && el.btnOpenTourney.addEventListener('click', openTourneyModal);
+
+  el.tourneyRegisterBtn && el.tourneyRegisterBtn.addEventListener('click', () => {
+    if (!state.session){ openGuestLock(); return; }
+    if (el.tourneyForm) el.tourneyForm.style.display = el.tourneyForm.style.display === 'none' ? 'flex' : 'none';
+  });
+  el.tourneyFormCancel && el.tourneyFormCancel.addEventListener('click', resetTourneyForm);
+  el.tourneyFormSubmit && el.tourneyFormSubmit.addEventListener('click', submitTourneyRegistration);
+  el.tourneyWaInput && el.tourneyWaInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitTourneyRegistration();
+  });
+}
+
+/* Saat keyboard HP muncul, pastikan input yang lagi difokus tetap
+   kelihatan (tidak ketutup keyboard) — beberapa WebView tidak
+   auto-scroll input ke dalam viewport dengan baik, terutama saat
+   inputnya ada di dalam modal yang sudah scrollable sendiri. */
+function wireModalInputFocusScroll(){
+  document.addEventListener('focusin', (e) => {
+    const target = e.target;
+    if (!target || !(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+    const modalBox = target.closest('.modal-box');
+    if (!modalBox) return;
+    setTimeout(() => {
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 300);
+  });
+}
+
+/* =========================================================
+   7. MODE: LAWAN KOMPUTER (praktik — TIDAK memengaruhi rating/statistik)
+========================================================= */
+async function startComputerGame(){
+  if (!state.session){ openGuestLock(); return; }
+  const level = parseInt(el.computerLevelRange.value, 10) || 10;
+
+  UI.switchScreen({ lobbyScreen: el.lobby, gameScreen: el.game }, 'gameScreen');
+  el.gameModeLabel.textContent = `Lawan Komputer • Level ${level} (latihan, rating tidak berubah)`;
+
+  state.vsComputer = true;
+  state.roomId = null;
+  state.myColor = 'w';
+  state.opponentProfile = { nama: `Komputer Lv.${level}`, rating: 800 + level * 60, kodeUnik: '__CPU__' };
+  await setupBoardForNewGame();
+
+  state.computer = new ComputerOpponent(level);
+  await state.computer.init();
+  if (state.computer.usingFallback){
+    UI.toast(el.toastContainer, 'Mesin Stockfish online tidak tersedia — memakai AI cadangan bawaan.', 'info');
+  }
+
+  startLocalTimerLoop();
+}
+
+/* =========================================================
+   8. MASUK RUANG PVP REALTIME
+========================================================= */
+function enterRoom(roomId){
+  const { db, fns } = state.fb;
+  state.vsComputer = false;
+  state.roomId = roomId;
+  UI.switchScreen({ lobbyScreen: el.lobby, gameScreen: el.game }, 'gameScreen');
+  el.gameModeLabel.textContent = 'Lawan Player • Menyambung…';
+
+  if (state.roomUnsub) state.roomUnsub();
+  const roomRef = fns.doc(db, COL_CHESS_ROOMS, roomId);
+
+  let initialized = false;
+  state.roomUnsub = fns.onSnapshot(roomRef, async (snap) => {
+    if (!snap.exists()) return;
+    const room = snap.data();
+
+    if (!initialized){
+      initialized = true;
+      const myKode = state.session.kodeUnik.toUpperCase();
+      state.myColor = room.players.w.kodeUnik === myKode ? 'w' : 'b';
+      state.opponentProfile = state.myColor === 'w' ? room.players.b : room.players.w;
+      state.incrementMs = room.incrementMs || 0;
+      state.timeControlLabel = room.timeControlLabel || 'Rapid 10+5';
+      state.lastEmoteTs = room.emote?.ts || null; // jangan putar ulang reaksi lama saat baru masuk/reconnect
+      el.gameModeLabel.textContent = `Lawan Player • ${state.timeControlLabel}`;
+      await setupBoardForNewGame(room.fen === 'start' ? undefined : room.fen);
+      state.scene.setOrientation(state.myColor);
+      startLocalTimerLoop();
+    }
+
+    applyRoomSnapshot(room);
+
+    if (room.status === 'finished'){
+      handleRoomFinished(room);
+    }
+  });
+}
+
+function applyRoomSnapshot(room){
+  state.localTimers.w = room.whiteTimeMs;
+  state.localTimers.b = room.blackTimeMs;
+  state.turnStartedAtMs = room.turnStartedAt?.toMillis ? room.turnStartedAt.toMillis() : Date.now();
+  state.currentTurn = room.turn;
+
+  // Rekonstruksi papan dari FEN kalau berbeda dari state lokal (langkah lawan masuk)
+  const fen = room.fen === 'start' ? undefined : room.fen;
+  const localFen = state.match ? state.match.fen : null;
+  if (fen && fen !== localFen){
+    const lastMove = room.pgn && room.pgn.length ? room.pgn[room.pgn.length - 1] : null;
+    state.match = new ChessMatch(fen);
+    state.scene.setPosition(state.match.board());
+    if (lastMove) state.scene.showLastMove(lastMove.from, lastMove.to);
+    reflectGameStatusEffects();
+    if (lastMove && lastMove.captured) sound.capture(); else if (lastMove) sound.move();
+  }
+
+  renderHud();
+  UI.renderMoveHistory(el.moveHistoryList, state.match.history);
+
+  if (room.drawOfferBy && room.drawOfferBy !== state.myColor){
+    showDrawOfferPrompt(room);
+  } else {
+    el.drawOfferBox && el.drawOfferBox.classList.remove('show');
+  }
+
+  // Reaksi emoji cepat (👍😮😂 dst.) — dibandingkan pakai timestamp klien
+  // supaya tiap reaksi baru cuma "diputar" sekali, tidak berulang tiap
+  // snapshot lain masuk (mis. saat lawan jalan).
+  if (room.emote && room.emote.ts && room.emote.ts !== state.lastEmoteTs){
+    state.lastEmoteTs = room.emote.ts;
+    const isSelf = room.emote.by === state.myColor;
+    UI.showEmoteBubble(el.emoteBubbleLayer, room.emote.emoji, isSelf);
+    if (!isSelf && navigator.vibrate){ try { navigator.vibrate(35); } catch (err) { /* diabaikan */ } }
+  }
+}
+
+function showDrawOfferPrompt(room){
+  if (!el.drawOfferBox) return;
+  el.drawOfferBox.classList.add('show');
+  el.drawOfferBox.innerHTML = `
     <span>Lawan menawarkan remis</span>
     <button class="btn-mini btn-accept" id="acceptDrawBtn">Terima</button>
-    <button class="btn-mini btn-reject" id="rejectDrawBtn">Tolak</button>`,i("acceptDrawBtn").onclick=()=>L(e.roomId,"draw","draw_agree"),i("rejectDrawBtn").onclick=()=>{const{db:a,fns:s}=e.fb;s.updateDoc(s.doc(a,b,e.roomId),{drawOfferBy:null})})}async function Te(t){e.roomUnsub&&(e.roomUnsub(),e.roomUnsub=null),C();const a=e.session.kodeUnik.toUpperCase(),s=t.result===e.myColor,r=t.result==="draw"?"draw":s?"win":"lose";r==="win"?(p.victory(),e.scene.celebrateVictory()):r==="lose"?p.lose():p.draw(),q(r);const l=t.ratingDelta?e.myColor==="w"?t.ratingDelta.w:t.ratingDelta.b:0;m.showVictoryModal(n.victoryModal,{outcome:r,reason:t.reason,ratingDelta:l,vsComputer:!1})}function q(t){if(navigator.vibrate)try{t==="win"?navigator.vibrate([40,60,40,60,120]):t==="lose"?navigator.vibrate(180):navigator.vibrate([60,40,60])}catch{}}async function W(t){await G(),e.match=new F(t),e.selectedSquare=null,e.gameStartedAt=Date.now(),e.localTimers={w:k,b:k},e.turnStartedAtMs=Date.now(),e.scene||(e.scene=new de(n.board3d,{onSquareClick:Oe}),await e.scene.init(),e.scene.setBloom(n.settingBloom?n.settingBloom.checked:!0),e.scene.setShadows(n.settingShadow?n.settingShadow.checked:!0)),e.scene.setPosition(e.match.board()),e.scene.clearHighlights(),e.scene.clearCheck(),e.scene.setOrientation(e.vsComputer?"w":e.myColor),T(),m.renderMoveHistory(n.moveHistoryList,[])}function Ee(){return e.vsComputer?e.match.turn==="w":e.match.turn===e.myColor}function Oe(t){if(!e.match||!Ee())return;if(e.selectedSquare){if(t===e.selectedSquare){e.selectedSquare=null,e.scene.clearHighlights();return}const o=e.match.legalMovesFrom(e.selectedSquare).find(l=>l.to===t);if(o){z(e.selectedSquare,t,o.promotion?"q":void 0),e.selectedSquare=null,e.scene.clearHighlights();return}const r=e.match.board()[8-parseInt(t[1],10)][t.charCodeAt(0)-97];r&&r.color===e.match.turn?Z(t):(e.selectedSquare=null,e.scene.clearHighlights());return}const a=e.match.board()[8-parseInt(t[1],10)][t.charCodeAt(0)-97];a&&a.color===e.match.turn&&Z(t)}function Z(t){e.selectedSquare=t,e.scene.highlightSelected(t),e.scene.showLegalMoves(e.match.legalMovesFrom(t))}async function z(t,a,s){const o=e.match.fen,r=e.match.move(t,a,s);if(!r)return;if(await e.scene.animateMove({from:t,to:a,captured:r.captured,promotion:r.promotion,color:r.color}),r.captured?p.capture():p.move(),e.match.isCheck()&&!e.match.isCheckmate()&&(p.check(),navigator.vibrate))try{navigator.vibrate(60)}catch{}Y(),T(),m.renderMoveHistory(n.moveHistoryList,e.match.history);const l=Date.now(),c=l-e.turnStartedAtMs,u=r.color;e.localTimers[u]=Math.max(0,e.localTimers[u]-c),!e.vsComputer&&e.incrementMs&&(e.localTimers[u]+=e.incrementMs),e.turnStartedAtMs=l,e.vsComputer?(await Be(),!e.match.isGameOver()&&r.color==="w"&&window.setTimeout(()=>Pe(),260)):await Re(r)}async function Pe(){if(!e.match||e.match.isGameOver())return;const t=[];"abcdefgh".split("").forEach(s=>{for(let o=1;o<=8;o++)t.push(...e.match.legalMovesFrom(s+o))});const a=await e.computer.bestMove(e.match.fen,()=>t);a&&await z(a.from,a.to,a.promotion)}function Y(){if(e.match.isCheck()){const t=e.match.board(),a=e.match.turn;e:for(let s=0;s<8;s++)for(let o=0;o<8;o++){const r=t[s][o];if(r&&r.type==="k"&&r.color===a){const l="abcdefgh"[o]+(8-s);e.scene.showCheck(l);break e}}}else e.scene.clearCheck()}function T(){const t=e.vsComputer?e.session?e.session.nama:"Tamu":e.me?e.me.nama:"-",a=(e.vsComputer,e.me?e.me.rating:"-");n.hudSelfName.textContent=t,n.hudSelfRating.textContent=a,n.hudSelfAvatar.textContent=m.initials(t),n.hudOppName.textContent=e.opponentProfile?e.opponentProfile.nama:"-",n.hudOppRating.textContent=e.opponentProfile?e.opponentProfile.rating:"-",n.hudOppAvatar.textContent=e.opponentProfile?m.initials(e.opponentProfile.nama):"?";const s=e.vsComputer?"w":e.myColor,o=s==="w"?"b":"w",r=e.match.capturedPieces();m.renderCaptured(n.hudSelfCaptured,r[o],o),m.renderCaptured(n.hudOppCaptured,r[s],s);const l=e.localTimers.w+e.localTimers.b||1,c=e.localTimers[s],u=e.localTimers[o];n.duelFillSelf&&(n.duelFillSelf.style.width=`${c/l*100}%`),n.duelFillOpp&&(n.duelFillOpp.style.width=`${u/l*100}%`)}function J(){C(),e.timerInterval=setInterval(()=>{if(!e.match||e.match.isGameOver())return;const t=e.match.turn,a=e.vsComputer?"w":e.myColor,s=Date.now()-e.turnStartedAtMs,o=Math.max(0,e.localTimers[t]-s);m.setTimerDisplay(t===a?n.hudSelfTimer:n.hudOppTimer,o,!0),m.setTimerDisplay(t===a?n.hudOppTimer:n.hudSelfTimer,e.localTimers[t==="w"?"b":"w"],!1),o<=15e3&&o>0&&Math.floor(o/1e3)!==Math.floor((o+250)/1e3)&&p.countdown(),o<=0&&(C(),e.vsComputer?D(t==="w"?"b":"w","timeout"):L(e.roomId,t==="w"?"b":"w","timeout"))},250)}function C(){e.timerInterval&&clearInterval(e.timerInterval),e.timerInterval=null}async function Be(){if(!e.match.isGameOver())return;let t=null,a="draw_rule";e.match.isCheckmate()?(t=e.match.turn==="w"?"b":"w",a="checkmate",p.checkmate()):e.match.isStalemate()?a="stalemate":e.match.isDraw()&&(a="draw_rule"),D(t,a)}function D(t,a){C();const s=t?t==="w"?"win":"lose":"draw";s==="win"?(p.victory(),e.scene.celebrateVictory()):s==="lose"?p.lose():p.draw(),q(s),m.showVictoryModal(n.victoryModal,{outcome:s,reason:a,ratingDelta:0,vsComputer:!0}),e.computer&&(e.computer.destroy(),e.computer=null)}async function L(t,a,s){const{db:o,fns:r}=e.fb,l=r.doc(o,b,t);try{await r.runTransaction(o,async c=>{var x;const u=await c.get(l);if(!u.exists())return;const d=u.data();if(d.status==="finished")return;const f=r.doc(o,y,d.players.w.kodeUnik),h=r.doc(o,y,d.players.b.kodeUnik),g=await c.get(f),X=await c.get(h),A=g.data(),I=X.data();let M=.5,O=.5;a==="w"?(M=1,O=0):a==="b"&&(M=0,O=1);const{newA:ee,newB:te,deltaA:U,deltaB:H}=me(A.rating,I.rating,M,se);c.update(l,{status:"finished",result:a||"draw",reason:s,ratingDelta:{w:U,b:H},updatedAt:r.serverTimestamp()}),c.update(f,Q(A,M,ee,s,"w",a)),c.update(h,Q(I,O,te,s,"b",a)),c.set(r.doc(o,_,t),{players:[d.players.w.kodeUnik,d.players.b.kodeUnik],white:d.players.w,black:d.players.b,result:a||"draw",reason:s,ratingDelta:{w:U,b:H},pgn:d.pgn||[],timeControlLabel:d.timeControlLabel||"Rapid 10+5",durationMs:Date.now()-((x=d.createdAt)!=null&&x.toMillis?d.createdAt.toMillis():Date.now()),endedAt:r.serverTimestamp()})})}catch(c){console.error("[finishRoom] transaksi gagal",c)}}function Q(t,a,s,o,r,l){const c=a===1,u=a===0,d=o==="abandon"&&l&&l!==r,f=c?(t.winStreak||0)+1:0;return{rating:s,totalMatch:(t.totalMatch||0)+1,menang:(t.menang||0)+(c?1:0),kalah:(t.kalah||0)+(u?1:0),seri:(t.seri||0)+(a===.5?1:0),kabur:(t.kabur||0)+(d?1:0),winStreak:f,bestWinStreak:Math.max(t.bestWinStreak||0,f),inGame:!1,currentRoomId:null}}async function Re(t){const{db:a,fns:s}=e.fb,o=s.doc(a,b,e.roomId);if(await s.updateDoc(o,{fen:e.match.fen,pgn:e.match.history,turn:e.match.turn,whiteTimeMs:e.localTimers.w,blackTimeMs:e.localTimers.b,turnStartedAt:s.serverTimestamp(),lastMove:{from:t.from,to:t.to,san:t.san,captured:!!t.captured},drawOfferBy:null,updatedAt:s.serverTimestamp()}),e.match.isGameOver()){let r=null,l="draw_rule";e.match.isCheckmate()?(r=e.match.turn==="w"?"b":"w",l="checkmate",p.checkmate()):e.match.isStalemate()&&(l="stalemate"),await L(e.roomId,r,l)}}function De(){n.btnResign&&n.btnResign.addEventListener("click",()=>{if(!confirm("Yakin ingin menyerah dari permainan ini?"))return;const a=(e.vsComputer?"w":e.myColor)==="w"?"b":"w";e.vsComputer?D(a,"resign"):L(e.roomId,a,"resign")}),n.btnDraw&&n.btnDraw.addEventListener("click",async()=>{if(e.vsComputer){m.toast(n.toastContainer,"Tawaran remis hanya berlaku saat lawan player.","info");return}const{db:t,fns:a}=e.fb;await a.updateDoc(a.doc(t,b,e.roomId),{drawOfferBy:e.myColor}),m.toast(n.toastContainer,"Tawaran remis dikirim ke lawan.","info")}),n.btnUndo&&n.btnUndo.addEventListener("click",()=>{if(!e.vsComputer){m.toast(n.toastContainer,"Undo hanya tersedia saat lawan komputer.","error");return}e.match.undo(),e.match.undo(),e.scene.setPosition(e.match.board()),e.scene.clearHighlights(),e.scene.clearCheck(),m.renderMoveHistory(n.moveHistoryList,e.match.history),T()}),n.btnZoomIn&&n.btnZoomIn.addEventListener("click",()=>{p.click(),e.scene&&e.scene.zoomIn()}),n.btnZoomOut&&n.btnZoomOut.addEventListener("click",()=>{p.click(),e.scene&&e.scene.zoomOut()}),n.btnMute&&n.btnMute.addEventListener("click",()=>{const t=!p.muted;p.setMuted(t),n.btnMute.innerHTML=t?'<i class="fa-solid fa-volume-xmark"></i>':'<i class="fa-solid fa-volume-high"></i>'}),n.btnFullscreen&&n.btnFullscreen.addEventListener("click",()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{})}),n.btnSettings&&n.btnSettings.addEventListener("click",()=>n.settingsModal.classList.add("open")),n.btnExit&&n.btnExit.addEventListener("click",()=>{if(e.timerInterval&&e.match&&!e.match.isGameOver()){if(!confirm("Keluar sekarang akan dianggap KABUR dari permainan. Lanjutkan?"))return;if(!e.vsComputer){const t=e.myColor==="w"?"b":"w";L(e.roomId,t,"abandon")}}E()}),n.victoryPeekBtn&&n.victoryPeekBtn.addEventListener("click",()=>{n.victoryModal.classList.add("peek-board")}),n.victoryPeekBackBtn&&n.victoryPeekBackBtn.addEventListener("click",()=>{n.victoryModal.classList.remove("peek-board")}),i("victoryExitBtn")&&i("victoryExitBtn").addEventListener("click",()=>{n.victoryModal.classList.remove("peek-board"),m.closeModal(n.victoryModal),E()}),i("victoryRematchBtn")&&i("victoryRematchBtn").addEventListener("click",()=>{if(n.victoryModal.classList.remove("peek-board"),m.closeModal(n.victoryModal),e.vsComputer)$();else if(e.opponentProfile){const t=e.opponentProfile,a=Object.values(m.TIME_CONTROLS).find(s=>s.label===e.timeControlLabel)||m.TIME_CONTROLS.rapid;E(),j(t,a)}else E()}),n.emotePicker&&m.buildEmotePicker(n.emotePicker,{onPick:async t=>{if(n.emotePicker.classList.remove("show"),e.vsComputer||!e.roomId)return;const{db:a,fns:s}=e.fb;try{await s.updateDoc(s.doc(a,b,e.roomId),{emote:{by:e.myColor,emoji:t,ts:Date.now()}})}catch(o){console.warn("Gagal mengirim reaksi:",o)}}}),n.btnEmote&&n.btnEmote.addEventListener("click",()=>{if(e.vsComputer){m.toast(n.toastContainer,"Reaksi hanya tersedia saat lawan player.","info");return}n.emotePicker.classList.toggle("show")}),document.addEventListener("click",t=>{var a;n.emotePicker&&n.emotePicker.classList.contains("show")&&!n.emotePicker.contains(t.target)&&t.target!==n.btnEmote&&!((a=n.btnEmote)!=null&&a.contains(t.target))&&n.emotePicker.classList.remove("show")}),n.btnMatchHistory&&n.btnMatchHistory.addEventListener("click",ve),document.querySelectorAll("[data-close-modal]").forEach(t=>{t.addEventListener("click",()=>m.closeModal(t.closest(".modal-backdrop")))}),n.settingVolume&&n.settingVolume.addEventListener("input",t=>p.setVolume(parseFloat(t.target.value))),n.settingMuted&&n.settingMuted.addEventListener("change",t=>p.setMuted(t.target.checked)),n.settingShadow&&n.settingShadow.addEventListener("change",t=>e.scene&&e.scene.setShadows(t.target.checked)),n.settingBloom&&n.settingBloom.addEventListener("change",t=>e.scene&&e.scene.setBloom(t.target.checked))}function E(){C(),e.roomUnsub&&(e.roomUnsub(),e.roomUnsub=null),e.computer&&(e.computer.destroy(),e.computer=null),e.roomId=null,e.opponentProfile=null,m.switchScreen({lobbyScreen:n.lobby,gameScreen:n.game},"lobbyScreen")}async function Ae(){m.setLoadingProgress(n.loading,10,"Menyiapkan koneksi Firebase\u2026"),e.fb=await ue(),m.setLoadingProgress(n.loading,35,"Memuat aturan catur\u2026"),await G(),m.setLoadingProgress(n.loading,55,"Memeriksa sesi peserta\u2026"),e.session=pe();let t=null;e.session?(n.guestBadge&&(n.guestBadge.style.display="none"),n.memberBadge&&(n.memberBadge.style.display="flex"),n.btnMatchHistory&&(n.btnMatchHistory.style.display="flex"),t=await fe(),he(t),we(t),Ce()):(n.guestBadge&&(n.guestBadge.style.display="flex"),n.memberBadge&&(n.memberBadge.style.display="none")),m.setLoadingProgress(n.loading,80,"Memuat papan 3D\u2026"),ge(),be(),De(),n.searchInput&&n.searchInput.addEventListener("input",B),n.computerLevelRange&&n.computerLevelRange.addEventListener("input",a=>{n.computerLevelValue.textContent=a.target.value}),n.btnVsComputer&&n.btnVsComputer.addEventListener("click",()=>{if(!e.session){v();return}document.getElementById("computerLevelPanel").classList.add("open")}),n.btnVsPlayer&&n.btnVsPlayer.addEventListener("click",()=>{if(!e.session){v();return}n.onlineList&&n.onlineList.scrollIntoView({behavior:"smooth",block:"center"}),m.toast(n.toastContainer,'Pilih pemain online lalu klik "Tantang Duel" di profilnya.',"info")}),n.startComputerBtn&&n.startComputerBtn.addEventListener("click",()=>{document.getElementById("computerLevelPanel").classList.remove("open"),$()}),m.setLoadingProgress(n.loading,100,"Selesai!"),setTimeout(()=>{n.loading&&n.loading.classList.add("done")},350),"serviceWorker"in navigator&&navigator.serviceWorker.register("./sw.js").catch(()=>{}),t&&await ke(t)}Ae().catch(t=>{console.error("[boot] gagal memulai modul catur:",t),m.setLoadingProgress(n.loading,100,"Gagal memuat. Periksa koneksi internet lalu muat ulang halaman.")});
+    <button class="btn-mini btn-reject" id="rejectDrawBtn">Tolak</button>`;
+  $('acceptDrawBtn').onclick = () => finishRoom(state.roomId, 'draw', 'draw_agree');
+  $('rejectDrawBtn').onclick = () => {
+    const { db, fns } = state.fb;
+    fns.updateDoc(fns.doc(db, COL_CHESS_ROOMS, state.roomId), { drawOfferBy: null });
+  };
+}
+
+async function handleRoomFinished(room){
+  if (state.roomUnsub) { state.roomUnsub(); state.roomUnsub = null; }
+  stopLocalTimerLoop();
+
+  const myKode = state.session.kodeUnik.toUpperCase();
+  const iWon = room.result === state.myColor;
+  const isDraw = room.result === 'draw';
+  const outcome = isDraw ? 'draw' : (iWon ? 'win' : 'lose');
+
+  if (outcome === 'win'){ sound.victory(); state.scene.celebrateVictory(); }
+  else if (outcome === 'lose'){ sound.lose(); }
+  else { sound.draw(); }
+  vibrateOutcome(outcome);
+
+  const myDelta = room.ratingDelta ? (state.myColor === 'w' ? room.ratingDelta.w : room.ratingDelta.b) : 0;
+  UI.showVictoryModal(el.victoryModal, { outcome, reason: room.reason, ratingDelta: myDelta, vsComputer: false });
+}
+
+/** Pola getar HP singkat sesuai hasil akhir — aman dilewati di device/browser tanpa dukungan getar. */
+function vibrateOutcome(outcome){
+  if (!navigator.vibrate) return;
+  try {
+    if (outcome === 'win') navigator.vibrate([40, 60, 40, 60, 120]);
+    else if (outcome === 'lose') navigator.vibrate(180);
+    else navigator.vibrate([60, 40, 60]);
+  } catch (err) { /* diabaikan */ }
+}
+
+/* =========================================================
+   9. PAPAN & INTERAKSI (dipakai baik mode komputer maupun PvP)
+========================================================= */
+async function setupBoardForNewGame(fen){
+  await loadChessRules();
+  state.match = new ChessMatch(fen);
+  state.selectedSquare = null;
+  state.gameStartedAt = Date.now();
+  state.localTimers = { w: GAME_TIME_MS, b: GAME_TIME_MS };
+  state.turnStartedAtMs = Date.now();
+
+  if (!state.scene){
+    state.scene = new Chess3DScene(el.board3d, { onSquareClick: onBoardSquareClick });
+    await state.scene.init();
+    state.scene.setBloom(el.settingBloom ? el.settingBloom.checked : true);
+    state.scene.setShadows(el.settingShadow ? el.settingShadow.checked : true);
+  }
+  state.scene.setPosition(state.match.board());
+  state.scene.clearHighlights();
+  state.scene.clearCheck();
+  state.scene.setOrientation(state.vsComputer ? 'w' : state.myColor);
+  renderHud();
+  UI.renderMoveHistory(el.moveHistoryList, []);
+}
+
+function myTurnNow(){
+  if (state.vsComputer) return state.match.turn === 'w'; // manusia selalu putih vs komputer
+  return state.match.turn === state.myColor;
+}
+
+function onBoardSquareClick(square){
+  if (!state.match || !myTurnNow()) return;
+
+  if (state.selectedSquare){
+    if (square === state.selectedSquare){
+      state.selectedSquare = null;
+      state.scene.clearHighlights();
+      return;
+    }
+    const legal = state.match.legalMovesFrom(state.selectedSquare);
+    const chosen = legal.find(m => m.to === square);
+    if (chosen){
+      commitMove(state.selectedSquare, square, chosen.promotion ? 'q' : undefined);
+      state.selectedSquare = null;
+      state.scene.clearHighlights();
+      return;
+    }
+    // Klik petak lain milik sendiri -> pindah seleksi
+    const piece = state.match.board()[8 - parseInt(square[1],10)][square.charCodeAt(0)-97];
+    if (piece && piece.color === state.match.turn){
+      selectSquare(square);
+    } else {
+      state.selectedSquare = null;
+      state.scene.clearHighlights();
+    }
+    return;
+  }
+
+  const piece = state.match.board()[8 - parseInt(square[1],10)][square.charCodeAt(0)-97];
+  if (piece && piece.color === state.match.turn) selectSquare(square);
+}
+
+function selectSquare(square){
+  state.selectedSquare = square;
+  state.scene.highlightSelected(square);
+  state.scene.showLegalMoves(state.match.legalMovesFrom(square));
+}
+
+async function commitMove(from, to, promotion){
+  const beforeFen = state.match.fen;
+  const moveResult = state.match.move(from, to, promotion);
+  if (!moveResult) return;
+
+  await state.scene.animateMove({
+    from, to, captured: moveResult.captured, promotion: moveResult.promotion, color: moveResult.color
+  });
+
+  if (moveResult.captured) sound.capture(); else sound.move();
+  if (state.match.isCheck() && !state.match.isCheckmate()){
+    sound.check();
+    if (navigator.vibrate){ try { navigator.vibrate(60); } catch (err) { /* diabaikan */ } }
+  }
+
+  reflectGameStatusEffects();
+  renderHud();
+  UI.renderMoveHistory(el.moveHistoryList, state.match.history);
+
+  const now = Date.now();
+  const elapsed = now - state.turnStartedAtMs;
+  const moverColor = moveResult.color;
+  state.localTimers[moverColor] = Math.max(0, state.localTimers[moverColor] - elapsed);
+  // Fischer increment: tambahkan waktu setelah bergerak (hanya PvP, kalau
+  // kontrol waktunya memang punya increment — Bullet 3+0 tidak dapat tambahan).
+  if (!state.vsComputer && state.incrementMs) state.localTimers[moverColor] += state.incrementMs;
+  state.turnStartedAtMs = now;
+
+  if (state.vsComputer){
+    await checkGameEndVsComputer();
+    // PENTING (perbaikan bug "bidak jalan otomatis"): hanya jadwalkan
+    // giliran komputer kalau yang BARU SAJA jalan adalah bidak manusia
+    // (putih). Sebelumnya kode ini terpanggil lagi setelah komputer
+    // SENDIRI selesai jalan, sehingga Stockfish diminta mencarikan
+    // langkah terbaik untuk giliran putih (manusia) dan otomatis
+    // menjalankannya sendiri tanpa diklik user.
+    if (!state.match.isGameOver() && moveResult.color === 'w'){
+      window.setTimeout(() => makeComputerMove(), 260);
+    }
+  } else {
+    await syncMoveToRoom(moveResult);
+  }
+}
+
+async function makeComputerMove(){
+  if (!state.match || state.match.isGameOver()) return;
+  const legalAll = [];
+  'abcdefgh'.split('').forEach(f => {
+    for (let r = 1; r <= 8; r++) legalAll.push(...state.match.legalMovesFrom(f + r));
+  });
+  const uciMove = await state.computer.bestMove(state.match.fen, () => legalAll);
+  if (!uciMove) return;
+  await commitMove(uciMove.from, uciMove.to, uciMove.promotion);
+}
+
+function reflectGameStatusEffects(){
+  if (state.match.isCheck()){
+    const board = state.match.board();
+    const turnColor = state.match.turn;
+    outer: for (let r = 0; r < 8; r++){
+      for (let f = 0; f < 8; f++){
+        const cell = board[r][f];
+        if (cell && cell.type === 'k' && cell.color === turnColor){
+          const square = 'abcdefgh'[f] + (8 - r);
+          state.scene.showCheck(square);
+          break outer;
+        }
+      }
+    }
+  } else {
+    state.scene.clearCheck();
+  }
+}
+
+/* ---------------- HUD ---------------- */
+function renderHud(){
+  const selfName = state.vsComputer ? (state.session ? state.session.nama : 'Tamu') : (state.me ? state.me.nama : '-');
+  const selfRating = state.vsComputer ? (state.me ? state.me.rating : '-') : (state.me ? state.me.rating : '-');
+  el.hudSelfName.textContent = selfName;
+  el.hudSelfRating.textContent = selfRating;
+  el.hudSelfAvatar.textContent = UI.initials(selfName);
+
+  el.hudOppName.textContent = state.opponentProfile ? state.opponentProfile.nama : '-';
+  el.hudOppRating.textContent = state.opponentProfile ? state.opponentProfile.rating : '-';
+  el.hudOppAvatar.textContent = state.opponentProfile ? UI.initials(state.opponentProfile.nama) : '?';
+
+  const myColor = state.vsComputer ? 'w' : state.myColor;
+  const oppColor = myColor === 'w' ? 'b' : 'w';
+  const captured = state.match.capturedPieces();
+  UI.renderCaptured(el.hudSelfCaptured, captured[oppColor], oppColor);
+  UI.renderCaptured(el.hudOppCaptured, captured[myColor], myColor);
+
+  const total = state.localTimers.w + state.localTimers.b || 1;
+  const selfMs = state.localTimers[myColor], oppMs = state.localTimers[oppColor];
+  if (el.duelFillSelf) el.duelFillSelf.style.width = `${(selfMs/total)*100}%`;
+  if (el.duelFillOpp) el.duelFillOpp.style.width = `${(oppMs/total)*100}%`;
+}
+
+/* ---------------- Timer loop ---------------- */
+function startLocalTimerLoop(){
+  stopLocalTimerLoop();
+  state.timerInterval = setInterval(() => {
+    if (!state.match || state.match.isGameOver()) return;
+    const activeColor = state.match.turn;
+    const myColor = state.vsComputer ? 'w' : state.myColor;
+    const elapsed = Date.now() - state.turnStartedAtMs;
+    const liveMs = Math.max(0, state.localTimers[activeColor] - elapsed);
+
+    UI.setTimerDisplay(activeColor === myColor ? el.hudSelfTimer : el.hudOppTimer, liveMs, true);
+    UI.setTimerDisplay(activeColor === myColor ? el.hudOppTimer : el.hudSelfTimer,
+      state.localTimers[activeColor === 'w' ? 'b' : 'w'], false);
+
+    if (liveMs <= 15000 && liveMs > 0 && Math.floor(liveMs/1000) !== Math.floor((liveMs+250)/1000)) sound.countdown();
+
+    if (liveMs <= 0){
+      stopLocalTimerLoop();
+      if (state.vsComputer){
+        finishLocalGame(activeColor === 'w' ? 'b' : 'w', 'timeout');
+      } else {
+        finishRoom(state.roomId, activeColor === 'w' ? 'b' : 'w', 'timeout');
+      }
+    }
+  }, 250);
+}
+function stopLocalTimerLoop(){ if (state.timerInterval) clearInterval(state.timerInterval); state.timerInterval = null; }
+
+/* =========================================================
+   10. AKHIR PERMAINAN
+========================================================= */
+
+async function checkGameEndVsComputer(){
+  if (!state.match.isGameOver()) return;
+  let winner = null, reason = 'draw_rule';
+  if (state.match.isCheckmate()){ winner = state.match.turn === 'w' ? 'b' : 'w'; reason = 'checkmate'; sound.checkmate(); }
+  else if (state.match.isStalemate()){ reason = 'stalemate'; }
+  else if (state.match.isDraw()){ reason = 'draw_rule'; }
+  finishLocalGame(winner, reason);
+}
+
+/** Mode Lawan Komputer: TIDAK menulis rating/statistik apa pun (sesuai permintaan). */
+function finishLocalGame(winnerColor, reason){
+  stopLocalTimerLoop();
+  const outcome = !winnerColor ? 'draw' : (winnerColor === 'w' ? 'win' : 'lose');
+  if (outcome === 'win'){ sound.victory(); state.scene.celebrateVictory(); }
+  else if (outcome === 'lose'){ sound.lose(); }
+  else { sound.draw(); }
+  vibrateOutcome(outcome);
+  UI.showVictoryModal(el.victoryModal, { outcome, reason, ratingDelta: 0, vsComputer: true });
+  if (state.computer){ state.computer.destroy(); state.computer = null; }
+}
+
+/** Klik user sendiri (resign/timeout terdeteksi lokal) untuk room PvP. */
+async function finishRoom(roomId, winnerColor, reason){
+  const { db, fns } = state.fb;
+  const roomRef = fns.doc(db, COL_CHESS_ROOMS, roomId);
+
+  try {
+    await fns.runTransaction(db, async (tx) => {
+      const snap = await tx.get(roomRef);
+      if (!snap.exists()) return;
+      const room = snap.data();
+      if (room.status === 'finished') return; // sudah diproses klien lain
+
+      const wRef = fns.doc(db, COL_CHESS_PLAYERS, room.players.w.kodeUnik);
+      const bRef = fns.doc(db, COL_CHESS_PLAYERS, room.players.b.kodeUnik);
+      const wSnap = await tx.get(wRef);
+      const bSnap = await tx.get(bRef);
+      const wData = wSnap.data(); const bData = bSnap.data();
+
+      let scoreW = 0.5, scoreB = 0.5;
+      if (winnerColor === 'w'){ scoreW = 1; scoreB = 0; }
+      else if (winnerColor === 'b'){ scoreW = 0; scoreB = 1; }
+
+      const { newA: newW, newB: newBRating, deltaA, deltaB } = calcElo(wData.rating, bData.rating, scoreW, ELO_K_FACTOR);
+
+      tx.update(roomRef, {
+        status: 'finished', result: winnerColor || 'draw', reason,
+        ratingDelta: { w: deltaA, b: deltaB }, updatedAt: fns.serverTimestamp()
+      });
+
+      tx.update(wRef, buildStatUpdate(wData, scoreW, newW, reason, 'w', winnerColor));
+      tx.update(bRef, buildStatUpdate(bData, scoreB, newBRating, reason, 'b', winnerColor));
+
+      tx.set(fns.doc(db, COL_CHESS_MATCHES, roomId), {
+        players: [room.players.w.kodeUnik, room.players.b.kodeUnik],
+        white: room.players.w, black: room.players.b,
+        result: winnerColor || 'draw', reason,
+        ratingDelta: { w: deltaA, b: deltaB },
+        pgn: room.pgn || [],
+        timeControlLabel: room.timeControlLabel || 'Rapid 10+5',
+        durationMs: Date.now() - (room.createdAt?.toMillis ? room.createdAt.toMillis() : Date.now()),
+        endedAt: fns.serverTimestamp()
+      });
+    });
+  } catch (err){
+    console.error('[finishRoom] transaksi gagal', err);
+  }
+}
+
+function buildStatUpdate(data, score, newRating, reason, color, winnerColor){
+  const won = score === 1;
+  const lost = score === 0;
+  const kabur = reason === 'abandon' && winnerColor && winnerColor !== color;
+  const newStreak = won ? (data.winStreak || 0) + 1 : 0;
+  return {
+    rating: newRating,
+    totalMatch: (data.totalMatch || 0) + 1,
+    menang: (data.menang || 0) + (won ? 1 : 0),
+    kalah: (data.kalah || 0) + (lost ? 1 : 0),
+    seri: (data.seri || 0) + (score === 0.5 ? 1 : 0),
+    kabur: (data.kabur || 0) + (kabur ? 1 : 0),
+    winStreak: newStreak,
+    bestWinStreak: Math.max(data.bestWinStreak || 0, newStreak),
+    inGame: false, currentRoomId: null
+  };
+}
+
+async function syncMoveToRoom(moveResult){
+  const { db, fns } = state.fb;
+  const roomRef = fns.doc(db, COL_CHESS_ROOMS, state.roomId);
+  await fns.updateDoc(roomRef, {
+    fen: state.match.fen,
+    pgn: state.match.history,
+    turn: state.match.turn,
+    whiteTimeMs: state.localTimers.w,
+    blackTimeMs: state.localTimers.b,
+    turnStartedAt: fns.serverTimestamp(),
+    lastMove: { from: moveResult.from, to: moveResult.to, san: moveResult.san, captured: !!moveResult.captured },
+    drawOfferBy: null,
+    updatedAt: fns.serverTimestamp()
+  });
+
+  if (state.match.isGameOver()){
+    let winner = null, reason = 'draw_rule';
+    if (state.match.isCheckmate()){ winner = state.match.turn === 'w' ? 'b' : 'w'; reason = 'checkmate'; sound.checkmate(); }
+    else if (state.match.isStalemate()) reason = 'stalemate';
+    await finishRoom(state.roomId, winner, reason);
+  }
+}
+
+/* =========================================================
+   11. TOMBOL AKSI DALAM GAME
+========================================================= */
+function wireGameActions(){
+  el.btnResign && el.btnResign.addEventListener('click', () => {
+    if (!confirm('Yakin ingin menyerah dari permainan ini?')) return;
+    const myColor = state.vsComputer ? 'w' : state.myColor;
+    const winner = myColor === 'w' ? 'b' : 'w';
+    if (state.vsComputer) finishLocalGame(winner, 'resign');
+    else finishRoom(state.roomId, winner, 'resign');
+  });
+
+  el.btnDraw && el.btnDraw.addEventListener('click', async () => {
+    if (state.vsComputer){ UI.toast(el.toastContainer, 'Tawaran remis hanya berlaku saat lawan player.', 'info'); return; }
+    const { db, fns } = state.fb;
+    await fns.updateDoc(fns.doc(db, COL_CHESS_ROOMS, state.roomId), { drawOfferBy: state.myColor });
+    UI.toast(el.toastContainer, 'Tawaran remis dikirim ke lawan.', 'info');
+  });
+
+  el.btnUndo && el.btnUndo.addEventListener('click', () => {
+    if (!state.vsComputer){ UI.toast(el.toastContainer, 'Undo hanya tersedia saat lawan komputer.', 'error'); return; }
+    state.match.undo(); state.match.undo(); // batalkan langkah AI + langkah sendiri
+    state.scene.setPosition(state.match.board());
+    state.scene.clearHighlights(); state.scene.clearCheck();
+    UI.renderMoveHistory(el.moveHistoryList, state.match.history);
+    renderHud();
+  });
+
+  el.btnZoomIn && el.btnZoomIn.addEventListener('click', () => { sound.click(); state.scene && state.scene.zoomIn(); });
+  el.btnZoomOut && el.btnZoomOut.addEventListener('click', () => { sound.click(); state.scene && state.scene.zoomOut(); });
+
+  el.btnMute && el.btnMute.addEventListener('click', () => {
+    const muted = !sound.muted;
+    sound.setMuted(muted);
+    el.btnMute.innerHTML = muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+  });
+
+  el.btnFullscreen && el.btnFullscreen.addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  });
+
+  el.btnSettings && el.btnSettings.addEventListener('click', () => el.settingsModal.classList.add('open'));
+
+  el.btnExit && el.btnExit.addEventListener('click', () => {
+    if (state.timerInterval && state.match && !state.match.isGameOver()){
+      if (!confirm('Keluar sekarang akan dianggap KABUR dari permainan. Lanjutkan?')) return;
+      if (!state.vsComputer){
+        const winner = state.myColor === 'w' ? 'b' : 'w';
+        finishRoom(state.roomId, winner, 'abandon');
+      }
+    }
+    exitToLobby();
+  });
+
+  // "Lihat Papan Akhir" — supaya user bisa lihat sendiri posisi akhir
+  // (kenapa bisa skakmat/remis) sebelum kembali ke dasbor/main lagi.
+  // Kartu hasil disembunyikan sementara (bukan ditutup penuh), papan 3D
+  // di baliknya jadi terlihat & tetap bisa diputar/zoom seperti biasa.
+  el.victoryPeekBtn && el.victoryPeekBtn.addEventListener('click', () => {
+    el.victoryModal.classList.add('peek-board');
+  });
+  el.victoryPeekBackBtn && el.victoryPeekBackBtn.addEventListener('click', () => {
+    el.victoryModal.classList.remove('peek-board');
+  });
+
+  $('victoryExitBtn') && $('victoryExitBtn').addEventListener('click', () => {
+    el.victoryModal.classList.remove('peek-board');
+    UI.closeModal(el.victoryModal);
+    exitToLobby();
+  });
+  $('victoryRematchBtn') && $('victoryRematchBtn').addEventListener('click', () => {
+    el.victoryModal.classList.remove('peek-board');
+    UI.closeModal(el.victoryModal);
+    if (state.vsComputer){
+      startComputerGame();
+    } else if (state.opponentProfile){
+      // PERBAIKAN: sebelumnya tombol "Main Lagi" untuk mode PvP cuma
+      // exitToLobby() — sama saja dengan tombol Keluar, TIDAK benar-benar
+      // mengirim rematch. Sekarang kirim ulang tantangan sungguhan ke
+      // lawan yang sama, pakai kontrol waktu yang sama seperti game barusan.
+      const opp = state.opponentProfile;
+      const tc = Object.values(UI.TIME_CONTROLS).find(t => t.label === state.timeControlLabel) || UI.TIME_CONTROLS.rapid;
+      exitToLobby();
+      sendChallenge(opp, tc);
+    } else {
+      exitToLobby();
+    }
+  });
+
+  // ---- Reaksi emoji cepat saat main (👍😮😂 dst., hanya mode PvP) ----
+  if (el.emotePicker){
+    UI.buildEmotePicker(el.emotePicker, {
+      onPick: async (emoji) => {
+        el.emotePicker.classList.remove('show');
+        if (state.vsComputer || !state.roomId){ return; }
+        const { db, fns } = state.fb;
+        try {
+          await fns.updateDoc(fns.doc(db, COL_CHESS_ROOMS, state.roomId), {
+            emote: { by: state.myColor, emoji, ts: Date.now() }
+          });
+        } catch (err){ console.warn('Gagal mengirim reaksi:', err); }
+      }
+    });
+  }
+  el.btnEmote && el.btnEmote.addEventListener('click', () => {
+    if (state.vsComputer){ UI.toast(el.toastContainer, 'Reaksi hanya tersedia saat lawan player.', 'info'); return; }
+    el.emotePicker.classList.toggle('show');
+  });
+  document.addEventListener('click', (e) => {
+    if (el.emotePicker && el.emotePicker.classList.contains('show') &&
+        !el.emotePicker.contains(e.target) && e.target !== el.btnEmote && !el.btnEmote?.contains(e.target)){
+      el.emotePicker.classList.remove('show');
+    }
+  });
+
+  // ---- Riwayat Pertandingan Saya ----
+  el.btnMatchHistory && el.btnMatchHistory.addEventListener('click', openMatchHistory);
+
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => UI.closeModal(btn.closest('.modal-backdrop')));
+  });
+
+  el.settingVolume && el.settingVolume.addEventListener('input', (e) => sound.setVolume(parseFloat(e.target.value)));
+  el.settingMuted && el.settingMuted.addEventListener('change', (e) => sound.setMuted(e.target.checked));
+  el.settingShadow && el.settingShadow.addEventListener('change', (e) => state.scene && state.scene.setShadows(e.target.checked));
+  el.settingBloom && el.settingBloom.addEventListener('change', (e) => state.scene && state.scene.setBloom(e.target.checked));
+}
+
+function exitToLobby(){
+  stopLocalTimerLoop();
+  if (state.roomUnsub){ state.roomUnsub(); state.roomUnsub = null; }
+  if (state.computer){ state.computer.destroy(); state.computer = null; }
+  state.roomId = null; state.opponentProfile = null;
+  UI.switchScreen({ lobbyScreen: el.lobby, gameScreen: el.game }, 'lobbyScreen');
+}
+
+/* =========================================================
+   12. BOOTSTRAP
+========================================================= */
+async function boot(){
+  UI.setLoadingProgress(el.loading, 10, 'Menyiapkan koneksi Firebase…');
+  state.fb = await initFirebase();
+
+  UI.setLoadingProgress(el.loading, 35, 'Memuat aturan catur…');
+  await loadChessRules();
+
+  UI.setLoadingProgress(el.loading, 55, 'Memeriksa sesi peserta…');
+  state.session = readSession();
+
+  let myPlayerRef = null;
+  if (state.session){
+    el.guestBadge && (el.guestBadge.style.display = 'none');
+    el.memberBadge && (el.memberBadge.style.display = 'flex');
+    el.btnMatchHistory && (el.btnMatchHistory.style.display = 'flex');
+    myPlayerRef = await ensurePlayerDoc();
+    startHeartbeat(myPlayerRef);
+    listenMyProfile(myPlayerRef);
+    listenIncomingChallenges();
+    listenMyTourneyReg();
+  } else {
+    el.guestBadge && (el.guestBadge.style.display = 'flex');
+    el.memberBadge && (el.memberBadge.style.display = 'none');
+    if (el.dashMenuName) el.dashMenuName.textContent = 'Tamu';
+    if (el.dashMenuRating) el.dashMenuRating.textContent = 'Mode Tamu — hanya melihat';
+  }
+
+  UI.setLoadingProgress(el.loading, 80, 'Memuat papan 3D…');
+  listenRanking();
+  listenValidPeserta();
+  wireGameActions();
+  wireDashMenu();
+  wireModalInputFocusScroll();
+
+  await loadTourneyConfig();
+  listenTourneyApproved();
+  startTourneyCountdown();
+  wireTourneyActions();
+
+  el.searchInput && el.searchInput.addEventListener('input', renderLists);
+  el.computerLevelRange && el.computerLevelRange.addEventListener('input', (e) => {
+    el.computerLevelValue.textContent = e.target.value;
+  });
+  el.btnVsComputer && el.btnVsComputer.addEventListener('click', () => {
+    if (!state.session){ openGuestLock(); return; }
+    document.getElementById('computerLevelPanel').classList.add('open');
+  });
+  el.btnVsPlayer && el.btnVsPlayer.addEventListener('click', () => {
+    if (!state.session){ openGuestLock(); return; }
+    el.onlineList && el.onlineList.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    UI.toast(el.toastContainer, 'Pilih pemain online lalu klik "Tantang Duel" di profilnya.', 'info');
+  });
+  el.startComputerBtn && el.startComputerBtn.addEventListener('click', () => {
+    document.getElementById('computerLevelPanel').classList.remove('open');
+    startComputerGame();
+  });
+
+  UI.setLoadingProgress(el.loading, 100, 'Selesai!');
+  setTimeout(() => { el.loading && el.loading.classList.add('done'); }, 350);
+
+  if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  // PENTING: pemulihan sesi (reconnect ke room yang masih berjalan, atau
+  // reset flag inGame yang nyangkut) dijalankan PALING TERAKHIR, setelah
+  // semua tombol aksi dalam game (wireGameActions) sudah ter-pasang —
+  // supaya kalau langsung reconnect ke papan, tombol menyerah/remis/keluar
+  // sudah berfungsi, bukan mati karena listenernya belum sempat dipasang.
+  if (myPlayerRef) await recoverActiveSession(myPlayerRef);
+}
+
+boot().catch(err => {
+  console.error('[boot] gagal memulai modul catur:', err);
+  UI.setLoadingProgress(el.loading, 100, 'Gagal memuat. Periksa koneksi internet lalu muat ulang halaman.');
+});
