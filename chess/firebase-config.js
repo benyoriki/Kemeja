@@ -35,27 +35,34 @@ export const COL_CHESS_ROOMS      = "chess_rooms";       // ruang permainan akti
 export const COL_CHESS_MATCHES    = "chess_matches";     // arsip histori pertandingan selesai
 export const COL_CHESS_CHALLENGES = "chess_challenges";  // notifikasi tantangan duel realtime
 
-/* ---- Turnamen 17 Agustus 2026 (event spesial, terpisah dari
-        ranking/main harian) ----
-   - COL_TOURNEY_REG   : 1 dokumen per pendaftar, docId = kodeUnik
-                         (mencegah dobel daftar), status diubah admin
-                         lewat Dasbor Admin -> menu "Turnamen Catur".
-   - COL_TOURNEY_CONFIG: 1 dokumen tunggal (docId TOURNEY_ID) berisi
-                         tanggal/jam mulai & hadiah juara 1/2/3 —
-                         SEMUA bisa diubah admin dari Dasbor Admin,
-                         tanpa perlu edit kode. Nilai di bawah ini
-                         cuma FALLBACK kalau dokumen config belum
-                         pernah disimpan admin sama sekali. */
+/* ---- Turnamen Catur Lokon Prima Parung 2026 (event spesial, terpisah
+        dari ranking/main harian) ----
+   - COL_TOURNEY_REG     : 1 dokumen per pendaftar, docId = kodeUnik
+                           (mencegah dobel daftar), status diubah admin
+                           lewat Dasbor Admin -> menu "Turnamen Catur".
+   - COL_TOURNEY_CONFIG  : 1 dokumen tunggal (docId TOURNEY_ID) berisi
+                           tanggal/jam mulai & hadiah juara 1/2/3, plus
+                           PIN admin dasbor turnamen (adminPin) — SEMUA
+                           bisa diubah admin, tanpa perlu edit kode.
+   - COL_TOURNEY_BRACKET : 1 dokumen tunggal (docId TOURNEY_ID) berisi
+                           SELURUH bagan turnamen: semua babak & room
+                           pertandingan (pemain, status, papan/FEN,
+                           riwayat langkah, sisa waktu) — dibuat oleh
+                           dasbor-turnamen.html (bukan modul catur
+                           utama), sengaja dipisah dari chess_rooms &
+                           tidak menyentuh rating ELO harian. */
 export const COL_TOURNEY_REG     = "chess_tournament_agustus17";
 export const COL_TOURNEY_CONFIG  = "chess_tournament_config";
+export const COL_TOURNEY_BRACKET = "chess_tournament_bracket";
 export const TOURNEY_ID          = "agustus17_2026";
 export const TOURNEY_DEFAULTS = {
-  title: "Turnamen Catur Kemerdekaan 17 Agustus 2026",
+  title: "Turnamen Catur Lokon Prima Parung 2026",
   startAtISO: "2026-08-17T09:00:00+07:00",
   prize1: "Rp 1.000.000 + Trofi + Sertifikat",
   prize2: "Rp 600.000 + Sertifikat",
   prize3: "Rp 300.000 + Sertifikat",
-  active: true
+  active: true,
+  adminPin: "MERDEKA81"
 };
 
 /* ---- Parameter permainan (satu metode saja, sesuai permintaan) ---- */
@@ -64,3 +71,6 @@ export const ELO_K_FACTOR   = 32;
 export const HEARTBEAT_MS   = 20 * 1000;       // interval "saya masih online"
 export const ONLINE_TIMEOUT_MS = 60 * 1000;    // > ini dianggap idle
 export const IDLE_TIMEOUT_MS   = 5 * 60 * 1000; // > ini dianggap offline
+
+/* ---- Parameter khusus Room Pertandingan Turnamen (dasbor-turnamen.html) --- */
+export const TOURNEY_GAME_TIME_MS = 10 * 60 * 1000; // 10 menit/pemain per match turnamen

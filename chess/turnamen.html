@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turnamen Catur HUT RI ke-81 — Lokon Prima Parung</title>
+<link rel="icon" href="../favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></noscript>
+<style>
+  :root{
+    /* ---- Palet Dirgahayu RI ke-81 (merah/putih dominan, emas aksen) ---- */
+    --merah:#E60026; --merah-tua:#B00020; --merah-terang:#FF3B4D;
+    --putih:#FFFFFF; --putih-lembut:#F7F8FA; --abu:#EAEAEA;
+    --emas:#FFD54A; --emas-gelap:#C99812;
+    --teks:#241012; --teks-muted:#6B5A5D;
+    --hijau-live:#1DA65A; --oranye-wait:#F08A1E; --biru-info:#2E7BC7;
+    --font-display:'Anton', sans-serif; --font-body:'Plus Jakarta Sans', sans-serif; --font-mono:'JetBrains Mono', monospace;
+    --r-sm:10px; --r-md:14px; --r-lg:20px;
+    --shadow-merah:0 10px 28px rgba(230,0,38,.14);
+    --shadow-emas:0 8px 22px rgba(201,152,18,.22);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:var(--font-body);
+    background:
+      radial-gradient(ellipse 900px 480px at 12% -8%, rgba(230,0,38,.10), transparent 60%),
+      radial-gradient(ellipse 800px 520px at 105% 0%, rgba(255,213,74,.16), transparent 55%),
+      radial-gradient(ellipse 900px 600px at 50% 115%, rgba(230,0,38,.08), transparent 60%),
+      var(--putih-lembut);
+    color:var(--teks); min-height:100vh; -webkit-font-smoothing:antialiased; overflow-x:hidden; position:relative;
+  }
+  /* ---------- Batik / kembang api watermark (CSS only, ringan) ---------- */
+  body::before{
+    content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(230,0,38,.05) 0 2px, transparent 3px),
+      radial-gradient(circle at 50% 50%, rgba(201,152,18,.06) 0 1.4px, transparent 2.4px);
+    background-size:64px 64px, 32px 32px; background-position:0 0, 16px 16px;
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important;} }
+  img,svg{max-width:100%;}
+  button{font-family:inherit;}
+  ::selection{background:var(--merah); color:#fff;}
+
+  /* ---------- Bunting garland (umbul-umbul merah putih) ---------- */
+  .bunting{display:flex; width:100%; height:26px; overflow:hidden; background:var(--merah-tua); border-bottom:1px solid rgba(255,213,74,.4); box-shadow:0 2px 10px rgba(176,0,32,.18);}
+  .bunting span{flex:0 0 34px; height:26px; margin-top:-2px; clip-path:polygon(0 0,100% 0,50% 100%); animation:sway 2.6s ease-in-out infinite; transform-origin:top center;}
+  .bunting span:nth-child(odd){background:var(--putih); animation-delay:0s;}
+  .bunting span:nth-child(even){background:var(--emas); animation-delay:.35s;}
+  .bunting span:nth-child(3n){background:var(--merah-terang);}
+  @keyframes sway{0%,100%{transform:rotate(-2.5deg) translateY(0);} 50%{transform:rotate(2.5deg) translateY(2px);}}
+
+  /* ---------- Header / nav ---------- */
+  header.topbar{position:sticky; top:0; z-index:40; backdrop-filter:blur(14px); background:rgba(255,255,255,.88); border-bottom:2px solid var(--merah); box-shadow:0 4px 18px rgba(230,0,38,.08);}
+  .topbar-inner{max-width:1180px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .brand-badge{width:40px; height:40px; border-radius:50%; background:conic-gradient(from 180deg, var(--merah) 0 50%, var(--putih) 50% 100%); display:flex; align-items:center; justify-content:center; font-size:19px; color:var(--merah-tua); border:2px solid var(--emas); box-shadow:0 0 0 3px rgba(255,213,74,.18), var(--shadow-merah);}
+  .brand-text{line-height:1.15;}
+  .brand-text b{display:block; font-size:14px; letter-spacing:.02em; color:var(--merah-tua);}
+  .brand-text small{color:var(--emas-gelap); font-size:11px; letter-spacing:.06em; text-transform:uppercase; font-weight:700;}
+  nav.tabs{display:flex; gap:4px; background:var(--putih-lembut); padding:4px; border-radius:12px; flex-wrap:wrap; border:1px solid var(--abu);}
+  nav.tabs button{font-family:var(--font-body); font-weight:700; font-size:12.5px; color:var(--teks-muted); background:transparent; border:none; padding:8px 14px; border-radius:9px; cursor:pointer; transition:.18s; letter-spacing:.01em;}
+  nav.tabs button:hover{color:var(--merah);}
+  nav.tabs button.active{background:linear-gradient(160deg, var(--merah), var(--merah-tua)); color:#fff; box-shadow:0 3px 12px rgba(230,0,38,.35);}
+  .admin-lock{background:var(--putih); border:1.5px solid var(--abu); color:var(--emas-gelap); width:34px; height:34px; border-radius:9px; cursor:pointer; font-size:13px;}
+  .admin-lock.on{background:var(--emas); color:var(--merah-tua); border-color:var(--emas-gelap);}
+
+  main{max-width:1180px; margin:0 auto; padding:0 20px 80px;}
+  section{display:none; animation:fadein .35s ease;}
+  section.active{display:block;}
+  @keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:48px 0 32px; text-align:center; position:relative; overflow:hidden; border-radius:0 0 28px 28px;}
+  .hero::before{
+    content:'🦅'; position:absolute; top:-40px; left:50%; transform:translateX(-50%); font-size:min(60vw,420px);
+    opacity:.05; filter:grayscale(1) brightness(.4); z-index:0; pointer-events:none; line-height:1;
+  }
+  .hero::after{
+    content:''; position:absolute; bottom:-60px; left:50%; transform:translateX(-50%); width:120px; height:150px; z-index:0; pointer-events:none;
+    background:linear-gradient(var(--merah-tua), var(--merah-tua)); opacity:.04;
+    clip-path:polygon(46% 0, 54% 0, 58% 55%, 100% 55%, 100% 62%, 58% 62%, 58% 100%, 42% 100%, 42% 62%, 0 62%, 0 55%, 42% 55%);
+  }
+  .hero > *{position:relative; z-index:1;}
+  .hero-eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--merah-tua); background:var(--putih); border:1.5px solid var(--merah); padding:6px 14px; border-radius:999px; margin-bottom:18px; box-shadow:0 3px 10px rgba(230,0,38,.1);}
+  .hero-eyebrow i.dot{width:6px; height:6px; border-radius:50%; background:var(--hijau-live); box-shadow:0 0 0 3px rgba(29,166,90,.2);}
+  .hero-title{font-family:var(--font-display); font-weight:400; font-size:clamp(26px,5vw,46px); letter-spacing:.01em; color:var(--teks); text-transform:uppercase; line-height:1.1;}
+  .hero-title em{font-style:normal; color:var(--merah); -webkit-text-stroke:1px var(--emas-gelap);}
+  .hero-sub{max-width:560px; margin:14px auto 26px; color:var(--teks-muted); font-size:14.5px; line-height:1.6;}
+  .hero-cta{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:32px;}
+  .btn{font-family:var(--font-body); font-weight:700; font-size:14px; cursor:pointer; padding:13px 26px; border-radius:12px; border:none; letter-spacing:.01em; display:inline-flex; align-items:center; gap:8px; transition:.18s;}
+  .btn-primary{background:linear-gradient(135deg, var(--merah-terang), var(--merah-tua)); color:#fff; box-shadow:0 6px 20px rgba(230,0,38,.3);}
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 10px 26px rgba(230,0,38,.42);}
+  .btn-ghost{background:var(--putih); color:var(--merah-tua); border:1.5px solid var(--merah);}
+  .btn-ghost:hover{background:var(--merah); color:#fff;}
+  .btn-danger{background:var(--putih); color:var(--merah-tua); border:1.5px solid var(--merah-tua);}
+  .btn-danger:hover{background:var(--merah-tua); color:#fff;}
+  .btn-sm{padding:8px 14px; font-size:12px; border-radius:9px;}
+  .btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
+
+  .countdown{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .cd-cell{background:var(--putih); border:1.5px solid var(--merah); border-radius:14px; padding:14px 18px; min-width:74px; text-align:center; box-shadow:var(--shadow-merah); transition:.2s;}
+  .cd-cell:hover{transform:translateY(-3px); box-shadow:0 14px 28px rgba(230,0,38,.2);}
+  .cd-cell b{display:block; font-family:var(--font-mono); font-size:26px; color:var(--merah);}
+  .cd-cell span{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--teks-muted);}
+  .prize-row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:26px;}
+  .prize-chip{background:var(--putih); border:1px solid var(--emas-gelap); border-radius:12px; padding:10px 16px; font-size:12.5px; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-emas);}
+  .prize-chip b{color:var(--emas-gelap); font-family:var(--font-mono);}
+
+  /* ---------- My status callout ---------- */
+  .my-status{margin:0 0 30px; border-radius:16px; padding:16px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; border:1.5px solid var(--emas); background:linear-gradient(120deg, rgba(255,213,74,.14), rgba(230,0,38,.06)); box-shadow:var(--shadow-emas);}
+  .my-status .icon{width:42px; height:42px; border-radius:12px; background:var(--emas); color:var(--merah-tua); display:flex; align-items:center; justify-content:center; font-size:18px; flex:0 0 auto;}
+  .my-status .txt{flex:1; min-width:200px;}
+  .my-status .txt b{display:block; font-size:14px; margin-bottom:2px; color:var(--teks);}
+  .my-status .txt span{font-size:12.5px; color:var(--teks-muted);}
+
+  /* ---------- Section headers ---------- */
+  .sec-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:6px 0 20px; flex-wrap:wrap;}
+  .sec-head h2{font-family:var(--font-display); font-weight:400; font-size:24px; text-transform:uppercase; letter-spacing:.01em; color:var(--merah-tua);}
+  .sec-head p{color:var(--teks-muted); font-size:13px; margin-top:4px;}
+  .pill{font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:999px; background:rgba(29,166,90,.1); color:var(--hijau-live); border:1px solid rgba(29,166,90,.35); display:inline-flex; align-items:center; gap:6px;}
+  .pill.muted{background:var(--putih-lembut); color:var(--teks-muted); border-color:var(--abu);}
+  .pill i.dot{width:6px; height:6px; border-radius:50%; background:var(--hijau-live); animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+  .empty-note{padding:26px; text-align:center; color:var(--teks-muted); font-size:13px; border:1.5px dashed var(--abu); border-radius:14px; background:var(--putih);}
+
+  /* ---------- Room grid ---------- */
+  .room-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:16px;}
+  .room-card{background:var(--putih); border:1px solid var(--abu); border-radius:16px; padding:16px; cursor:pointer; transition:.2s; position:relative; overflow:hidden; box-shadow:0 4px 14px rgba(36,16,18,.05);}
+  .room-card:hover{border-color:var(--merah); transform:translateY(-4px); box-shadow:0 16px 30px rgba(230,0,38,.14);}
+  .room-card::before{content:''; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg, var(--merah), var(--emas));}
+  .room-card.mine{border-color:var(--emas-gelap); box-shadow:0 0 0 1.5px var(--emas), 0 10px 24px rgba(255,213,74,.22);}
+  .room-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .room-name{font-weight:800; font-size:12.5px; letter-spacing:.03em; color:var(--merah-tua); position:relative; padding-left:14px;}
+  .room-name::before{content:''; position:absolute; left:0; top:1px; width:8px; height:11px; background:var(--merah); clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);}
+  .room-status{font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px;}
+  .room-status.live{background:rgba(29,166,90,.12); color:var(--hijau-live);}
+  .room-status.menunggu, .room-status.wait{background:rgba(240,138,30,.14); color:var(--oranye-wait);}
+  .room-status.selesai{background:rgba(230,0,38,.12); color:var(--merah);}
+  .room-status.bye{background:rgba(46,123,199,.12); color:var(--biru-info);}
+  .room-status.seri{background:rgba(46,123,199,.12); color:var(--biru-info);}
+
+  .mini-board{display:grid; grid-template-columns:repeat(8,1fr); gap:0; width:100%; aspect-ratio:1; border-radius:8px; overflow:hidden; margin:10px 0 12px; border:1px solid var(--abu);}
+  .mini-board div{display:flex; align-items:center; justify-content:center; font-size:clamp(9px,1.6vw,15px); user-select:none;}
+  .mb-light{background:#FBEFD9;} .mb-dark{background:var(--merah-tua);}
+  .mb-light{color:var(--merah-tua);} .mb-dark{color:var(--emas);}
+  .mb-sel{outline:2px solid var(--emas); outline-offset:-2px;}
+  .mb-dot::after{content:''; width:26%; height:26%; border-radius:50%; background:rgba(255,213,74,.75); display:block;}
+
+  .room-players{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .player{display:flex; align-items:center; gap:8px; min-width:0;}
+  .avatar{width:30px; height:30px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:#fff; border:1.5px solid rgba(0,0,0,.06); text-transform:uppercase;}
+  .avatar.red{background:linear-gradient(160deg, var(--merah), var(--merah-tua));}
+  .avatar.wht{background:linear-gradient(160deg, #3a3a3a, #1a1a1a); border-color:var(--emas);}
+  .p-name{font-size:12.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100px; color:var(--teks);}
+  .p-sub{font-size:10px; color:var(--teks-muted); font-family:var(--font-mono);}
+  .vs{font-family:var(--font-display); color:var(--emas-gelap); font-size:13px;}
+
+  .room-foot{display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:10px; border-top:1px dashed var(--abu);}
+  .room-foot .clock{font-family:var(--font-mono); font-size:12px; color:var(--merah);}
+  .room-foot .hint{font-size:11px; color:var(--teks-muted);}
+
+  /* ---------- Bracket ---------- */
+  .bracket{display:flex; gap:26px; overflow-x:auto; padding:8px 4px 18px;}
+  .bracket-round{display:flex; flex-direction:column; justify-content:space-around; gap:14px; flex:0 0 190px;}
+  .bracket-round .rtitle{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--emas-gelap); font-weight:700; margin-bottom:6px; text-align:center;}
+  .bmatch{background:var(--putih); border:1px solid var(--abu); border-radius:10px; padding:8px 10px; cursor:pointer; transition:.15s;}
+  .bmatch:hover{border-color:var(--merah); box-shadow:0 6px 16px rgba(230,0,38,.1);}
+  .bmatch .bp{display:flex; justify-content:space-between; font-size:12px; padding:3px 0; gap:6px; color:var(--teks);}
+  .bmatch .bp span:first-child{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .bmatch .bp.win{color:var(--emas-gelap); font-weight:800;}
+  .bmatch .bp.lose{color:var(--teks-muted); text-decoration:line-through;}
+  .bmatch .bp.tbd{color:#b9b0b1; font-style:italic;}
+  .champion-card{margin-top:22px; text-align:center; border:1.5px solid var(--emas); border-radius:18px; padding:28px 18px; background:linear-gradient(160deg, rgba(255,213,74,.16), rgba(230,0,38,.06)); box-shadow:var(--shadow-emas);}
+  .champion-card .cup{font-size:44px; margin-bottom:10px;}
+  .champion-card h3{font-family:var(--font-display); font-size:22px; text-transform:uppercase; color:var(--merah-tua); letter-spacing:.02em;}
+  .podium{display:flex; gap:14px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  .podium div{background:var(--putih); border:1px solid var(--abu); border-radius:12px; padding:14px 20px; min-width:130px;}
+  .podium div b{display:block; font-size:14px; color:var(--teks);}
+  .podium div span{font-size:11px; color:var(--teks-muted);}
+
+  /* ---------- Peserta ---------- */
+  .peserta-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px;}
+  .peserta-card{background:var(--putih); border:1px solid var(--abu); border-radius:12px; padding:12px; display:flex; align-items:center; gap:10px; transition:.18s;}
+  .peserta-card:hover{border-color:var(--merah); box-shadow:0 6px 16px rgba(230,0,38,.08);}
+  .peserta-card .p-name{font-size:13px; max-width:none;} .peserta-card small{display:block; font-size:10.5px; color:var(--teks-muted);}
+  .status-chip{margin-left:auto; font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px;}
+  .status-chip.approved{background:rgba(29,166,90,.12); color:var(--hijau-live);}
+  .status-chip.pending{background:rgba(255,213,74,.22); color:var(--emas-gelap);}
+
+  /* ---------- Modal ---------- */
+  .modal-bg{position:fixed; inset:0; background:rgba(36,16,18,.55); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; z-index:100; padding:16px;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--putih); border:1.5px solid var(--merah); border-radius:20px; max-width:440px; width:100%; padding:22px; max-height:92vh; overflow-y:auto; box-shadow:0 24px 60px rgba(36,16,18,.28);}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px;}
+  .modal-head h3{font-size:15px; color:var(--merah-tua);}
+  .modal-close{background:var(--putih-lembut); border:1px solid var(--abu); color:var(--teks); width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:16px; flex:0 0 auto;}
+  .modal .mini-board{margin:12px 0;}
+  .modal-meta{display:flex; justify-content:space-between; font-size:12px; color:var(--teks-muted); margin-top:6px; flex-wrap:wrap; gap:6px;}
+  .move-list{font-family:var(--font-mono); font-size:11.5px; color:var(--teks); background:var(--putih-lembut); border-radius:10px; padding:10px; margin-top:10px; max-height:110px; overflow-y:auto; line-height:1.7; border:1px solid var(--abu);}
+  .modal-actions{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .modal-actions .btn{flex:1 1 auto; justify-content:center;}
+  .turn-flag{font-size:11.5px; padding:4px 10px; border-radius:999px; background:rgba(255,213,74,.22); color:var(--emas-gelap); font-weight:700;}
+  .admin-mini{margin-top:14px; padding-top:14px; border-top:1px dashed var(--abu);}
+  .admin-mini p{font-size:11px; color:var(--teks-muted); margin-bottom:8px;}
+
+  /* ---------- Admin drawer ---------- */
+  .drawer-bg{position:fixed; inset:0; background:rgba(36,16,18,.45); display:none; z-index:90;}
+  .drawer-bg.open{display:block;}
+  .drawer{position:fixed; top:0; right:0; height:100%; width:min(380px,92vw); background:var(--putih); border-left:2px solid var(--merah); z-index:95; transform:translateX(100%); transition:.25s; padding:20px; overflow-y:auto; box-shadow:-14px 0 34px rgba(36,16,18,.14);}
+  .drawer.open{transform:translateX(0);}
+  .drawer h3{font-family:var(--font-display); font-size:18px; color:var(--merah-tua); text-transform:uppercase; margin-bottom:14px;}
+  .drawer label{display:block; font-size:11.5px; color:var(--teks-muted); margin:12px 0 5px; font-weight:600;}
+  .drawer input{width:100%; background:var(--putih-lembut); border:1px solid var(--abu); border-radius:9px; padding:9px 11px; color:var(--teks); font-family:var(--font-body); font-size:13px;}
+  .drawer input:focus{outline:none; border-color:var(--merah);}
+  .adm-match{background:var(--putih-lembut); border:1px solid var(--abu); border-radius:10px; padding:10px; margin-bottom:10px; font-size:12px;}
+  .adm-match .row{display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px; color:var(--teks);}
+  .adm-actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+
+  footer{max-width:1180px; margin:0 auto; padding:30px 20px 50px; text-align:center; color:var(--teks-muted); font-size:12px;}
+  footer b{color:var(--emas-gelap);}
+  .toast-wrap{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:8px; align-items:center; width:100%; padding:0 16px;}
+  .toast{background:var(--putih); border:1.5px solid var(--merah); color:var(--teks); padding:10px 18px; border-radius:999px; font-size:12.5px; box-shadow:0 10px 26px rgba(36,16,18,.16); animation:toastin .25s ease;}
+  @keyframes toastin{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+  /* =========================================================
+     PESTA RAKYAT — kemeriahan tambahan
+  ========================================================= */
+
+  /* ---------- Ticker berjalan ala panggung 17 Agustus ---------- */
+  .ticker-wrap{width:100%; overflow:hidden; background:linear-gradient(90deg, var(--merah-tua), var(--merah) 50%, var(--merah-tua)); border-bottom:2px solid var(--emas); padding:7px 0; white-space:nowrap; position:relative; z-index:39;}
+  .ticker-track{display:inline-flex; gap:52px; padding-left:52px; animation:tickerScroll 22s linear infinite; will-change:transform;}
+  .ticker-track span{display:inline-flex; align-items:center; gap:8px; color:#fff; font-weight:700; font-size:12px; letter-spacing:.05em; text-transform:uppercase;}
+  @keyframes tickerScroll{from{transform:translateX(0);} to{transform:translateX(-50%);}}
+  @media (prefers-reduced-motion: reduce){ .ticker-track{animation:none;} }
+
+  /* ---------- Hamburger (khusus HP) ---------- */
+  .hamburger{display:none; flex-direction:column; justify-content:center; align-items:center; gap:5px; width:38px; height:36px; background:var(--putih); border:1.5px solid var(--merah); border-radius:10px; cursor:pointer; padding:0; flex:0 0 auto;}
+  .hamburger span{display:block; height:2px; width:18px; background:var(--merah-tua); border-radius:2px; transition:.25s;}
+  .hamburger.active span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+  .hamburger.active span:nth-child(2){opacity:0;}
+  .hamburger.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+  /* ---------- Lampion gantung ---------- */
+  .lampion-row{position:absolute; top:0; left:0; right:0; height:0; pointer-events:none; z-index:0;}
+  .lampion{position:absolute; top:4px; width:24px; height:32px; border-radius:8px 8px 13px 13px; background:linear-gradient(180deg, var(--emas), var(--merah)); box-shadow:0 0 14px rgba(255,213,74,.5); opacity:.85; animation:lampionSway 3.4s ease-in-out infinite; transform-origin:top center;}
+  .lampion::before{content:''; position:absolute; top:-9px; left:50%; width:1px; height:9px; background:rgba(36,16,18,.3); transform:translateX(-50%);}
+  .lampion::after{content:''; position:absolute; bottom:-5px; left:50%; width:7px; height:7px; background:var(--emas-gelap); border-radius:0 0 4px 4px; transform:translateX(-50%);}
+  .lampion.l1{left:5%; animation-delay:0s;}
+  .lampion.l2{left:22%; animation-delay:.5s; background:linear-gradient(180deg, var(--putih), var(--merah));}
+  .lampion.l3{left:48%; animation-delay:1s;}
+  .lampion.l4{left:73%; animation-delay:.3s; background:linear-gradient(180deg, var(--putih), var(--merah));}
+  .lampion.l5{left:91%; animation-delay:.8s;}
+  @keyframes lampionSway{0%,100%{transform:rotate(-7deg);} 50%{transform:rotate(7deg);}}
+
+  /* ---------- Bintang emas berkelip di hero ---------- */
+  .hero-stars{position:absolute; inset:0; pointer-events:none; z-index:0;}
+  .hero-stars span{position:absolute; color:var(--emas-gelap); font-size:13px; animation:twinkle 2.3s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:.2; transform:scale(.8);} 50%{opacity:1; transform:scale(1.2);}}
+
+  /* ---------- Confetti jatuh (hero saja, CSS murni) ---------- */
+  .confetti-layer{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0;}
+  .confetti-layer i{position:absolute; top:-14px; width:7px; height:11px; opacity:.85; border-radius:1px; animation:confettiFall linear infinite;}
+  @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg); opacity:.9;} 100%{transform:translateY(380px) rotate(340deg); opacity:0;}}
+  @media (prefers-reduced-motion: reduce){ .confetti-layer i, .lampion, .hero-stars span{animation:none;} }
+
+  /* ---------- Aksen meriah tambahan ---------- */
+  .hero-title{animation:titleGlow 3s ease-in-out infinite;}
+  @keyframes titleGlow{0%,100%{text-shadow:0 0 0 rgba(230,0,38,0);} 50%{text-shadow:0 8px 26px rgba(230,0,38,.2);}}
+  .sec-head h2::before{content:'🎊'; margin-right:8px; font-size:.82em;}
+  .btn-primary{position:relative; overflow:hidden;}
+  .btn-primary::after{content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background:linear-gradient(120deg, transparent, rgba(255,255,255,.55), transparent); transform:skewX(-20deg); animation:shimmerSweep 2.8s ease-in-out infinite;}
+  @keyframes shimmerSweep{0%{left:-60%;} 55%,100%{left:130%;}}
+  .room-status.live{animation:liveGlow 1.6s ease-in-out infinite;}
+  @keyframes liveGlow{0%,100%{box-shadow:0 0 0 rgba(29,166,90,0);} 50%{box-shadow:0 0 10px rgba(29,166,90,.45);}}
+
+  /* ---------- Responsif: nav jadi dropdown lewat hamburger ---------- */
+  @media (max-width:760px){
+    .hamburger{display:flex;}
+    .topbar-inner{position:relative;}
+    nav.tabs#tabs{position:absolute; top:calc(100% + 10px); right:20px; left:20px; flex-direction:column; background:var(--putih); border:1.5px solid var(--merah); border-radius:14px; padding:0 8px; box-shadow:0 18px 36px rgba(36,16,18,.2); max-height:0; overflow:hidden; opacity:0; transition:max-height .25s ease, opacity .2s ease, padding .25s ease; gap:3px; z-index:60;}
+    nav.tabs#tabs.open{max-height:280px; opacity:1; padding:8px;}
+    nav.tabs#tabs button{width:100%; text-align:left; padding:12px 14px;}
+    .ticker-track span{font-size:11px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="bunting" id="bunting"></div>
+
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker-track">
+    <span>🇮🇩 MERDEKA! MERDEKA! MERDEKA!</span>
+    <span>🎉 SEMARAK PESTA RAKYAT HUT RI KE-81</span>
+    <span>🎊 17 AGUSTUS 2026 — DIRGAHAYU REPUBLIK INDONESIA</span>
+    <span>♟ TURNAMEN CATUR KEMERDEKAAN</span>
+    <span>🏆 AYO IKUT MERIAHKAN LOMBA!</span>
+    <span>🇮🇩 MERDEKA! MERDEKA! MERDEKA!</span>
+    <span>🎉 SEMARAK PESTA RAKYAT HUT RI KE-81</span>
+    <span>🎊 17 AGUSTUS 2026 — DIRGAHAYU REPUBLIK INDONESIA</span>
+    <span>♟ TURNAMEN CATUR KEMERDEKAAN</span>
+    <span>🏆 AYO IKUT MERIAHKAN LOMBA!</span>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html">
+      <div class="brand-badge">🇮🇩</div>
+      <div class="brand-text">
+        <b id="brandTitle">Turnamen Catur</b>
+        <small>Dirgahayu RI ke-81</small>
+      </div>
+    </a>
+    <nav class="tabs" id="tabs">
+      <button data-target="rooms" class="active">🏆 Room Pertandingan</button>
+      <button data-target="bagan">🥊 Bagan Turnamen</button>
+      <button data-target="peserta">👥 Peserta</button>
+    </nav>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Buka menu" aria-expanded="false" aria-controls="tabs">
+      <span></span><span></span><span></span>
+    </button>
+    <button class="admin-lock" id="adminLockBtn" title="Panel Admin"><i class="fa-solid fa-lock"></i></button>
+  </div>
+</header>
+
+<main>
+  <section class="hero" style="display:block;">
+    <div class="lampion-row" aria-hidden="true">
+      <span class="lampion l1"></span><span class="lampion l2"></span><span class="lampion l3"></span><span class="lampion l4"></span><span class="lampion l5"></span>
+    </div>
+    <div class="hero-stars" aria-hidden="true">
+      <span style="top:18%; left:10%; animation-delay:0s;">★</span>
+      <span style="top:32%; left:88%; animation-delay:.6s;">★</span>
+      <span style="top:60%; left:6%; animation-delay:1.1s;">★</span>
+      <span style="top:70%; left:92%; animation-delay:.3s;">★</span>
+      <span style="top:12%; left:50%; animation-delay:1.5s;">★</span>
+    </div>
+    <div class="confetti-layer" aria-hidden="true">
+      <i style="left:8%; background:var(--merah); animation-duration:3.2s; animation-delay:0s;"></i>
+      <i style="left:18%; background:var(--emas); animation-duration:4s; animation-delay:.6s;"></i>
+      <i style="left:29%; background:var(--merah-tua); animation-duration:3.6s; animation-delay:1.2s;"></i>
+      <i style="left:41%; background:var(--emas-gelap); animation-duration:4.4s; animation-delay:.2s;"></i>
+      <i style="left:54%; background:var(--merah-terang); animation-duration:3.4s; animation-delay:1.6s;"></i>
+      <i style="left:66%; background:var(--emas); animation-duration:3.9s; animation-delay:.9s;"></i>
+      <i style="left:77%; background:var(--merah); animation-duration:3.1s; animation-delay:1.4s;"></i>
+      <i style="left:88%; background:var(--emas-gelap); animation-duration:4.2s; animation-delay:.4s;"></i>
+      <i style="left:95%; background:var(--merah-tua); animation-duration:3.7s; animation-delay:1.8s;"></i>
+    </div>
+    <div style="font-size:11px; font-weight:700; letter-spacing:.15em; color:var(--emas-gelap); text-transform:uppercase; margin-bottom:10px;">🎉 Dirgahayu Republik Indonesia · HUT RI ke-81 · 17 Agustus 2026 🎉</div>
+    <div class="hero-eyebrow"><i class="dot"></i> <span id="heroStatusLabel">Memuat data turnamen…</span></div>
+    <div class="hero-title" id="heroTitle">Turnamen Catur <em>Kemerdekaan</em></div>
+    <p class="hero-sub" id="heroSub">Menghubungkan ke Firestore untuk data peserta &amp; bagan pertandingan asli…</p>
+    <div class="countdown" id="countdown">
+      <div class="cd-cell"><b id="cd-d">00</b><span>Hari</span></div>
+      <div class="cd-cell"><b id="cd-h">00</b><span>Jam</span></div>
+      <div class="cd-cell"><b id="cd-m">00</b><span>Menit</span></div>
+      <div class="cd-cell"><b id="cd-s">00</b><span>Detik</span></div>
+    </div>
+    <div class="prize-row">
+      <div class="prize-chip">🥇 <b id="prize1">—</b></div>
+      <div class="prize-chip">🥈 <b id="prize2">—</b></div>
+      <div class="prize-chip">🥉 <b id="prize3">—</b></div>
+    </div>
+  </section>
+
+  <div id="myStatusBox"></div>
+
+  <!-- ROOMS -->
+  <section id="rooms" class="active">
+    <div class="sec-head">
+      <div><h2 id="roomsHeading">Room Pertandingan</h2><p id="roomsSub">Setiap room = satu papan, satu pasangan pemain pada babak berjalan.</p></div>
+      <span class="pill" id="roomsPill"><i class="dot"></i> Live</span>
+    </div>
+    <div class="room-grid" id="roomGrid"></div>
+  </section>
+
+  <!-- BAGAN -->
+  <section id="bagan">
+    <div class="sec-head">
+      <div><h2>Bagan Turnamen</h2><p>Sistem gugur — kalah satu kali langsung tersingkir, pemenang tiap room maju ke babak berikutnya.</p></div>
+    </div>
+    <div id="baganWrap"><div class="empty-note">Bagan belum dibuat oleh admin.</div></div>
+  </section>
+
+  <!-- PESERTA -->
+  <section id="peserta">
+    <div class="sec-head">
+      <div><h2>Peserta Terdaftar</h2><p>Data asli dari pendaftaran turnamen — status disetujui admin lewat Dasbor Admin.</p></div>
+      <span class="pill muted" id="pesertaCountPill">0 disetujui</span>
+    </div>
+    <div class="peserta-grid" id="pesertaGrid"></div>
+  </section>
+</main>
+
+<footer>🇮🇩 Dirgahayu Republik Indonesia ke-81 — Dasbor Turnamen Catur data real-time dari Firestore (<b>chess_tournament_agustus17</b>, <b>chess_tournament_config</b>, <b>chess_tournament_bracket</b>). Papan dirender ringan (CSS/Unicode, tanpa engine 3D) supaya lancar di HP maupun PC.</footer>
+
+<!-- Modal room / spectate / play -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Room 1</h3>
+      <button class="modal-close" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="mini-board" id="modalBoard"></div>
+    <div class="modal-meta">
+      <span id="modalClockW">⏱ Putih —</span>
+      <span id="modalClockB">⏱ Hitam —</span>
+      <span class="turn-flag" id="modalTurnFlag" style="display:none;"></span>
+    </div>
+    <div class="move-list" id="modalMoves"></div>
+    <div class="modal-actions" id="modalPlayerActions" style="display:none;">
+      <button class="btn btn-primary btn-sm" id="modalResignBtn"><i class="fa-solid fa-flag"></i> Menyerah</button>
+    </div>
+    <div class="admin-mini" id="modalAdminBox" style="display:none;">
+      <p>Panel wasit — hanya terlihat setelah PIN admin benar.</p>
+      <div class="adm-actions" id="modalAdminActions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin drawer -->
+<div class="drawer-bg" id="drawerBg"></div>
+<div class="drawer" id="adminDrawer">
+  <h3>Panel Admin Turnamen</h3>
+  <div id="drawerPinGate">
+    <label>Masukkan PIN Admin</label>
+    <input type="password" id="pinInput" placeholder="PIN admin">
+    <button class="btn btn-primary btn-sm" style="margin-top:10px; width:100%;" id="pinSubmitBtn">Masuk</button>
+    <p style="font-size:11px; color:rgba(251,239,217,.5); margin-top:10px;">PIN diatur lewat dokumen <code>chess_tournament_config</code> (field <code>adminPin</code>).</p>
+  </div>
+  <div id="drawerAdminBody" style="display:none;">
+    <div class="pill" style="margin-bottom:14px;"><i class="dot"></i> Mode admin aktif</div>
+
+    <label>Judul Turnamen</label>
+    <input id="cfgTitle">
+    <label>Mulai (ISO, contoh 2026-08-17T09:00:00+07:00)</label>
+    <input id="cfgStart">
+    <label>Hadiah Juara 1</label>
+    <input id="cfgPrize1">
+    <label>Hadiah Juara 2</label>
+    <input id="cfgPrize2">
+    <label>Hadiah Juara 3</label>
+    <input id="cfgPrize3">
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px; width:100%;" id="cfgSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan</button>
+
+    <div style="margin-top:22px; padding-top:16px; border-top:1px dashed rgba(242,183,5,.25);">
+      <p style="font-size:12px; color:rgba(251,239,217,.6); margin-bottom:8px;" id="bracketStatusTxt">Bagan belum dibuat.</p>
+      <button class="btn btn-primary btn-sm" style="width:100%;" id="genBracketBtn"><i class="fa-solid fa-shuffle"></i> Kocok Peserta &amp; Buat Bagan</button>
+      <button class="btn btn-danger btn-sm" style="width:100%; margin-top:8px;" id="resetBracketBtn"><i class="fa-solid fa-trash"></i> Reset Turnamen</button>
+    </div>
+
+    <div style="margin-top:22px; padding-top:16px; border-top:1px dashed rgba(242,183,5,.25);">
+      <p style="font-size:12px; color:rgba(251,239,217,.6); margin-bottom:10px;">Room babak berjalan</p>
+      <div id="adminMatchList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script type="module">
+import {
+  firebaseConfig, SESSION_KEY,
+  COL_TOURNEY_REG, COL_TOURNEY_CONFIG, COL_TOURNEY_BRACKET, TOURNEY_ID, TOURNEY_DEFAULTS,
+  TOURNEY_GAME_TIME_MS
+} from './firebase-config.js';
+
+const SDK_VER = '10.12.2';
+const CHESS_CDN = 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0-beta.8/+esm';
+const FILES = { w:['a','b','c','d','e','f','g','h'] };
+const PIECE_GLYPH = { p:'♟', n:'♞', b:'♝', r:'♜', q:'♛', k:'♚', P:'♙', N:'♘', B:'♗', R:'♖', Q:'♕', K:'♔' };
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+/* ---------------- state ---------------- */
+let db, fns;
+let session = null;
+let config = { ...TOURNEY_DEFAULTS };
+let approved = [];
+let bracket = null;
+let isAdmin = false;
+let chessCtorPromise = null;
+let currentModal = null; // { r, i }
+let modalMoveSel = null; // selected square while playing
+let clockTicker = null;
+let bunting = document.getElementById('bunting');
+
+/* ---------------- boot ---------------- */
+(function initBunting(){
+  const frag = document.createDocumentFragment();
+  for(let i=0;i<60;i++){ const s=document.createElement('span'); frag.appendChild(s); }
+  bunting.appendChild(frag);
+})();
+
+readSession();
+initFirebase().then(({ database, f }) => {
+  db = database; fns = f;
+  listenConfig();
+  listenApproved();
+  listenBracket();
+});
+
+function readSession(){
+  try{
+    const raw = localStorage.getItem(SESSION_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    session = (parsed && parsed.kodeUnik) ? { kodeUnik: String(parsed.kodeUnik).toUpperCase(), nama: parsed.nama || 'Peserta' } : null;
+  }catch{ session = null; }
+}
+
+async function initFirebase(){
+  const [{ initializeApp }, f] = await Promise.all([
+    import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-app.js`),
+    import(`https://www.gstatic.com/firebasejs/${SDK_VER}/firebase-firestore.js`)
+  ]);
+  const app = initializeApp(firebaseConfig);
+  const database = f.getFirestore(app);
+  return { database, f };
+}
+
+function loadChessCtor(){
+  if(!chessCtorPromise) chessCtorPromise = import(CHESS_CDN).then(m => m.Chess);
+  return chessCtorPromise;
+}
+
+/* ---------------- toast ---------------- */
+function toast(msg){
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+/* =========================================================
+   CONFIG (countdown, hadiah, judul, PIN admin)
+========================================================= */
+function listenConfig(){
+  fns.onSnapshot(fns.doc(db, COL_TOURNEY_CONFIG, TOURNEY_ID), (snap) => {
+    config = snap.exists() ? { ...TOURNEY_DEFAULTS, ...snap.data() } : { ...TOURNEY_DEFAULTS };
+    applyConfigToDom();
+  }, (err) => { console.error('[config] listener error', err); applyConfigToDom(); });
+}
+
+function applyConfigToDom(){
+  document.getElementById('brandTitle').textContent = config.title.split(' ').slice(0,3).join(' ');
+  document.getElementById('heroTitle').innerHTML = escapeHtml(config.title).replace(/(\S+)$/, '<em>$1</em>');
+  document.getElementById('heroSub').textContent = 'Semua data di bawah ini diambil langsung dari Firestore — peserta, bagan, dan room pertandingan sungguhan, bukan simulasi.';
+  document.getElementById('prize1').textContent = config.prize1;
+  document.getElementById('prize2').textContent = config.prize2;
+  document.getElementById('prize3').textContent = config.prize3;
+  document.getElementById('cfgTitle').value = config.title;
+  document.getElementById('cfgStart').value = config.startAtISO;
+  document.getElementById('cfgPrize1').value = config.prize1;
+  document.getElementById('cfgPrize2').value = config.prize2;
+  document.getElementById('cfgPrize3').value = config.prize3;
+  startCountdown();
+}
+
+let countdownTimer = null;
+function startCountdown(){
+  if(countdownTimer) clearInterval(countdownTimer);
+  const target = new Date(config.startAtISO).getTime() || 0;
+  const tick = () => {
+    const diff = Math.max(0, target - Date.now());
+    const d = Math.floor(diff/86400000);
+    const h = Math.floor((diff%86400000)/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    document.getElementById('cd-d').textContent = String(d).padStart(2,'0');
+    document.getElementById('cd-h').textContent = String(h).padStart(2,'0');
+    document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
+    document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
+    const label = document.getElementById('heroStatusLabel');
+    if(bracket && bracket.status === 'finished') label.textContent = 'Turnamen selesai — juara sudah ditentukan 🏆';
+    else if(bracket && bracket.status === 'ongoing') label.textContent = 'Turnamen sedang berlangsung! 🔥';
+    else if(diff <= 0) label.textContent = 'Hari-H tiba — menunggu bagan dimulai admin';
+    else label.textContent = 'Menuju hari-H…';
+  };
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
+
+/* =========================================================
+   PESERTA (approved list, real Firestore data)
+========================================================= */
+function listenApproved(){
+  const q = fns.query(fns.collection(db, COL_TOURNEY_REG), fns.where('status', '==', 'approved'));
+  fns.onSnapshot(q, (snap) => {
+    approved = snap.docs.map(d => d.data());
+    renderPeserta();
+    renderAdminGenerateState();
+  }, (err) => console.error('[peserta] listener error', err));
+}
+
+function renderPeserta(){
+  const grid = document.getElementById('pesertaGrid');
+  document.getElementById('pesertaCountPill').textContent = approved.length + ' disetujui';
+  if(approved.length === 0){
+    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Belum ada peserta yang disetujui admin.</div>';
+    return;
+  }
+  grid.innerHTML = approved.map((p,i) => `
+    <div class="peserta-card">
+      <div class="avatar ${i%2===0?'red':'wht'}">${escapeHtml((p.nama||'?')[0])}</div>
+      <div><div class="p-name">${escapeHtml(p.nama||'Peserta')}</div><small>${escapeHtml(p.kodeUnik||'')}</small></div>
+      <span class="status-chip approved">Diterima</span>
+    </div>`).join('');
+}
+
+/* =========================================================
+   BRACKET — struktur & render
+========================================================= */
+function listenBracket(){
+  fns.onSnapshot(fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID), (snap) => {
+    bracket = snap.exists() ? snap.data() : null;
+    renderRooms();
+    renderBagan();
+    renderMyStatus();
+    renderAdminGenerateState();
+    renderAdminMatchList();
+    if(currentModal) refreshModal();
+  }, (err) => console.error('[bracket] listener error', err));
+}
+
+function roundName(totalRounds, idx){
+  const remaining = totalRounds - idx;
+  if(remaining === 1) return 'Final';
+  if(remaining === 2) return 'Semifinal';
+  if(remaining === 3) return 'Perempat Final';
+  return Math.pow(2, remaining) + ' Besar';
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const buf = new Uint32Array(1); crypto.getRandomValues(buf);
+    const j = buf[0] % (i+1);
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function makeMatch(r, i, a, b){
+  const bothNull = !a && !b;
+  const oneNull = (!a) !== (!b);
+  let status = 'tbd', winner = null;
+  if(!bothNull && oneNull){ status = 'bye'; winner = a ? 'A' : 'B'; }
+  else if(!bothNull && !oneNull){ status = 'menunggu'; }
+  return {
+    matchId: `r${r}m${i}`, roomNo: i+1,
+    playerA: a, playerB: b, winner, status,
+    fen: 'start', pgn: [], turn: 'w',
+    whiteTimeMs: TOURNEY_GAME_TIME_MS, blackTimeMs: TOURNEY_GAME_TIME_MS,
+    turnStartedAt: null
+  };
+}
+
+function applyAdvance(roundsArr, r, i, side, opts){
+  const match = roundsArr[r].matches[i];
+  match.winner = side;
+  match.status = opts && opts.bye ? 'bye' : 'selesai';
+  const winnerPlayer = side === 'A' ? match.playerA : match.playerB;
+  if(r+1 < roundsArr.length){
+    const nextIdx = Math.floor(i/2);
+    const slot = (i%2===0) ? 'playerA' : 'playerB';
+    roundsArr[r+1].matches[nextIdx][slot] = winnerPlayer;
+    const nm = roundsArr[r+1].matches[nextIdx];
+    if(nm.playerA && nm.playerB && nm.status === 'tbd') nm.status = 'menunggu';
+    return { champion:null, runnerUp:null, finished:false };
+  }else{
+    const loserPlayer = side === 'A' ? match.playerB : match.playerA;
+    return { champion: winnerPlayer, runnerUp: loserPlayer, finished:true };
+  }
+}
+
+function buildInitialBracket(participants){
+  const list = shuffle(participants.map(p => ({ kodeUnik: p.kodeUnik, nama: p.nama })));
+  let size = 1; while(size < list.length) size *= 2;
+  while(list.length < size) list.push(null);
+  const totalRounds = Math.max(1, Math.log2(size));
+  const rounds = [];
+  const round0 = [];
+  for(let i=0;i<size/2;i++) round0.push(makeMatch(0, i, list[i*2], list[i*2+1]));
+  rounds.push({ name: roundName(totalRounds, 0), matches: round0 });
+  for(let r=1;r<totalRounds;r++){
+    const count = size / Math.pow(2, r+1);
+    const matches = [];
+    for(let i=0;i<count;i++) matches.push(makeMatch(r, i, null, null));
+    rounds.push({ name: roundName(totalRounds, r), matches });
+  }
+  let champion = null, runnerUp = null, finished = false;
+  for(let r=0;r<rounds.length;r++){
+    rounds[r].matches.forEach((m, i) => {
+      if(m.status === 'bye'){
+        const res = applyAdvance(rounds, r, i, m.winner, { bye:true });
+        if(res.finished){ champion = res.champion; runnerUp = res.runnerUp; finished = true; }
+      }
+    });
+  }
+  return {
+    status: finished ? 'finished' : 'ongoing',
+    totalRounds, rounds,
+    champion, runnerUp,
+    generatedAt: Date.now()
+  };
+}
+
+function renderBagan(){
+  const wrap = document.getElementById('baganWrap');
+  if(!bracket || !bracket.rounds || !bracket.rounds.length){
+    wrap.innerHTML = '<div class="empty-note">Bagan belum dibuat oleh admin. Setelah admin mengocok peserta, bagan lengkap akan tampil di sini secara real-time.</div>';
+    return;
+  }
+  const roundsHtml = bracket.rounds.map((round, r) => `
+    <div class="bracket-round">
+      <div class="rtitle">${escapeHtml(round.name)}</div>
+      ${round.matches.map((m,i) => `
+        <div class="bmatch" data-r="${r}" data-i="${i}">
+          ${renderBracketSide(m, 'A')}
+          ${renderBracketSide(m, 'B')}
+        </div>`).join('')}
+    </div>`).join('');
+  let championHtml = '';
+  if(bracket.status === 'finished' && bracket.champion){
+    championHtml = `
+      <div class="champion-card">
+        <div class="cup">🏆</div>
+        <h3>Juara Turnamen Catur Kemerdekaan</h3>
+        <div class="podium">
+          <div><b>🥇 ${escapeHtml(bracket.champion.nama)}</b><span>Juara 1 — ${escapeHtml(config.prize1)}</span></div>
+          ${bracket.runnerUp ? `<div><b>🥈 ${escapeHtml(bracket.runnerUp.nama)}</b><span>Juara 2 — ${escapeHtml(config.prize2)}</span></div>` : ''}
+        </div>
+      </div>`;
+  }
+  wrap.innerHTML = `<div class="bracket">${roundsHtml}</div>${championHtml}`;
+  wrap.querySelectorAll('.bmatch').forEach(el => {
+    el.addEventListener('click', () => {
+      const r = +el.dataset.r, i = +el.dataset.i;
+      const m = bracket.rounds[r].matches[i];
+      if(m.playerA || m.playerB) openModal(r, i);
+    });
+  });
+}
+
+function renderBracketSide(m, side){
+  const player = side === 'A' ? m.playerA : m.playerB;
+  const name = player ? escapeHtml(player.nama) : 'TBD';
+  let cls = 'tbd';
+  if(m.winner === side) cls = 'win';
+  else if(m.winner && m.winner !== side) cls = 'lose';
+  else if(player) cls = '';
+  return `<div class="bp ${cls}"><span>${name}</span></div>`;
+}
+
+/* =========================================================
+   ROOMS — babak berjalan (current round only)
+========================================================= */
+function currentRoundIndex(){
+  if(!bracket || !bracket.rounds) return -1;
+  for(let r=0;r<bracket.rounds.length;r++){
+    const notDone = bracket.rounds[r].matches.some(m => m.status !== 'selesai' && m.status !== 'bye');
+    if(notDone) return r;
+  }
+  return bracket.rounds.length - 1;
+}
+
+function renderRooms(){
+  const grid = document.getElementById('roomGrid');
+  const pill = document.getElementById('roomsPill');
+  const heading = document.getElementById('roomsHeading');
+  const sub = document.getElementById('roomsSub');
+
+  if(!bracket || !bracket.rounds || !bracket.rounds.length){
+    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Belum ada room — menunggu admin membuat bagan turnamen.</div>';
+    pill.innerHTML = '<i class="dot"></i> Menunggu';
+    return;
+  }
+  const r = currentRoundIndex();
+  const round = bracket.rounds[r];
+  heading.textContent = 'Room Pertandingan — ' + round.name;
+  sub.textContent = round.matches.length + ' room pada babak ini, berjalan paralel.';
+  const anyLive = round.matches.some(m => m.status === 'live');
+  pill.innerHTML = anyLive ? '<i class="dot"></i> Live sekarang' : '<i class="dot" style="animation:none;"></i> Menunggu dimulai';
+
+  const realMatches = round.matches.filter(m => m.playerA || m.playerB);
+  if(!realMatches.length){
+    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Room babak ini belum terisi.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  realMatches.forEach(m => {
+    const idx = round.matches.indexOf(m);
+    const card = document.createElement('div');
+    const mine = session && ((m.playerA && m.playerA.kodeUnik===session.kodeUnik) || (m.playerB && m.playerB.kodeUnik===session.kodeUnik));
+    card.className = 'room-card' + (mine ? ' mine' : '');
+    card.addEventListener('click', () => openModal(r, idx));
+    const statusLabel = { live:'🔴 LIVE', menunggu:'Menunggu', selesai:'Selesai', seri:'Remis', bye:'Bye', tbd:'—' }[m.status] || m.status;
+    const nameA = m.playerA ? escapeHtml(m.playerA.nama) : 'TBD';
+    const nameB = m.playerB ? escapeHtml(m.playerB.nama) : 'TBD';
+    card.innerHTML = `
+      <div class="room-top">
+        <span class="room-name">ROOM ${m.roomNo}</span>
+        <span class="room-status ${m.status}">${statusLabel}</span>
+      </div>
+      <div class="mini-board"></div>
+      <div class="room-players">
+        <div class="player"><div class="avatar red">${nameA[0]||'?'}</div><div><div class="p-name">${nameA}</div><div class="p-sub">Putih</div></div></div>
+        <div class="vs">VS</div>
+        <div class="player" style="flex-direction:row-reverse; text-align:right;"><div class="avatar wht">${nameB[0]||'?'}</div><div><div class="p-name">${nameB}</div><div class="p-sub">Hitam</div></div></div>
+      </div>
+      <div class="room-foot">
+        <span class="clock">${clockLabel(m)}</span>
+        <span class="hint">${mine ? 'Ini room Anda' : 'Klik untuk menonton'}</span>
+      </div>`;
+    frag.appendChild(card);
+    requestAnimationFrame(() => renderMiniBoard(card.querySelector('.mini-board'), m.fen));
+  });
+  grid.appendChild(frag);
+}
+
+function clockLabel(m){
+  if(m.status === 'bye') return '⏱ Bye otomatis';
+  if(m.status === 'selesai' || m.status === 'seri') return '⏱ Selesai';
+  if(m.status === 'menunggu') return '⏱ Belum mulai';
+  const w = fmtMs(m.whiteTimeMs), b = fmtMs(m.blackTimeMs);
+  return `⏱ ${w} / ${b}`;
+}
+function fmtMs(ms){
+  ms = Math.max(0, ms||0);
+  const m = Math.floor(ms/60000), s = Math.floor((ms%60000)/1000);
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+/* =========================================================
+   FEN parsing (read-only render, tidak butuh chess.js)
+========================================================= */
+function fenToGrid(fen){
+  const board = [];
+  const rows = (fen === 'start' ? START_FEN : fen).split(' ')[0].split('/');
+  rows.forEach(row => {
+    const line = [];
+    for(const ch of row){
+      if(/\d/.test(ch)) for(let k=0;k<+ch;k++) line.push(null);
+      else line.push(ch);
+    }
+    board.push(line);
+  });
+  return board; // board[0] = rank 8 ... board[7] = rank 1
+}
+
+function renderMiniBoard(container, fen){
+  if(!container) return;
+  container.innerHTML = '';
+  const grid = fenToGrid(fen || 'start');
+  const frag = document.createDocumentFragment();
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const cell = document.createElement('div');
+      cell.className = (r+c)%2===0 ? 'mb-light' : 'mb-dark';
+      const piece = grid[r][c];
+      if(piece) cell.textContent = PIECE_GLYPH[piece] || '';
+      frag.appendChild(cell);
+    }
+  }
+  container.appendChild(frag);
+}
+
+/* =========================================================
+   MY STATUS callout (personalized, based on real session)
+========================================================= */
+function findMyLatestMatch(){
+  if(!session || !bracket || !bracket.rounds) return null;
+  let found = null;
+  bracket.rounds.forEach((round, r) => {
+    round.matches.forEach((m, i) => {
+      const inA = m.playerA && m.playerA.kodeUnik === session.kodeUnik;
+      const inB = m.playerB && m.playerB.kodeUnik === session.kodeUnik;
+      if(inA || inB) found = { r, i, m, side: inA ? 'A' : 'B' };
+    });
+  });
+  return found;
+}
+
+function renderMyStatus(){
+  const box = document.getElementById('myStatusBox');
+  if(!session){
+    box.innerHTML = '';
+    return;
+  }
+  if(!bracket || !bracket.rounds){
+    box.innerHTML = '';
+    return;
+  }
+  const found = findMyLatestMatch();
+  if(!found){
+    box.innerHTML = '';
+    return;
+  }
+  const { m, side } = found;
+  const oppName = side === 'A' ? (m.playerB ? escapeHtml(m.playerB.nama) : 'menunggu lawan') : (m.playerA ? escapeHtml(m.playerA.nama) : 'menunggu lawan');
+  let title, desc;
+  if(bracket.champion && bracket.champion.kodeUnik === session.kodeUnik){
+    title = '🏆 Selamat! Anda Juara 1'; desc = 'Anda menjuarai Turnamen Catur Kemerdekaan tahun ini.';
+  } else if(bracket.runnerUp && bracket.runnerUp.kodeUnik === session.kodeUnik){
+    title = '🥈 Anda Juara 2'; desc = 'Kalah di partai final — tetap membanggakan!';
+  } else if(m.status === 'live'){
+    title = 'Room ' + m.roomNo + ' sedang berjalan'; desc = 'Lawan Anda: ' + oppName + '. Klik untuk masuk ke papan.';
+  } else if(m.status === 'menunggu'){
+    title = 'Room ' + m.roomNo + ' siap dimulai'; desc = 'Lawan Anda: ' + oppName + '. Menunggu admin memulai room.';
+  } else if(m.status === 'bye'){
+    title = 'Anda melaju otomatis (bye)'; desc = 'Belum ada lawan di babak ini — Anda langsung maju ke babak berikutnya.';
+  } else if(m.status === 'selesai' && m.winner !== side){
+    title = 'Anda tersingkir'; desc = 'Kalah melawan ' + oppName + '. Terima kasih sudah bertanding!';
+  } else if(m.status === 'selesai' && m.winner === side){
+    title = 'Anda menang, menunggu babak berikutnya'; desc = 'Menunggu bagan babak selanjutnya dibuka admin.';
+  } else {
+    title = 'Menunggu lawan'; desc = 'Room Anda belum lengkap — menunggu peserta lain.';
+  }
+  box.innerHTML = `
+    <div class="my-status">
+      <div class="icon"><i class="fa-solid fa-chess-knight"></i></div>
+      <div class="txt"><b>${title}</b><span>${desc}</span></div>
+      <button class="btn btn-ghost btn-sm" id="myStatusJump">Lihat Room</button>
+    </div>`;
+  document.getElementById('myStatusJump').addEventListener('click', () => openModal(found.r, found.i));
+}
+
+/* =========================================================
+   MODAL — spectate + play
+========================================================= */
+function openModal(r, i){
+  currentModal = { r, i };
+  modalMoveSel = null;
+  document.getElementById('modalBg').classList.add('open');
+  refreshModal();
+  if(clockTicker) clearInterval(clockTicker);
+  clockTicker = setInterval(refreshClocksOnly, 1000);
+}
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('open');
+  currentModal = null;
+  if(clockTicker){ clearInterval(clockTicker); clockTicker = null; }
+}
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('modalBg').addEventListener('click', e => { if(e.target.id==='modalBg') closeModal(); });
+
+function getCurrentMatch(){
+  if(!currentModal || !bracket) return null;
+  return bracket.rounds[currentModal.r].matches[currentModal.i];
+}
+
+function refreshClocksOnly(){
+  const m = getCurrentMatch();
+  if(!m) return;
+  document.getElementById('modalClockW').textContent = '⏱ Putih ' + fmtMs(liveClock(m,'w'));
+  document.getElementById('modalClockB').textContent = '⏱ Hitam ' + fmtMs(liveClock(m,'b'));
+}
+function liveClock(m, color){
+  if(m.status !== 'live' || !m.turnStartedAt) return color==='w' ? m.whiteTimeMs : m.blackTimeMs;
+  if(m.turn !== color) return color==='w' ? m.whiteTimeMs : m.blackTimeMs;
+  const elapsed = Date.now() - m.turnStartedAt;
+  return Math.max(0, (color==='w' ? m.whiteTimeMs : m.blackTimeMs) - elapsed);
+}
+
+async function refreshModal(){
+  const m = getCurrentMatch();
+  if(!m) return;
+  document.getElementById('modalTitle').textContent = `Room ${m.roomNo} — ${m.playerA?m.playerA.nama:'TBD'} vs ${m.playerB?m.playerB.nama:'TBD'}`;
+  renderMiniBoard(document.getElementById('modalBoard'), m.fen);
+  refreshClocksOnly();
+  const flag = document.getElementById('modalTurnFlag');
+  if(m.status === 'live'){ flag.style.display='inline-flex'; flag.textContent = 'Giliran: ' + (m.turn==='w'?'Putih':'Hitam'); }
+  else flag.style.display='none';
+  document.getElementById('modalMoves').innerHTML = (m.pgn && m.pgn.length)
+    ? pairMoves(m.pgn).map(l => `<div>${l}</div>`).join('')
+    : '<div style="opacity:.5;">Belum ada langkah.</div>';
+
+  const iAmPlayer = session && ((m.playerA && m.playerA.kodeUnik===session.kodeUnik) || (m.playerB && m.playerB.kodeUnik===session.kodeUnik));
+  const actions = document.getElementById('modalPlayerActions');
+  actions.style.display = (iAmPlayer && m.status==='live') ? 'flex' : 'none';
+
+  // enable tap-to-move if I'm a live player
+  const boardEl = document.getElementById('modalBoard');
+  boardEl.onclick = null;
+  if(iAmPlayer && m.status === 'live'){
+    const mySide = (m.playerA && m.playerA.kodeUnik===session.kodeUnik) ? 'A' : 'B';
+    const myColor = mySide === 'A' ? 'w' : 'b';
+    if(m.turn === myColor){
+      boardEl.onclick = (e) => handleBoardClick(e, boardEl, m, myColor);
+    }
+  }
+
+  renderModalAdmin(m);
+}
+
+function pairMoves(pgnArr){
+  const lines = [];
+  for(let i=0;i<pgnArr.length;i+=2){
+    const num = (i/2)+1;
+    lines.push(`${num}. ${pgnArr[i]||''}  ${pgnArr[i+1]||''}`);
+  }
+  return lines;
+}
+
+async function handleBoardClick(e, boardEl, m, myColor){
+  const cell = e.target.closest('div');
+  if(!cell) return;
+  const cells = Array.from(boardEl.children);
+  const idx = cells.indexOf(cell);
+  if(idx < 0) return;
+  const r = Math.floor(idx/8), c = idx%8;
+  const square = FILES.w[c] + (8-r);
+
+  const Chess = await loadChessCtor();
+  const chess = new Chess(m.fen === 'start' ? undefined : m.fen);
+
+  if(!modalMoveSel){
+    const moves = chess.moves({ square, verbose:true });
+    if(!moves.length) return;
+    modalMoveSel = square;
+    highlightSquares(boardEl, [square, ...moves.map(mv=>mv.to)]);
+    return;
+  }
+  if(modalMoveSel === square){ modalMoveSel = null; renderMiniBoard(boardEl, m.fen); return; }
+
+  let moveResult;
+  try{ moveResult = chess.move({ from: modalMoveSel, to: square, promotion:'q' }); }
+  catch(err){ moveResult = null; }
+  modalMoveSel = null;
+  if(!moveResult){ renderMiniBoard(boardEl, m.fen); toast('Langkah tidak sah.'); return; }
+
+  await applyMove(chess, moveResult, myColor);
+}
+
+function highlightSquares(boardEl, squares){
+  const cells = Array.from(boardEl.children);
+  cells.forEach((cell, idx) => {
+    const r = Math.floor(idx/8), c = idx%8;
+    const sq = FILES.w[c] + (8-r);
+    cell.classList.toggle('mb-sel', squares[0] === sq);
+    cell.classList.toggle('mb-dot', squares.slice(1).includes(sq));
+  });
+}
+
+async function applyMove(chessAfterMove, moveResult, myColor){
+  if(!currentModal) return;
+  const { r, i } = currentModal;
+  const ref = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
+  try{
+    await fns.runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      if(!snap.exists()) throw new Error('bracket hilang');
+      const data = snap.data();
+      const match = data.rounds[r].matches[i];
+      if(match.status !== 'live') return; // sudah berubah di klien lain
+      const elapsed = match.turnStartedAt ? (Date.now() - match.turnStartedAt) : 0;
+      if(myColor === 'w') match.whiteTimeMs = Math.max(0, match.whiteTimeMs - elapsed);
+      else match.blackTimeMs = Math.max(0, match.blackTimeMs - elapsed);
+      match.fen = chessAfterMove.fen();
+      match.pgn = [...(match.pgn||[]), moveResult.san];
+      match.turn = myColor === 'w' ? 'b' : 'w';
+      match.turnStartedAt = Date.now();
+
+      let finishedInfo = null;
+      if(chessAfterMove.isCheckmate()){
+        const side = myColor === 'w' ? 'A' : 'B';
+        finishedInfo = applyAdvance(data.rounds, r, i, side);
+      }else if(chessAfterMove.isDraw() || chessAfterMove.isStalemate() || chessAfterMove.isThreefoldRepetition()){
+        match.status = 'seri';
+      }
+      if(finishedInfo && finishedInfo.finished){
+        data.champion = finishedInfo.champion; data.runnerUp = finishedInfo.runnerUp; data.status = 'finished';
+      }
+      tx.set(ref, data);
+    });
+  }catch(err){
+    console.error('[applyMove] gagal', err);
+    toast('Gagal menyimpan langkah, coba lagi.');
+  }
+}
+
+document.getElementById('modalResignBtn').addEventListener('click', async () => {
+  if(!currentModal || !session) return;
+  if(!confirm('Yakin menyerah dari pertandingan ini?')) return;
+  const { r, i } = currentModal;
+  const ref = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
+  try{
+    await fns.runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      const data = snap.data();
+      const match = data.rounds[r].matches[i];
+      if(match.status !== 'live') return;
+      const mySide = (match.playerA && match.playerA.kodeUnik===session.kodeUnik) ? 'A' : 'B';
+      const winnerSide = mySide === 'A' ? 'B' : 'A';
+      const info = applyAdvance(data.rounds, r, i, winnerSide);
+      if(info.finished){ data.champion = info.champion; data.runnerUp = info.runnerUp; data.status = 'finished'; }
+      tx.set(ref, data);
+    });
+    toast('Anda menyerah dari pertandingan.');
+  }catch(err){ console.error(err); toast('Gagal memproses menyerah.'); }
+});
+
+/* Auto-detect timeout, checked while any modal open or room grid rendered */
+setInterval(async () => {
+  if(!bracket || !bracket.rounds) return;
+  const r = currentRoundIndex();
+  if(r < 0) return;
+  const round = bracket.rounds[r];
+  for(let i=0;i<round.matches.length;i++){
+    const m = round.matches[i];
+    if(m.status !== 'live' || !m.turnStartedAt) continue;
+    const remaining = liveClock(m, m.turn);
+    if(remaining <= 0){
+      const ref = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
+      try{
+        await fns.runTransaction(db, async (tx) => {
+          const snap = await tx.get(ref);
+          const data = snap.data();
+          const match = data.rounds[r].matches[i];
+          if(match.status !== 'live') return;
+          const rem = liveClock(match, match.turn);
+          if(rem > 0) return;
+          const loserSide = match.turn === 'w' ? 'A' : 'B';
+          const winnerSide = loserSide === 'A' ? 'B' : 'A';
+          const info = applyAdvance(data.rounds, r, i, winnerSide);
+          if(info.finished){ data.champion = info.champion; data.runnerUp = info.runnerUp; data.status = 'finished'; }
+          tx.set(ref, data);
+        });
+      }catch(err){ /* biarkan klien lain yang berhasil menang transaksi */ }
+    }
+  }
+}, 3000);
+
+/* =========================================================
+   ADMIN — PIN gate, generate bracket, controls
+========================================================= */
+const drawer = document.getElementById('adminDrawer');
+const drawerBg = document.getElementById('drawerBg');
+document.getElementById('adminLockBtn').addEventListener('click', () => {
+  drawer.classList.add('open'); drawerBg.classList.add('open');
+});
+drawerBg.addEventListener('click', () => { drawer.classList.remove('open'); drawerBg.classList.remove('open'); });
+
+document.getElementById('pinSubmitBtn').addEventListener('click', () => {
+  const val = document.getElementById('pinInput').value;
+  if(val && val === config.adminPin){
+    isAdmin = true;
+    sessionStorage.setItem('tourneyAdmin','1');
+    document.getElementById('adminLockBtn').classList.add('on');
+    document.getElementById('drawerPinGate').style.display = 'none';
+    document.getElementById('drawerAdminBody').style.display = 'block';
+    renderAdminMatchList();
+    if(currentModal) refreshModal();
+    toast('Mode admin aktif.');
+  }else{
+    toast('PIN salah.');
+  }
+});
+if(sessionStorage.getItem('tourneyAdmin') === '1'){
+  isAdmin = true;
+  document.getElementById('adminLockBtn').classList.add('on');
+  document.getElementById('drawerPinGate').style.display = 'none';
+  document.getElementById('drawerAdminBody').style.display = 'block';
+}
+
+document.getElementById('cfgSaveBtn').addEventListener('click', async () => {
+  const payload = {
+    title: document.getElementById('cfgTitle').value.trim() || TOURNEY_DEFAULTS.title,
+    startAtISO: document.getElementById('cfgStart').value.trim() || TOURNEY_DEFAULTS.startAtISO,
+    prize1: document.getElementById('cfgPrize1').value.trim() || TOURNEY_DEFAULTS.prize1,
+    prize2: document.getElementById('cfgPrize2').value.trim() || TOURNEY_DEFAULTS.prize2,
+    prize3: document.getElementById('cfgPrize3').value.trim() || TOURNEY_DEFAULTS.prize3,
+    adminPin: config.adminPin || TOURNEY_DEFAULTS.adminPin,
+    active: true
+  };
+  try{
+    await fns.setDoc(fns.doc(db, COL_TOURNEY_CONFIG, TOURNEY_ID), payload, { merge:true });
+    toast('Pengaturan turnamen disimpan.');
+  }catch(err){ console.error(err); toast('Gagal menyimpan pengaturan.'); }
+});
+
+function renderAdminGenerateState(){
+  const btn = document.getElementById('genBracketBtn');
+  const statusTxt = document.getElementById('bracketStatusTxt');
+  if(!btn) return;
+  const hasBracket = bracket && bracket.rounds && bracket.rounds.length;
+  btn.disabled = hasBracket || approved.length < 2;
+  if(hasBracket) statusTxt.textContent = `Bagan aktif — ${bracket.rounds.length} babak, status: ${bracket.status}.`;
+  else if(approved.length < 2) statusTxt.textContent = `Butuh minimal 2 peserta disetujui (saat ini ${approved.length}).`;
+  else statusTxt.textContent = `Siap dibuat dari ${approved.length} peserta disetujui.`;
+}
+
+document.getElementById('genBracketBtn').addEventListener('click', async () => {
+  if(approved.length < 2) return;
+  if(!confirm(`Kocok ${approved.length} peserta menjadi bagan babak pertama? Aksi ini tidak bisa dibatalkan kecuali reset.`)) return;
+  const data = buildInitialBracket(approved);
+  try{
+    await fns.setDoc(fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID), data);
+    toast('Bagan turnamen berhasil dibuat!');
+  }catch(err){ console.error(err); toast('Gagal membuat bagan.'); }
+});
+
+document.getElementById('resetBracketBtn').addEventListener('click', async () => {
+  if(!confirm('Reset seluruh bagan & room turnamen? Semua progres akan hilang.')) return;
+  try{
+    await fns.deleteDoc(fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID));
+    toast('Turnamen direset.');
+  }catch(err){ console.error(err); toast('Gagal reset.'); }
+});
+
+function renderAdminMatchList(){
+  const wrap = document.getElementById('adminMatchList');
+  if(!wrap) return;
+  if(!isAdmin) return;
+  if(!bracket || !bracket.rounds){ wrap.innerHTML = '<div class="empty-note">Belum ada bagan.</div>'; return; }
+  const r = currentRoundIndex();
+  const round = bracket.rounds[r];
+  wrap.innerHTML = round.matches.filter(m=>m.playerA||m.playerB).map(m => {
+    const idx = round.matches.indexOf(m);
+    const nameA = m.playerA ? escapeHtml(m.playerA.nama) : 'TBD';
+    const nameB = m.playerB ? escapeHtml(m.playerB.nama) : 'TBD';
+    let actions = '';
+    if(m.status === 'menunggu') actions += `<button class="btn btn-primary btn-sm" data-act="start" data-r="${r}" data-i="${idx}">Mulai Room</button>`;
+    if(m.status === 'live' || m.status === 'seri'){
+      actions += `<button class="btn btn-ghost btn-sm" data-act="winA" data-r="${r}" data-i="${idx}">Menang: ${nameA}</button>`;
+      actions += `<button class="btn btn-ghost btn-sm" data-act="winB" data-r="${r}" data-i="${idx}">Menang: ${nameB}</button>`;
+    }
+    return `<div class="adm-match">
+      <div class="row"><b>Room ${m.roomNo}</b><span class="room-status ${m.status}">${m.status}</span></div>
+      <div class="row"><span>${nameA}</span><span>vs</span><span>${nameB}</span></div>
+      <div class="adm-actions">${actions}</div>
+    </div>`;
+  }).join('') || '<div class="empty-note">Belum ada room terisi di babak ini.</div>';
+
+  wrap.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', () => handleAdminMatchAction(btn.dataset.act, +btn.dataset.r, +btn.dataset.i));
+  });
+}
+
+async function handleAdminMatchAction(act, r, i){
+  const ref = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
+  try{
+    await fns.runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      const data = snap.data();
+      const match = data.rounds[r].matches[i];
+      if(act === 'start'){
+        if(match.status !== 'menunggu') return;
+        match.status = 'live';
+        match.turnStartedAt = Date.now();
+      }else if(act === 'winA' || act === 'winB'){
+        if(match.status === 'selesai' || match.status === 'bye') return;
+        const side = act === 'winA' ? 'A' : 'B';
+        const info = applyAdvance(data.rounds, r, i, side);
+        if(info.finished){ data.champion = info.champion; data.runnerUp = info.runnerUp; data.status = 'finished'; }
+      }
+      tx.set(ref, data);
+    });
+    toast('Berhasil diperbarui.');
+  }catch(err){ console.error(err); toast('Gagal memperbarui room.'); }
+}
+
+function renderModalAdmin(m){
+  const box = document.getElementById('modalAdminBox');
+  const actionsWrap = document.getElementById('modalAdminActions');
+  if(!isAdmin || !currentModal){ box.style.display='none'; return; }
+  box.style.display = 'block';
+  const { r, i } = currentModal;
+  let html = '';
+  if(m.status === 'menunggu') html += `<button class="btn btn-primary btn-sm" id="madmStart">Mulai Room</button>`;
+  if(m.status === 'live' || m.status === 'seri'){
+    html += `<button class="btn btn-ghost btn-sm" id="madmWinA">Menang: ${m.playerA?escapeHtml(m.playerA.nama):'A'}</button>`;
+    html += `<button class="btn btn-ghost btn-sm" id="madmWinB">Menang: ${m.playerB?escapeHtml(m.playerB.nama):'B'}</button>`;
+  }
+  actionsWrap.innerHTML = html || '<span style="font-size:11px; opacity:.5;">Tidak ada aksi tersedia.</span>';
+  const bind = (id, act) => { const el = document.getElementById(id); if(el) el.addEventListener('click', () => handleAdminMatchAction(act, r, i)); };
+  bind('madmStart','start'); bind('madmWinA','winA'); bind('madmWinB','winB');
+}
+
+/* =========================================================
+   TABS
+========================================================= */
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+  document.getElementById(btn.dataset.target).classList.add('active');
+});
+
+/* =========================================================
+   Utils
+========================================================= */
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+
+<!-- Menu hamburger untuk tampilan HP — script terpisah, tidak menyentuh logic Firebase/turnamen -->
+<script>
+(function(){
+  const hbBtn = document.getElementById('hamburgerBtn');
+  const tabsNav = document.getElementById('tabs');
+  if(!hbBtn || !tabsNav) return;
+  function closeMenu(){
+    tabsNav.classList.remove('open');
+    hbBtn.classList.remove('active');
+    hbBtn.setAttribute('aria-expanded','false');
+  }
+  hbBtn.addEventListener('click', () => {
+    const isOpen = tabsNav.classList.toggle('open');
+    hbBtn.classList.toggle('active', isOpen);
+    hbBtn.setAttribute('aria-expanded', String(isOpen));
+  });
+  // Tutup menu otomatis setelah salah satu tab dipilih (khusus HP)
+  tabsNav.addEventListener('click', (e) => {
+    if(e.target.closest('button')) closeMenu();
+  });
+  // Tutup menu jika klik di luar nav/hamburger
+  document.addEventListener('click', (e) => {
+    if(!tabsNav.classList.contains('open')) return;
+    if(tabsNav.contains(e.target) || hbBtn.contains(e.target)) return;
+    closeMenu();
+  });
+})();
+</script>
+</body>
+</html>
