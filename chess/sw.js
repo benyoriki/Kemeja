@@ -8,13 +8,17 @@
    ini tidak menyimpan/mengubah data apa pun, murni cache file.
 ========================================================= */
 
-const CACHE_NAME = 'lokon-arena-v6';
+// v7: effects.js (engine 3D, ~520KB) sengaja TIDAK dipaksa precache lagi
+// di sini — sekarang dimuat lazy (dynamic import) oleh script.js hanya
+// saat pemain benar-benar mulai main, supaya install PWA & buka pertama
+// kali jauh lebih ringan/cepat. File tetap otomatis ter-cache lewat
+// fetch handler network-first di bawah begitu benar-benar diminta.
+const CACHE_NAME = 'lokon-arena-v7';
 const APP_SHELL = [
   './index.html',
   './style.css',
   './script.js',
   './chess-engine.js',
-  './effects.js',
   './ui.js',
   './sound.js',
   './firebase-config.js',

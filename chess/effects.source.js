@@ -913,6 +913,18 @@ export class Chess3DScene{
   _animate(){
     if (this._paused) return;
     this._raf = requestAnimationFrame(() => this._animate());
+
+    // PERFORMA: di perangkat "lite" (HP/PC lemah), batasi render ke
+    // ~30fps alih-alih mengikuti refresh rate layar (bisa 60-120fps).
+    // Mata nyaris tidak bisa membedakan 30fps vs 60fps untuk papan
+    // catur yang sebagian besar statis, tapi bedanya besar untuk
+    // panas/baterai HP dan kelancaran keseluruhan halaman.
+    if (this._lite){
+      const now = performance.now();
+      if (this._lastFrameAt && now - this._lastFrameAt < 33) return;
+      this._lastFrameAt = now;
+    }
+
     this.controls.update();
 
     // Partikel ambient melayang pelan ke atas lalu reset

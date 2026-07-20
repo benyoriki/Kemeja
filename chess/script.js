@@ -14,11 +14,41 @@ import {
   GAME_TIME_MS, ELO_K_FACTOR, HEARTBEAT_MS, ONLINE_TIMEOUT_MS, IDLE_TIMEOUT_MS
 } from './firebase-config.js';
 import { loadChessRules, ChessMatch, ComputerOpponent, calcElo } from './chess-engine.js';
-import { Chess3DScene } from './effects.js';
 import { sound } from './sound.js';
 import * as UI from './ui.js';
 
 const SDK_VER = '10.12.2';
+
+/* =========================================================
+   PERFORMA — Lazy-load papan 3D (effects.js)
+   -------------------------------------------------
+   effects.js membundel seluruh Three.js + post-processing
+   (~520KB). Dasbor/lobi (ranking, daftar online, banner
+   turnamen) TIDAK butuh itu sama sekali. Sebelumnya file ini
+   di-import statis di baris atas, artinya browser WAJIB
+   mengunduh & mem-parsing seluruh engine 3D itu sebelum
+   dasbor bahkan sempat tampil — inilah penyebab utama dasbor
+   terasa berat/patah-patah, terutama di HP.
+
+   Sekarang effects.js hanya diambil (dynamic import) tepat
+   saat pemain benar-benar mulai main (setupBoardForNewGame).
+   Supaya papan tetap terasa instan saat tombol "Main" ditekan,
+   modul ini juga di-"prefetch" diam-diam saat browser sedang
+   idle (lihat prefetchScene3D di bawah) — jadi saat dipakai,
+   kemungkinan besar sudah ada di cache/memori.
+========================================================= */
+let Chess3DScenePromise = null;
+function loadScene3DModule(){
+  if (!Chess3DScenePromise){
+    Chess3DScenePromise = import('./effects.js').then(m => m.Chess3DScene);
+  }
+  return Chess3DScenePromise;
+}
+function prefetchScene3D(){
+  const run = () => loadScene3DModule().catch(() => { Chess3DScenePromise = null; });
+  if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 4000 });
+  else setTimeout(run, 1500);
+}
 
 /* ---------------- DOM refs ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -243,7 +273,7 @@ function listenRanking(){
       return { ...data, status: computeStatus(data.lastActiveAt) };
     });
     state.rankingCache = players;
-    renderLists();
+    scheduleRenderLists();
     if (state.session){
       const mine = players.find(p => p.kodeUnik === state.session.kodeUnik.toUpperCase());
       if (mine) updateSelfBadge(mine);
@@ -270,7 +300,7 @@ function listenValidPeserta(){
       if (kode) set.add(String(kode).toUpperCase());
     });
     state.validKodeSet = set;
-    renderLists();
+    scheduleRenderLists();
   }, (err) => console.error('[valid-peserta] listener error', err));
 }
 
@@ -281,6 +311,38 @@ function listenValidPeserta(){
 function getActivePlayers(){
   if (!state.validKodeSet) return state.rankingCache;
   return state.rankingCache.filter(p => state.validKodeSet.has(String(p.kodeUnik || '').toUpperCase()));
+}
+
+/* =========================================================
+   PERFORMA — Throttle render dasbor
+   -------------------------------------------------
+   listenRanking()/listenValidPeserta() dengar SATU snapshot
+   query yang mencakup semua pemain online. Karena tiap pemain
+   mengirim heartbeat (updateDoc lastActiveAt) tiap 20 detik,
+   snapshot ini bisa menyala berkali-kali per menit begitu ada
+   beberapa pemain online sekaligus — dan sebelumnya SETIAP
+   penyalaan itu langsung memicu renderLists() yang membangun
+   ulang seluruh <innerHTML> daftar ranking (sampai 100 baris)
+   + daftar online, untuk SEMUA client yang sedang buka dasbor.
+   Itulah sumber utama dasbor terasa patah-patah.
+
+   scheduleRenderLists() menggabungkan (coalesce) semua
+   pemicu yang datang berdekatan jadi satu render saja, maksimal
+   sekali tiap RENDER_LISTS_MIN_GAP_MS — cukup cepat untuk tetap
+   terasa realtime, tapi tidak lagi rebuild DOM berkali-kali
+   per detik.
+========================================================= */
+const RENDER_LISTS_MIN_GAP_MS = 1200;
+let _renderListsTimer = null;
+let _renderListsLastAt = 0;
+function scheduleRenderLists(){
+  if (_renderListsTimer) return;
+  const wait = Math.max(0, RENDER_LISTS_MIN_GAP_MS - (Date.now() - _renderListsLastAt));
+  _renderListsTimer = setTimeout(() => {
+    _renderListsTimer = null;
+    _renderListsLastAt = Date.now();
+    renderLists();
+  }, wait);
 }
 
 function renderLists(){
@@ -958,6 +1020,8 @@ async function setupBoardForNewGame(fen){
   state.turnStartedAtMs = Date.now();
 
   if (!state.scene){
+    UI.setLoadingProgress(el.loading, 90, 'Memuat papan 3D…');
+    const Chess3DScene = await loadScene3DModule();
     state.scene = new Chess3DScene(el.board3d, { onSquareClick: onBoardSquareClick });
     await state.scene.init();
     state.scene.setBloom(el.settingBloom ? el.settingBloom.checked : true);
@@ -1421,7 +1485,7 @@ async function boot(){
     if (el.dashMenuRating) el.dashMenuRating.textContent = 'Mode Tamu — hanya melihat';
   }
 
-  UI.setLoadingProgress(el.loading, 80, 'Memuat papan 3D…');
+  UI.setLoadingProgress(el.loading, 80, 'Menyiapkan dasbor…');
   listenRanking();
   listenValidPeserta();
   wireGameActions();
@@ -1453,6 +1517,7 @@ async function boot(){
 
   UI.setLoadingProgress(el.loading, 100, 'Selesai!');
   setTimeout(() => { el.loading && el.loading.classList.add('done'); }, 350);
+  prefetchScene3D();
 
   if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(() => {});
