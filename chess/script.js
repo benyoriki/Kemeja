@@ -10,7 +10,8 @@
 import {
   firebaseConfig, SESSION_KEY, FIRESTORE_COLLECTION,
   COL_CHESS_PLAYERS, COL_CHESS_ROOMS, COL_CHESS_MATCHES, COL_CHESS_CHALLENGES,
-  COL_TOURNEY_REG, COL_TOURNEY_CONFIG, TOURNEY_ID, TOURNEY_DEFAULTS,
+  COL_TOURNEY_REG, COL_TOURNEY_CONFIG, COL_TOURNEY_BRACKET, TOURNEY_ID, TOURNEY_DEFAULTS,
+  TOURNEY_GAME_TIME_MS,
   GAME_TIME_MS, ELO_K_FACTOR, HEARTBEAT_MS, ONLINE_TIMEOUT_MS, IDLE_TIMEOUT_MS
 } from './firebase-config.js';
 import { loadChessRules, ChessMatch, ComputerOpponent, calcElo } from './chess-engine.js';
@@ -185,6 +186,13 @@ const state = {
   tourneyApproved: [],      // daftar pendaftar berstatus 'approved' (realtime)
   tourneyMyReg: null,       // dokumen pendaftaran turnamen milik sendiri (realtime) | null
   tourneyCountdownTimer: null,
+
+  // Jembatan "Turnamen Catur 17 Agustus": diisi dari data room chess_rooms
+  // (bukan dari cara masuknya) begitu sebuah room ternyata isTournament=true,
+  // supaya tetap benar walau halaman ini dibuka lewat reconnect otomatis,
+  // bukan hanya lewat link "Main Sekarang" dari dashboard turnamen.html.
+  // { tr, ti } = index babak & index room di chess_tournament_bracket, atau null.
+  tournamentMatch: null,
 };
 
 /* =========================================================
@@ -891,6 +899,88 @@ async function startComputerGame(){
 /* =========================================================
    8. MASUK RUANG PVP REALTIME
 ========================================================= */
+
+// Jembatan dari dashboard "Turnamen Catur 17 Agustus" (chess/turnamen.html)
+// ke papan permainan sesungguhnya di sini. Dashboard itu HANYA ruang tunggu
+// & tempat menonton — begitu admin menekan "Mulai Room" dan salah satu dari
+// 2 peserta membuka index.html?tr=<babak>&ti=<indeks>, fungsi ini yang
+// menyiapkan/menyambungkan mereka ke room chess_rooms biasa, lalu memakai
+// engine 3D yang sama persis dengan mode "Lawan Player" harian — hanya
+// hasil akhirnya yang dipakai untuk memajukan bagan (lihat finishRoom),
+// dan permainan ini TIDAK PERNAH memengaruhi rating ELO harian.
+async function enterTournamentMatch(tr, ti){
+  if (!state.session){ openGuestLock(); return; }
+  const { db, fns } = state.fb;
+  const myKode = state.session.kodeUnik.toUpperCase();
+
+  let match;
+  try {
+    const bracketSnap = await fns.getDoc(fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID));
+    if (!bracketSnap.exists()){ UI.toast(el.toastContainer, 'Bagan turnamen belum tersedia.', 'error'); return; }
+    match = bracketSnap.data().rounds?.[tr]?.matches?.[ti];
+  } catch (err){
+    console.error('[tournament] gagal memuat bagan turnamen', err);
+    UI.toast(el.toastContainer, 'Gagal memuat data turnamen. Coba lagi.', 'error');
+    return;
+  }
+  if (!match){ UI.toast(el.toastContainer, 'Room turnamen tidak ditemukan.', 'error'); return; }
+  if (match.status !== 'live'){ UI.toast(el.toastContainer, 'Room ini belum dimulai oleh admin.', 'error'); return; }
+
+  const isA = match.playerA && match.playerA.kodeUnik === myKode;
+  const isB = match.playerB && match.playerB.kodeUnik === myKode;
+  if (!isA && !isB){ UI.toast(el.toastContainer, 'Anda bukan peserta di room turnamen ini.', 'error'); return; }
+
+  const roomId = `troom_${TOURNEY_ID}_${tr}_${ti}`;
+  if (state.me && state.me.inGame && state.me.currentRoomId && state.me.currentRoomId !== roomId){
+    UI.toast(el.toastContainer, 'Selesaikan dulu permainan Anda yang sedang berjalan.', 'error');
+    enterRoom(state.me.currentRoomId);
+    return;
+  }
+
+  const roomRef = fns.doc(db, COL_CHESS_ROOMS, roomId);
+  try {
+    const [aSnap, bSnap] = await Promise.all([
+      fns.getDoc(fns.doc(db, COL_CHESS_PLAYERS, match.playerA.kodeUnik)),
+      fns.getDoc(fns.doc(db, COL_CHESS_PLAYERS, match.playerB.kodeUnik))
+    ]);
+    const playerA = aSnap.exists() ? pick(aSnap.data()) : { kodeUnik: match.playerA.kodeUnik, nama: match.playerA.nama, rating: 1000 };
+    const playerB = bSnap.exists() ? pick(bSnap.data()) : { kodeUnik: match.playerB.kodeUnik, nama: match.playerB.nama, rating: 1000 };
+
+    await fns.runTransaction(db, async (tx) => {
+      const roomSnap = await tx.get(roomRef);
+      if (roomSnap.exists()) return; // sudah disiapkan lawan/reconnect — jangan timpa permainan yang berjalan
+      tx.set(roomRef, {
+        players: { w: playerA, b: playerB },
+        playersKode: [playerA.kodeUnik, playerB.kodeUnik],
+        fen: match.fen && match.fen !== 'start' ? match.fen : 'start',
+        pgn: match.pgn || [],
+        turn: match.turn || 'w',
+        whiteTimeMs: match.whiteTimeMs ?? TOURNEY_GAME_TIME_MS,
+        blackTimeMs: match.blackTimeMs ?? TOURNEY_GAME_TIME_MS,
+        timeControlMs: TOURNEY_GAME_TIME_MS,
+        incrementMs: 0,
+        timeControlLabel: 'Turnamen 17 Agustus',
+        turnStartedAt: fns.serverTimestamp(),
+        status: 'ongoing',
+        drawOfferBy: null, emote: null, vsComputer: false,
+        isTournament: true, tourneyRound: tr, tourneyMatchIndex: ti,
+        createdAt: fns.serverTimestamp(), updatedAt: fns.serverTimestamp()
+      });
+    });
+
+    await Promise.all([
+      fns.updateDoc(fns.doc(db, COL_CHESS_PLAYERS, playerA.kodeUnik), { inGame: true, currentRoomId: roomId }).catch(() => {}),
+      fns.updateDoc(fns.doc(db, COL_CHESS_PLAYERS, playerB.kodeUnik), { inGame: true, currentRoomId: roomId }).catch(() => {})
+    ]);
+  } catch (err){
+    console.error('[tournament] gagal menyiapkan room turnamen', err);
+    UI.toast(el.toastContainer, 'Gagal menyiapkan room pertandingan. Coba lagi.', 'error');
+    return;
+  }
+
+  enterRoom(roomId);
+}
+
 function enterRoom(roomId){
   const { db, fns } = state.fb;
   state.vsComputer = false;
@@ -914,7 +1004,15 @@ function enterRoom(roomId){
       state.incrementMs = room.incrementMs || 0;
       state.timeControlLabel = room.timeControlLabel || 'Rapid 10+5';
       state.lastEmoteTs = room.emote?.ts || null; // jangan putar ulang reaksi lama saat baru masuk/reconnect
-      el.gameModeLabel.textContent = `Lawan Player • ${state.timeControlLabel}`;
+      // Sumber kebenaran "apakah room ini pertandingan turnamen" adalah DATA
+      // room itu sendiri (bukan cara masuknya) — supaya tetap benar walau
+      // pemain reconnect otomatis tanpa lewat link "Main Sekarang".
+      state.tournamentMatch = room.isTournament
+        ? { tr: room.tourneyRound, ti: room.tourneyMatchIndex }
+        : null;
+      el.gameModeLabel.textContent = state.tournamentMatch
+        ? `🇮🇩 Turnamen Catur 17 Agustus • Room ${room.tourneyMatchIndex + 1}`
+        : `Lawan Player • ${state.timeControlLabel}`;
       await setupBoardForNewGame(room.fen === 'start' ? undefined : room.fen);
       state.scene.setOrientation(state.myColor);
       startLocalTimerLoop();
@@ -1241,6 +1339,43 @@ async function finishRoom(roomId, winnerColor, reason){
       const room = snap.data();
       if (room.status === 'finished') return; // sudah diproses klien lain
 
+      // ---- Room Turnamen Catur 17 Agustus: TIDAK menyentuh rating/statistik
+      // ELO harian — hasilnya dipakai untuk memajukan bagan turnamen saja. ----
+      if (room.isTournament){
+        const bracketRef = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
+        const bracketSnap = await tx.get(bracketRef);
+
+        tx.update(roomRef, {
+          status: 'finished', result: winnerColor || 'draw', reason, updatedAt: fns.serverTimestamp()
+        });
+        tx.update(fns.doc(db, COL_CHESS_PLAYERS, room.players.w.kodeUnik), { inGame: false, currentRoomId: null });
+        tx.update(fns.doc(db, COL_CHESS_PLAYERS, room.players.b.kodeUnik), { inGame: false, currentRoomId: null });
+
+        if (bracketSnap.exists()){
+          const data = bracketSnap.data();
+          const tr = room.tourneyRound, ti = room.tourneyMatchIndex;
+          const match = data.rounds?.[tr]?.matches?.[ti];
+          // Hanya majukan bagan kalau match itu masih 'live' — kalau wasit
+          // sudah memutuskan lebih dulu lewat panel admin (mis. saat pemain
+          // sudah keluar), jangan timpa keputusan itu.
+          if (match && match.status === 'live'){
+            if (winnerColor){
+              const side = winnerColor === 'w' ? 'A' : 'B';
+              const info = applyTourneyAdvance(data.rounds, tr, ti, side);
+              if (info.finished){ data.champion = info.champion; data.runnerUp = info.runnerUp; data.status = 'finished'; }
+            } else {
+              // Remis (stalemate/aturan lain) — bagan tunggal tidak punya
+              // aturan tie-break otomatis; tandai 'seri' & biarkan wasit
+              // memutuskan pemenangnya lewat panel admin turnamen.html.
+              match.status = 'seri';
+            }
+            tx.set(bracketRef, data);
+          }
+        }
+        return;
+      }
+
+      // ---- Alur normal (non-turnamen): ELO, statistik, histori — TIDAK BERUBAH ----
       const wRef = fns.doc(db, COL_CHESS_PLAYERS, room.players.w.kodeUnik);
       const bRef = fns.doc(db, COL_CHESS_PLAYERS, room.players.b.kodeUnik);
       const wSnap = await tx.get(wRef);
@@ -1277,6 +1412,26 @@ async function finishRoom(roomId, winnerColor, reason){
   }
 }
 
+// Porting persis dari turnamen.html (fungsi applyAdvance) supaya perilaku
+// memajukan bagan single-elimination identik di kedua tempat.
+function applyTourneyAdvance(roundsArr, r, i, side, opts){
+  const match = roundsArr[r].matches[i];
+  match.winner = side;
+  match.status = opts && opts.bye ? 'bye' : 'selesai';
+  const winnerPlayer = side === 'A' ? match.playerA : match.playerB;
+  if (r + 1 < roundsArr.length){
+    const nextIdx = Math.floor(i / 2);
+    const slot = (i % 2 === 0) ? 'playerA' : 'playerB';
+    roundsArr[r + 1].matches[nextIdx][slot] = winnerPlayer;
+    const nm = roundsArr[r + 1].matches[nextIdx];
+    if (nm.playerA && nm.playerB && nm.status === 'tbd') nm.status = 'menunggu';
+    return { champion: null, runnerUp: null, finished: false };
+  } else {
+    const loserPlayer = side === 'A' ? match.playerB : match.playerA;
+    return { champion: winnerPlayer, runnerUp: loserPlayer, finished: true };
+  }
+}
+
 function buildStatUpdate(data, score, newRating, reason, color, winnerColor){
   const won = score === 1;
   const lost = score === 0;
@@ -1310,12 +1465,45 @@ async function syncMoveToRoom(moveResult){
     updatedAt: fns.serverTimestamp()
   });
 
+  // Room turnamen: salin juga posisi terkini ke chess_tournament_bracket
+  // supaya dashboard "ruang tunggu" (turnamen.html) yang menonton lewat
+  // bagan itu tetap ter-update real-time, walau permainan sesungguhnya
+  // berjalan di sini. Kegagalan mirror TIDAK menghentikan permainan.
+  if (state.tournamentMatch){
+    mirrorMoveToBracket().catch(err => console.warn('[turnamen] gagal menyalin langkah ke bagan:', err));
+  }
+
   if (state.match.isGameOver()){
     let winner = null, reason = 'draw_rule';
     if (state.match.isCheckmate()){ winner = state.match.turn === 'w' ? 'b' : 'w'; reason = 'checkmate'; sound.checkmate(); }
     else if (state.match.isStalemate()) reason = 'stalemate';
     await finishRoom(state.roomId, winner, reason);
   }
+}
+
+// Menyalin fen/pgn/giliran/jam ke dalam chess_tournament_bracket setelah
+// tiap langkah, HANYA untuk room yang berasal dari Turnamen Catur 17 Agustus.
+// Tidak pernah menyentuh rating/statistik ELO harian.
+async function mirrorMoveToBracket(){
+  const { db, fns } = state.fb;
+  const { tr, ti } = state.tournamentMatch;
+  const bracketRef = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
+  await fns.runTransaction(db, async (tx) => {
+    const snap = await tx.get(bracketRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const match = data.rounds?.[tr]?.matches?.[ti];
+    // Kalau match sudah tidak 'live' (mis. sudah diputuskan wasit/timeout
+    // lewat jalur lain), jangan timpa lagi — biarkan hasil akhir yang berlaku.
+    if (!match || match.status !== 'live') return;
+    match.fen = state.match.fen;
+    match.pgn = state.match.history;
+    match.turn = state.match.turn;
+    match.whiteTimeMs = state.localTimers.w;
+    match.blackTimeMs = state.localTimers.b;
+    match.turnStartedAt = Date.now();
+    tx.set(bracketRef, data);
+  });
 }
 
 /* =========================================================
@@ -1451,7 +1639,7 @@ function exitToLobby(){
   stopLocalTimerLoop();
   if (state.roomUnsub){ state.roomUnsub(); state.roomUnsub = null; }
   if (state.computer){ state.computer.destroy(); state.computer = null; }
-  state.roomId = null; state.opponentProfile = null;
+  state.roomId = null; state.opponentProfile = null; state.tournamentMatch = null;
   UI.switchScreen({ lobbyScreen: el.lobby, gameScreen: el.game }, 'lobbyScreen');
 }
 
@@ -1528,7 +1716,18 @@ async function boot(){
   // semua tombol aksi dalam game (wireGameActions) sudah ter-pasang —
   // supaya kalau langsung reconnect ke papan, tombol menyerah/remis/keluar
   // sudah berfungsi, bukan mati karena listenernya belum sempat dipasang.
-  if (myPlayerRef) await recoverActiveSession(myPlayerRef);
+  //
+  // Link "Main Sekarang" dari dashboard turnamen.html membuka halaman ini
+  // dengan ?tr=<babak>&ti=<indeks room> — kalau parameter itu ada, prioritaskan
+  // langsung masuk ke pertandingan turnamen tsb ketimbang pemulihan sesi biasa.
+  const tourneyParams = new URLSearchParams(location.search);
+  const trParam = tourneyParams.get('tr');
+  const tiParam = tourneyParams.get('ti');
+  if (myPlayerRef && trParam !== null && tiParam !== null){
+    await enterTournamentMatch(parseInt(trParam, 10), parseInt(tiParam, 10));
+  } else if (myPlayerRef){
+    await recoverActiveSession(myPlayerRef);
+  }
 }
 
 boot().catch(err => {

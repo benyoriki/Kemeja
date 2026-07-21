@@ -416,7 +416,8 @@
     </div>
     <div class="move-list" id="modalMoves"></div>
     <div class="modal-actions" id="modalPlayerActions" style="display:none;">
-      <button class="btn btn-primary btn-sm" id="modalResignBtn"><i class="fa-solid fa-flag"></i> Menyerah</button>
+      <a class="btn btn-primary btn-sm" id="modalPlayBtn" target="_blank" rel="noopener" style="display:none;"><i class="fa-solid fa-chess-board"></i> Main Sekarang</a>
+      <button class="btn btn-danger btn-sm" id="modalResignBtn"><i class="fa-solid fa-flag"></i> Menyerah</button>
     </div>
     <div class="admin-mini" id="modalAdminBox" style="display:none;">
       <p>Panel wasit — hanya terlihat setelah PIN admin benar.</p>
@@ -473,7 +474,6 @@ import {
 } from './firebase-config.js';
 
 const SDK_VER = '10.12.2';
-const CHESS_CDN = 'https://cdn.jsdelivr.net/npm/chess.js@1.0.0-beta.8/+esm';
 const FILES = { w:['a','b','c','d','e','f','g','h'] };
 const PIECE_GLYPH = { p:'♟', n:'♞', b:'♝', r:'♜', q:'♛', k:'♚', P:'♙', N:'♘', B:'♗', R:'♖', Q:'♕', K:'♔' };
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -485,9 +485,7 @@ let config = { ...TOURNEY_DEFAULTS };
 let approved = [];
 let bracket = null;
 let isAdmin = false;
-let chessCtorPromise = null;
 let currentModal = null; // { r, i }
-let modalMoveSel = null; // selected square while playing
 let clockTicker = null;
 let bunting = document.getElementById('bunting');
 
@@ -522,11 +520,6 @@ async function initFirebase(){
   const app = initializeApp(firebaseConfig);
   const database = f.getFirestore(app);
   return { database, f };
-}
-
-function loadChessCtor(){
-  if(!chessCtorPromise) chessCtorPromise = import(CHESS_CDN).then(m => m.Chess);
-  return chessCtorPromise;
 }
 
 /* ---------------- toast ---------------- */
@@ -818,7 +811,9 @@ function renderRooms(){
       </div>
       <div class="room-foot">
         <span class="clock">${clockLabel(m)}</span>
-        <span class="hint">${mine ? 'Ini room Anda' : 'Klik untuk menonton'}</span>
+        ${mine && m.status === 'live'
+          ? `<a class="btn btn-primary btn-sm" href="${troomUrl(r, idx)}" onclick="event.stopPropagation();" style="padding:5px 12px; font-size:11.5px;"><i class="fa-solid fa-chess-board"></i> Main Sekarang</a>`
+          : `<span class="hint">${mine ? 'Ini room Anda' : 'Klik untuk menonton'}</span>`}
       </div>`;
     frag.appendChild(card);
     requestAnimationFrame(() => renderMiniBoard(card.querySelector('.mini-board'), m.fen));
@@ -912,7 +907,7 @@ function renderMyStatus(){
   } else if(bracket.runnerUp && bracket.runnerUp.kodeUnik === session.kodeUnik){
     title = '🥈 Anda Juara 2'; desc = 'Kalah di partai final — tetap membanggakan!';
   } else if(m.status === 'live'){
-    title = 'Room ' + m.roomNo + ' sedang berjalan'; desc = 'Lawan Anda: ' + oppName + '. Klik untuk masuk ke papan.';
+    title = 'Room ' + m.roomNo + ' sedang berjalan'; desc = 'Lawan Anda: ' + oppName + '. Papan permainan sudah siap.';
   } else if(m.status === 'menunggu'){
     title = 'Room ' + m.roomNo + ' siap dimulai'; desc = 'Lawan Anda: ' + oppName + '. Menunggu admin memulai room.';
   } else if(m.status === 'bye'){
@@ -924,21 +919,31 @@ function renderMyStatus(){
   } else {
     title = 'Menunggu lawan'; desc = 'Room Anda belum lengkap — menunggu peserta lain.';
   }
+  const isLiveForMe = m.status === 'live';
   box.innerHTML = `
     <div class="my-status">
       <div class="icon"><i class="fa-solid fa-chess-knight"></i></div>
       <div class="txt"><b>${title}</b><span>${desc}</span></div>
-      <button class="btn btn-ghost btn-sm" id="myStatusJump">Lihat Room</button>
+      ${isLiveForMe
+        ? `<a class="btn btn-primary btn-sm" id="myStatusJump" href="${troomUrl(found.r, found.i)}"><i class="fa-solid fa-chess-board"></i> Main Sekarang</a>`
+        : `<button class="btn btn-ghost btn-sm" id="myStatusJump">Lihat Room</button>`}
     </div>`;
-  document.getElementById('myStatusJump').addEventListener('click', () => openModal(found.r, found.i));
+  const jumpBtn = document.getElementById('myStatusJump');
+  if(!isLiveForMe) jumpBtn.addEventListener('click', () => openModal(found.r, found.i));
+}
+
+/* Membangun link menuju papan permainan sesungguhnya (chess/index.html) —
+   permainan turnamen SELALU dimainkan di sana, dashboard ini hanya ruang
+   tunggu & tempat menonton. Lihat script.js -> enterTournamentMatch(). */
+function troomUrl(r, i){
+  return `index.html?tr=${encodeURIComponent(r)}&ti=${encodeURIComponent(i)}`;
 }
 
 /* =========================================================
-   MODAL — spectate + play
+   MODAL — ruang tunggu & spectate (gameplay ada di chess/index.html)
 ========================================================= */
 function openModal(r, i){
   currentModal = { r, i };
-  modalMoveSel = null;
   document.getElementById('modalBg').classList.add('open');
   refreshModal();
   if(clockTicker) clearInterval(clockTicker);
@@ -987,15 +992,16 @@ async function refreshModal(){
   const actions = document.getElementById('modalPlayerActions');
   actions.style.display = (iAmPlayer && m.status==='live') ? 'flex' : 'none';
 
-  // enable tap-to-move if I'm a live player
-  const boardEl = document.getElementById('modalBoard');
-  boardEl.onclick = null;
+  // Papan di dashboard SELALU hanya untuk menonton (read-only) — baik untuk
+  // tamu/penonton maupun kedua pemain. Pemain bermain lewat papan asli di
+  // chess/index.html; tombol "Main Sekarang" di bawah yang membukanya.
+  const playBtn = document.getElementById('modalPlayBtn');
   if(iAmPlayer && m.status === 'live'){
-    const mySide = (m.playerA && m.playerA.kodeUnik===session.kodeUnik) ? 'A' : 'B';
-    const myColor = mySide === 'A' ? 'w' : 'b';
-    if(m.turn === myColor){
-      boardEl.onclick = (e) => handleBoardClick(e, boardEl, m, myColor);
-    }
+    playBtn.href = troomUrl(r, i);
+    playBtn.style.display = 'inline-flex';
+  } else {
+    playBtn.removeAttribute('href');
+    playBtn.style.display = 'none';
   }
 
   renderModalAdmin(m);
@@ -1008,83 +1014,6 @@ function pairMoves(pgnArr){
     lines.push(`${num}. ${pgnArr[i]||''}  ${pgnArr[i+1]||''}`);
   }
   return lines;
-}
-
-async function handleBoardClick(e, boardEl, m, myColor){
-  const cell = e.target.closest('div');
-  if(!cell) return;
-  const cells = Array.from(boardEl.children);
-  const idx = cells.indexOf(cell);
-  if(idx < 0) return;
-  const r = Math.floor(idx/8), c = idx%8;
-  const square = FILES.w[c] + (8-r);
-
-  const Chess = await loadChessCtor();
-  const chess = new Chess(m.fen === 'start' ? undefined : m.fen);
-
-  if(!modalMoveSel){
-    const moves = chess.moves({ square, verbose:true });
-    if(!moves.length) return;
-    modalMoveSel = square;
-    highlightSquares(boardEl, [square, ...moves.map(mv=>mv.to)]);
-    return;
-  }
-  if(modalMoveSel === square){ modalMoveSel = null; renderMiniBoard(boardEl, m.fen); return; }
-
-  let moveResult;
-  try{ moveResult = chess.move({ from: modalMoveSel, to: square, promotion:'q' }); }
-  catch(err){ moveResult = null; }
-  modalMoveSel = null;
-  if(!moveResult){ renderMiniBoard(boardEl, m.fen); toast('Langkah tidak sah.'); return; }
-
-  await applyMove(chess, moveResult, myColor);
-}
-
-function highlightSquares(boardEl, squares){
-  const cells = Array.from(boardEl.children);
-  cells.forEach((cell, idx) => {
-    const r = Math.floor(idx/8), c = idx%8;
-    const sq = FILES.w[c] + (8-r);
-    cell.classList.toggle('mb-sel', squares[0] === sq);
-    cell.classList.toggle('mb-dot', squares.slice(1).includes(sq));
-  });
-}
-
-async function applyMove(chessAfterMove, moveResult, myColor){
-  if(!currentModal) return;
-  const { r, i } = currentModal;
-  const ref = fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID);
-  try{
-    await fns.runTransaction(db, async (tx) => {
-      const snap = await tx.get(ref);
-      if(!snap.exists()) throw new Error('bracket hilang');
-      const data = snap.data();
-      const match = data.rounds[r].matches[i];
-      if(match.status !== 'live') return; // sudah berubah di klien lain
-      const elapsed = match.turnStartedAt ? (Date.now() - match.turnStartedAt) : 0;
-      if(myColor === 'w') match.whiteTimeMs = Math.max(0, match.whiteTimeMs - elapsed);
-      else match.blackTimeMs = Math.max(0, match.blackTimeMs - elapsed);
-      match.fen = chessAfterMove.fen();
-      match.pgn = [...(match.pgn||[]), moveResult.san];
-      match.turn = myColor === 'w' ? 'b' : 'w';
-      match.turnStartedAt = Date.now();
-
-      let finishedInfo = null;
-      if(chessAfterMove.isCheckmate()){
-        const side = myColor === 'w' ? 'A' : 'B';
-        finishedInfo = applyAdvance(data.rounds, r, i, side);
-      }else if(chessAfterMove.isDraw() || chessAfterMove.isStalemate() || chessAfterMove.isThreefoldRepetition()){
-        match.status = 'seri';
-      }
-      if(finishedInfo && finishedInfo.finished){
-        data.champion = finishedInfo.champion; data.runnerUp = finishedInfo.runnerUp; data.status = 'finished';
-      }
-      tx.set(ref, data);
-    });
-  }catch(err){
-    console.error('[applyMove] gagal', err);
-    toast('Gagal menyimpan langkah, coba lagi.');
-  }
 }
 
 document.getElementById('modalResignBtn').addEventListener('click', async () => {
