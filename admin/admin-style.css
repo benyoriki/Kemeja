@@ -1170,19 +1170,41 @@ button{ cursor:pointer; border:none; background:none; }
 .chess-tourney-btn{ color:#FF8A8A; }
 .chess-tourney-btn:hover{ background:linear-gradient(135deg, #FF3B3B, #F2C14E); color:#2A0A0A; }
 
-.chess-tourney-box{ max-width:760px; }
+.chess-tourney-box{ max-width:780px; }
 
+/* ---- Tab: Pengaturan Event / Daftar Pendaftar ----
+   Memisahkan konfigurasi turnamen dari daftar pendaftar supaya modal
+   tidak jadi satu scroll panjang — lebih rapi & lebih pas dipakai untuk
+   mengelola banyak pendaftar di HP maupun PC. */
+.ctour-tabs{
+  display:flex; gap:8px; margin:18px 0 4px; padding:4px; border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.03); border:1px solid var(--line);
+}
+.ctour-tab{
+  flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px 12px; border-radius:10px; font-size:12.5px; font-weight:700;
+  color:var(--ink-soft); transition:var(--transition);
+}
+.ctour-tab:hover{ color:var(--ink); background:rgba(255,255,255,.05); }
+.ctour-tab.active{ background:var(--gradient-brand); color:#04213A; box-shadow:var(--shadow-glow); }
+.ctour-tab-count{
+  display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;
+  padding:0 5px; border-radius:99px; font-size:10.5px; font-weight:700; font-family:var(--font-mono);
+  background:rgba(255,255,255,.14); color:inherit;
+}
+@media (max-width:520px){ .ctour-tab span:not(.ctour-tab-count){ display:none; } .ctour-tab{ gap:6px; } }
+
+.ctour-panel{ display:none; animation:adashFadeUp .3s ease both; }
+.ctour-panel.active{ display:block; }
+@media (prefers-reduced-motion: reduce){ .ctour-panel{ animation:none; } }
+
+/* ---- Form pengaturan (buat baru / edit) ---- */
 .ctour-config-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; margin:18px 0 6px; }
 .ctour-active-field{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .ctour-active-field label:first-child{ margin-bottom:0; }
-#ctourSaveConfig{ margin-top:6px; }
+.ctour-form-actions{ display:flex; gap:10px; margin-top:6px; }
+.ctour-form-actions .btn{ flex:1; justify-content:center; }
 @media (max-width:640px){ .ctour-config-grid{ grid-template-columns:1fr; } }
-
-.ctour-divider{
-  display:flex; align-items:center; gap:12px; margin:26px 0 14px; color:var(--ink-faint);
-  font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
-}
-.ctour-divider::before, .ctour-divider::after{ content:''; flex:1; height:1px; background:var(--line); }
 
 /* Toggle switch (belum ada di dasbor admin sebelumnya) */
 .switch{ position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; }
@@ -1198,11 +1220,43 @@ button{ cursor:pointer; border:none; background:none; }
 .switch input:checked + .slider{ background:var(--gradient-brand); border-color:transparent; }
 .switch input:checked + .slider::before{ transform:translateX(18px); background:#04213A; }
 
-/* Baris pendaftar turnamen — dibangun di atas .admin-row yang sudah
-   ada (avatar, badge status, dsb), ditambah baris tombol aksi. */
-.ctour-row-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
-.ctour-row-actions .btn{ flex:1; min-width:120px; padding:9px 14px; font-size:12.5px; }
-.ctour-wa-link{ color:var(--teal); text-decoration:none; }
-.ctour-wa-link:hover{ text-decoration:underline; }
+/* ---- Kartu ringkasan turnamen tersimpan (mode "view") ----
+   Input jadi TERTUTUP begitu sudah disimpan; hanya kartu ringkas +
+   tombol Edit/Hapus yang tampil sampai admin memilih untuk mengedit. */
+.ctour-summary{
+  background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:var(--radius);
+  padding:18px; margin:18px 0 6px; animation:adashFadeUp .3s ease both;
+}
+.ctour-summary-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.ctour-summary-head{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.ctour-summary-head h4{ font-size:16px; color:var(--ink); overflow-wrap:anywhere; }
+.ctour-summary-badge{
+  display:inline-flex; align-items:center; gap:6px; width:fit-content; font-size:11px; font-weight:700;
+  padding:4px 11px; border-radius:20px; background:rgba(15,216,184,.16); color:var(--teal);
+}
+.ctour-summary-badge i{ font-size:7px; }
+.ctour-summary-badge.inactive{ background:rgba(255,255,255,.08); color:var(--ink-faint); }
+.ctour-summary-actions{ display:flex; gap:8px; flex-shrink:0; }
+.ctour-summary-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+.ctour-summary-item{
+  display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-soft);
+  background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:10px; padding:9px 12px;
+}
+.ctour-summary-item i{ flex-shrink:0; width:16px; text-align:center; }
+@media (max-width:640px){ .ctour-summary-grid{ grid-template-columns:1fr; } }
+
+/* ---- Placeholder saat belum ada turnamen dibuat sama sekali ---- */
+.ctour-empty-state{
+  text-align:center; padding:44px 20px; margin:18px 0 6px; color:var(--ink-soft);
+  border:1.5px dashed var(--line); border-radius:var(--radius); font-size:13.5px;
+}
+.ctour-empty-state i{ font-size:30px; display:block; margin-bottom:14px; color:var(--aqua); }
+.ctour-empty-state p{ margin-bottom:16px; }
+
+/* ---- Variasi tombol aksi baris pendaftar (dibangun di atas
+   .admin-action-btn yang sudah ada di dasbor untuk konsistensi) ---- */
+.admin-action-tolak{ background:rgba(239,90,111,.14); color:var(--danger); border-color:rgba(239,90,111,.28); }
+.admin-action-tolak:hover{ background:var(--danger); color:#fff; border-color:transparent; }
+
 .badge-danger{ background:rgba(239,90,111,.16); color:#FF8095; }
 .admin-row:has(.badge-danger){ border-left-color:var(--danger); }

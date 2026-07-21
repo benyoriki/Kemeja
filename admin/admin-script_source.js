@@ -1083,9 +1083,9 @@ document.addEventListener('DOMContentLoaded', () => {
       doc.text('WEBSITE DAFTAR BAJU LOKON PRIMA', MARGIN, capY);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9.6);
-      doc.setTextColor(...hexToRgbArr('#EA580C'));
-      doc.text('Cek berkala status produksi kemejamu di link website ini, ya!', MARGIN, capY + 15);
+      doc.setFontSize(10.5);
+      doc.setTextColor(...hexToRgbArr('#DC2626'));
+      doc.text('Cek berkala status produksi kemejamu di link website ini', MARGIN, capY + 15);
 
       const linkText = 'benyoriki.github.io/Kemeja';
       doc.setFont('courier', 'bold');
@@ -2178,6 +2178,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const chessTourneyBtn = document.getElementById('chessTourneyBtn');
   const chessTourneyOverlay = document.getElementById('chessTourneyOverlay');
   const chessTourneyClose = document.getElementById('chessTourneyClose');
+  const ctourTabs = document.getElementById('ctourTabs');
+  const ctourTabCount = document.getElementById('ctourTabCount');
+  const ctourSummary = document.getElementById('ctourSummary');
+  const ctourSummaryStatus = document.getElementById('ctourSummaryStatus');
+  const ctourSummaryTitle = document.getElementById('ctourSummaryTitle');
+  const ctourSummaryDate = document.getElementById('ctourSummaryDate');
+  const ctourSummaryPrize1 = document.getElementById('ctourSummaryPrize1');
+  const ctourSummaryPrize2 = document.getElementById('ctourSummaryPrize2');
+  const ctourSummaryPrize3 = document.getElementById('ctourSummaryPrize3');
+  const ctourEditBtn = document.getElementById('ctourEditBtn');
+  const ctourDeleteBtn = document.getElementById('ctourDeleteBtn');
+  const ctourEmptyState = document.getElementById('ctourEmptyState');
+  const ctourCreateBtn = document.getElementById('ctourCreateBtn');
+  const ctourForm = document.getElementById('ctourForm');
+  const ctourCancelBtn = document.getElementById('ctourCancelBtn');
   const ctourTitle = document.getElementById('ctourTitle');
   const ctourStart = document.getElementById('ctourStart');
   const ctourPrize1 = document.getElementById('ctourPrize1');
@@ -2186,27 +2201,77 @@ document.addEventListener('DOMContentLoaded', () => {
   const ctourActive = document.getElementById('ctourActive');
   const ctourSaveConfig = document.getElementById('ctourSaveConfig');
   const ctourConfigError = document.getElementById('ctourConfigError');
+  const ctourSearchInput = document.getElementById('ctourSearch');
   const ctourFilters = document.getElementById('ctourFilters');
   const ctourList = document.getElementById('ctourList');
   const ctourEmpty = document.getElementById('ctourEmpty');
 
   let ctourConfigCache = null;
+  let ctourExists = false;           // apakah dokumen konfigurasi sudah pernah disimpan
+  let ctourMode = 'view';            // 'view' | 'edit' | 'create'
   let ctourRegCache = [];
   let ctourConfigUnsub = null;
   let ctourRegUnsub = null;
   let ctourActiveFilter = 'semua';
+  let ctourSearchQuery = '';
 
   function tourneyConfigRef(fb){ return fb.doc(fb.db, TOURNEY_CONFIG_COLLECTION, TOURNEY_ID); }
   function tourneyRegRef(fb, kodeUnik){ return fb.doc(fb.db, TOURNEY_REG_COLLECTION, kodeUnik); }
 
-  function renderCtourConfigForm(){
-    const c = { ...TOURNEY_DEFAULTS, ...(ctourConfigCache || {}) };
+  // Isi field-field form (dipakai baik untuk mode "edit" berisi data lama,
+  // maupun mode "create" berisi nilai bawaan/kosong).
+  function fillCtourFormFields(c){
     if (ctourTitle) ctourTitle.value = c.title;
     if (ctourStart) ctourStart.value = isoToDatetimeLocalValue(c.startAtISO);
     if (ctourPrize1) ctourPrize1.value = c.prize1;
     if (ctourPrize2) ctourPrize2.value = c.prize2;
     if (ctourPrize3) ctourPrize3.value = c.prize3;
     if (ctourActive) ctourActive.checked = c.active !== false;
+  }
+
+  // Isi kartu ringkasan (mode "view") dari data konfigurasi tersimpan.
+  function renderCtourSummary(){
+    const c = { ...TOURNEY_DEFAULTS, ...(ctourConfigCache || {}) };
+    if (ctourSummaryTitle) ctourSummaryTitle.textContent = c.title;
+    if (ctourSummaryDate){
+      let dateLabel = '-';
+      try {
+        dateLabel = new Date(c.startAtISO).toLocaleString('id-ID', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) + ' WIB';
+      } catch (err) { /* biarkan default '-' kalau tanggal tidak valid */ }
+      ctourSummaryDate.textContent = dateLabel;
+    }
+    if (ctourSummaryPrize1) ctourSummaryPrize1.textContent = c.prize1;
+    if (ctourSummaryPrize2) ctourSummaryPrize2.textContent = c.prize2;
+    if (ctourSummaryPrize3) ctourSummaryPrize3.textContent = c.prize3;
+    if (ctourSummaryStatus){
+      const active = c.active !== false;
+      ctourSummaryStatus.innerHTML = `<i class="fa-solid fa-circle"></i> ${active ? 'Aktif — tampil di publik' : 'Nonaktif — disembunyikan'}`;
+      ctourSummaryStatus.classList.toggle('inactive', !active);
+    }
+  }
+
+  // Satu fungsi pusat yang memutuskan tampilan mana yang aktif:
+  // form (sedang membuat/mengedit), ringkasan (sudah tersimpan & sedang
+  // dilihat saja), atau placeholder kosong (belum pernah dibuat sama sekali).
+  function updateCtourConfigView(){
+    if (!ctourSummary || !ctourEmptyState || !ctourForm) return;
+    if (ctourMode === 'edit' || ctourMode === 'create'){
+      ctourSummary.style.display = 'none';
+      ctourEmptyState.style.display = 'none';
+      ctourForm.style.display = 'block';
+      return;
+    }
+    ctourForm.style.display = 'none';
+    if (ctourExists){
+      renderCtourSummary();
+      ctourSummary.style.display = 'block';
+      ctourEmptyState.style.display = 'none';
+    } else {
+      ctourSummary.style.display = 'none';
+      ctourEmptyState.style.display = 'block';
+    }
   }
 
   function renderCtourList(){
@@ -2218,8 +2283,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setCount('ctourCountPending', counts.pending);
     setCount('ctourCountApproved', counts.approved);
     setCount('ctourCountRejected', counts.rejected);
+    if (ctourTabCount) ctourTabCount.textContent = counts.semua;
 
-    const filtered = ctourActiveFilter === 'semua' ? ctourRegCache : ctourRegCache.filter(r => r.status === ctourActiveFilter);
+    let filtered = ctourActiveFilter === 'semua' ? ctourRegCache.slice() : ctourRegCache.filter(r => r.status === ctourActiveFilter);
+    if (ctourSearchQuery.trim() !== ''){
+      const q = ctourSearchQuery.trim().toLowerCase();
+      filtered = filtered.filter(r =>
+        (r.nama || '').toLowerCase().includes(q) ||
+        (r.kodeUnik || '').toLowerCase().includes(q) ||
+        (r.whatsapp || '').toLowerCase().includes(q)
+      );
+    }
 
     if (!filtered.length){
       ctourList.innerHTML = '';
@@ -2246,14 +2320,19 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="admin-row-meta">
             <div class="admin-row-meta-group">
-              <a class="ctour-wa-link" href="${waLink}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(r.whatsapp || '-')}</a>
               <span><i class="fa-solid fa-clock"></i> Daftar: ${tanggal}</span>
             </div>
           </div>
-          <div class="ctour-row-actions">
-            ${r.status !== 'approved' ? `<button class="btn btn-primary ripple" data-caction="approve" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-check"></i> Terima</button>` : ''}
-            ${r.status !== 'rejected' ? `<button class="btn btn-danger ripple" data-caction="reject" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-xmark"></i> Tolak</button>` : ''}
-            ${r.status !== 'pending' ? `<button class="btn btn-outline-dark ripple" data-caction="pending" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-rotate-left"></i> Batalkan</button>` : ''}
+          <div class="admin-row-actions">
+            <div class="admin-row-actions-primary">
+              ${r.status !== 'approved' ? `<button class="admin-action-btn admin-action-lunas" data-caction="approve" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-check"></i> Terima</button>` : ''}
+              ${r.status !== 'rejected' ? `<button class="admin-action-btn admin-action-tolak" data-caction="reject" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-circle-xmark"></i> Tolak</button>` : ''}
+              ${r.status !== 'pending' ? `<button class="admin-action-btn admin-action-ubahstatus" data-caction="pending" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-rotate-left"></i> Batalkan</button>` : ''}
+            </div>
+            <div class="admin-row-actions-icons">
+              ${r.whatsapp ? `<a class="admin-icon-action wa" title="Chat WhatsApp" href="${waLink}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
+              <button class="admin-icon-action hapus" type="button" title="Hapus pendaftaran" data-caction="hapus" data-kode="${escapeHtml(r.kodeUnik)}"><i class="fa-solid fa-trash"></i></button>
+            </div>
           </div>
         </div>`;
     }).join('');
@@ -2267,8 +2346,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (!ctourConfigUnsub){
       ctourConfigUnsub = fb.onSnapshot(tourneyConfigRef(fb), (snap) => {
-        ctourConfigCache = snap.exists() ? snap.data() : null;
-        renderCtourConfigForm();
+        ctourExists = snap.exists();
+        ctourConfigCache = ctourExists ? snap.data() : null;
+        if (ctourMode === 'view') updateCtourConfigView();
       }, (err) => console.warn('Gagal memantau chess_tournament_config:', err.code, err.message));
     }
     if (!ctourRegUnsub){
@@ -2290,10 +2370,50 @@ document.addEventListener('DOMContentLoaded', () => {
   chessTourneyBtn?.addEventListener('click', () => {
     chessTourneyOverlay?.classList.add('active');
     if (ctourConfigError) ctourConfigError.textContent = '';
+    ctourMode = 'view';
+    updateCtourConfigView();
     loadCtourRealtime();
   });
   chessTourneyClose?.addEventListener('click', () => chessTourneyOverlay?.classList.remove('active'));
   chessTourneyOverlay?.addEventListener('click', (e) => { if (e.target === chessTourneyOverlay) chessTourneyOverlay.classList.remove('active'); });
+
+  // Tab "Pengaturan Event" <-> "Daftar Pendaftar"
+  ctourTabs?.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-ctab]');
+    if (!tab) return;
+    const target = tab.dataset.ctab;
+    ctourTabs.querySelectorAll('.ctour-tab').forEach(t => {
+      const active = t === tab;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', String(active));
+    });
+    chessTourneyOverlay?.querySelectorAll('.ctour-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.panel === target);
+    });
+  });
+
+  // Buka form kosong untuk membuat turnamen baru (dari placeholder "belum ada turnamen")
+  ctourCreateBtn?.addEventListener('click', () => {
+    ctourMode = 'create';
+    fillCtourFormFields(TOURNEY_DEFAULTS);
+    if (ctourConfigError) ctourConfigError.textContent = '';
+    updateCtourConfigView();
+  });
+
+  // Buka form berisi data lama untuk diedit (dari kartu ringkasan)
+  ctourEditBtn?.addEventListener('click', () => {
+    ctourMode = 'edit';
+    fillCtourFormFields({ ...TOURNEY_DEFAULTS, ...(ctourConfigCache || {}) });
+    if (ctourConfigError) ctourConfigError.textContent = '';
+    updateCtourConfigView();
+  });
+
+  // Batalkan membuat/mengedit — kembali ke tampilan ringkasan/placeholder tanpa menyimpan apa pun
+  ctourCancelBtn?.addEventListener('click', () => {
+    ctourMode = 'view';
+    if (ctourConfigError) ctourConfigError.textContent = '';
+    updateCtourConfigView();
+  });
 
   ctourFilters?.addEventListener('click', (e) => {
     const chip = e.target.closest('[data-cfilter]');
@@ -2303,7 +2423,13 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCtourList();
   });
 
-  // Simpan pengaturan event (judul, tanggal/jam, hadiah, tampil/sembunyikan banner)
+  ctourSearchInput?.addEventListener('input', (e) => {
+    ctourSearchQuery = e.target.value;
+    renderCtourList();
+  });
+
+  // Simpan pengaturan event (judul, tanggal/jam, hadiah, tampil/sembunyikan banner) —
+  // dipakai baik untuk membuat turnamen baru maupun menyimpan hasil edit.
   ctourSaveConfig?.addEventListener('click', async () => {
     const title = (ctourTitle?.value || '').trim() || TOURNEY_DEFAULTS.title;
     const startAtISO = datetimeLocalValueToIso(ctourStart?.value || '') || TOURNEY_DEFAULTS.startAtISO;
@@ -2311,9 +2437,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const prize2 = (ctourPrize2?.value || '').trim() || TOURNEY_DEFAULTS.prize2;
     const prize3 = (ctourPrize3?.value || '').trim() || TOURNEY_DEFAULTS.prize3;
     const active = !!ctourActive?.checked;
+    const isCreating = ctourMode === 'create';
 
     const confirmed = await showAdminConfirm({
-      title: 'Simpan Pengaturan Turnamen Catur?',
+      title: isCreating ? 'Buat Turnamen Catur Baru?' : 'Simpan Perubahan Turnamen Catur?',
       messageHtml: `<p>Perubahan akan langsung tampil real-time ke semua peserta yang membuka Lokon Chess Arena — termasuk countdown, hadiah, dan status tampil/sembunyi banner.</p>`,
       confirmLabel: 'Ya, Simpan'
     });
@@ -2333,7 +2460,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
       }, { merge: true });
       await logAdminAction('edit', `Judul: "${title}" • Mulai: ${new Date(startAtISO).toLocaleString('id-ID')} • Tampil: ${active ? 'Ya' : 'Tidak'}`, 'Turnamen Catur 17 Agustus');
-      showToast('Pengaturan turnamen berhasil disimpan.', 'success');
+      ctourExists = true;
+      ctourConfigCache = { title, startAtISO, prize1, prize2, prize3, active };
+      ctourMode = 'view';
+      updateCtourConfigView();
+      showToast(isCreating ? 'Turnamen baru berhasil dibuat.' : 'Pengaturan turnamen berhasil disimpan.', 'success');
     } catch (err){
       console.warn('Gagal menyimpan pengaturan turnamen:', err.code, err.message);
       if (ctourConfigError) ctourConfigError.textContent = 'Gagal menyimpan — cek Firestore Rules koleksi "chess_tournament_config".';
@@ -2343,7 +2474,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Terima / Tolak / Batalkan (kembalikan ke menunggu) — event delegation
+  // Hapus turnamen (dokumen pengaturan) — daftar pendaftar yang sudah ada TIDAK ikut terhapus
+  ctourDeleteBtn?.addEventListener('click', async () => {
+    const c = { ...TOURNEY_DEFAULTS, ...(ctourConfigCache || {}) };
+    const confirmed = await showAdminConfirm({
+      title: 'Hapus Turnamen Catur?',
+      messageHtml: `<p>Turnamen <b>${escapeHtml(c.title)}</b> akan dihapus dari pengaturan. Modul catur di situs publik akan kembali ke pengaturan bawaan sampai turnamen baru dibuat lagi. Daftar pendaftar yang sudah ada tidak ikut terhapus.</p>`,
+      confirmLabel: 'Ya, Hapus',
+      danger: true
+    });
+    if (!confirmed) return;
+
+    const fb = window.__lokonFirebase;
+    if (!fb || !fb.deleteDoc){
+      showToast('Gagal menghapus: Firebase belum tersambung.', 'error');
+      return;
+    }
+    ctourDeleteBtn.disabled = true;
+    try {
+      await fb.deleteDoc(tourneyConfigRef(fb));
+      await logAdminAction('hapus', `Turnamen "${c.title}" dihapus dari pengaturan.`, 'Turnamen Catur 17 Agustus');
+      ctourExists = false;
+      ctourConfigCache = null;
+      ctourMode = 'view';
+      updateCtourConfigView();
+      showToast('Turnamen berhasil dihapus.', 'success');
+    } catch (err){
+      console.warn('Gagal menghapus turnamen:', err.code, err.message);
+      if (ctourConfigError) ctourConfigError.textContent = 'Gagal menghapus — cek Firestore Rules koleksi "chess_tournament_config".';
+    } finally {
+      ctourDeleteBtn.disabled = false;
+    }
+  });
+
+  // Terima / Tolak / Batalkan (kembalikan ke menunggu) / Hapus — event delegation
   // supaya tetap berfungsi walau daftar di-render ulang oleh listener realtime.
   ctourList?.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-caction]');
@@ -2352,6 +2516,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const kode = btn.dataset.kode;
     const reg = ctourRegCache.find(r => r.kodeUnik === kode);
     if (!reg) return;
+
+    if (action === 'hapus'){
+      const confirmed = await showAdminConfirm({
+        title: 'Hapus Pendaftaran Turnamen?',
+        messageHtml: `<p>Data pendaftaran <b>${escapeHtml(reg.nama)}</b> (kode ${escapeHtml(reg.kodeUnik)}) akan dihapus permanen dan tidak bisa dikembalikan.</p>`,
+        confirmLabel: 'Ya, Hapus',
+        danger: true
+      });
+      if (!confirmed) return;
+      const fb = window.__lokonFirebase;
+      if (!fb || !fb.deleteDoc){
+        showToast('Gagal menghapus: Firebase belum tersambung.', 'error');
+        return;
+      }
+      btn.disabled = true;
+      try {
+        await fb.deleteDoc(tourneyRegRef(fb, kode));
+        await logAdminAction('hapus', 'Pendaftaran turnamen catur dihapus.', `${reg.nama || '-'} (${kode})`);
+        showToast(`Pendaftaran "${escapeHtml(reg.nama)}" berhasil dihapus.`, 'success');
+      } catch (err){
+        console.warn('Gagal menghapus pendaftaran turnamen:', err.code, err.message);
+        showToast('Gagal menghapus — cek Firestore Rules koleksi "chess_tournament_agustus17".', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+      return;
+    }
 
     const ACTION_META = {
       approve: { newStatus: 'approved', title: 'Terima Pendaftaran Turnamen?', confirmLabel: 'Ya, Terima', danger: false,

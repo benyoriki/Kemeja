@@ -536,56 +536,114 @@
       Terima atau tolak pendaftar di bawah; peserta yang diterima otomatis muncul di daftar peserta turnamen.
     </p>
 
-    <div class="ctour-config-grid">
-      <div class="admin-field">
-        <label for="ctourTitle">Judul Event</label>
-        <div class="admin-input-wrap"><i class="fa-solid fa-heading"></i>
-          <input type="text" id="ctourTitle" placeholder="Turnamen Catur Kemerdekaan 17 Agustus 2026">
-        </div>
-      </div>
-      <div class="admin-field">
-        <label for="ctourStart">Tanggal &amp; Jam Mulai (WIB)</label>
-        <div class="admin-input-wrap"><i class="fa-solid fa-calendar-days"></i>
-          <input type="datetime-local" id="ctourStart">
-        </div>
-      </div>
-      <div class="admin-field">
-        <label for="ctourPrize1"><i class="fa-solid fa-trophy" style="color:#F2C14E;"></i> Hadiah Juara 1</label>
-        <div class="admin-input-wrap"><i class="fa-solid fa-gift"></i>
-          <input type="text" id="ctourPrize1" placeholder="Rp 1.000.000 + Trofi + Sertifikat">
-        </div>
-      </div>
-      <div class="admin-field">
-        <label for="ctourPrize2"><i class="fa-solid fa-medal" style="color:#C7D1E0;"></i> Hadiah Juara 2</label>
-        <div class="admin-input-wrap"><i class="fa-solid fa-gift"></i>
-          <input type="text" id="ctourPrize2" placeholder="Rp 600.000 + Sertifikat">
-        </div>
-      </div>
-      <div class="admin-field">
-        <label for="ctourPrize3"><i class="fa-solid fa-medal" style="color:#D98B4A;"></i> Hadiah Juara 3</label>
-        <div class="admin-input-wrap"><i class="fa-solid fa-gift"></i>
-          <input type="text" id="ctourPrize3" placeholder="Rp 300.000 + Sertifikat">
-        </div>
-      </div>
-      <div class="admin-field ctour-active-field">
-        <label for="ctourActive">Tampilkan Banner di Modul Catur</label>
-        <label class="switch"><input type="checkbox" id="ctourActive" checked><span class="slider"></span></label>
-      </div>
+    <!-- Tab: Pengaturan Event / Daftar Pendaftar — memisahkan pengaturan
+         dari daftar pendaftar supaya tidak jadi satu scroll panjang. -->
+    <div class="ctour-tabs" id="ctourTabs" role="tablist">
+      <button class="ctour-tab active" type="button" data-ctab="config" role="tab" aria-selected="true">
+        <i class="fa-solid fa-sliders"></i> Pengaturan Event
+      </button>
+      <button class="ctour-tab" type="button" data-ctab="pendaftar" role="tab" aria-selected="false">
+        <i class="fa-solid fa-users"></i> Daftar Pendaftar <span class="ctour-tab-count" id="ctourTabCount">0</span>
+      </button>
     </div>
-    <button class="btn btn-primary ripple" id="ctourSaveConfig" type="button"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan Event</button>
+
     <small class="admin-error" id="ctourConfigError"></small>
 
-    <div class="ctour-divider"><span>Daftar Pendaftar</span></div>
+    <!-- ===== PANEL 1: PENGATURAN EVENT ===== -->
+    <div class="ctour-panel active" data-panel="config" id="ctourPanelConfig">
 
-    <div class="adash-filters" id="ctourFilters">
-      <button class="adash-chip active" data-cfilter="semua">Semua <span class="adash-chip-count" id="ctourCountSemua">0</span></button>
-      <button class="adash-chip" data-cfilter="pending">Menunggu <span class="adash-chip-count" id="ctourCountPending">0</span></button>
-      <button class="adash-chip" data-cfilter="approved">Diterima <span class="adash-chip-count" id="ctourCountApproved">0</span></button>
-      <button class="adash-chip" data-cfilter="rejected">Ditolak <span class="adash-chip-count" id="ctourCountRejected">0</span></button>
+      <!-- Kartu ringkasan — tampil kalau turnamen SUDAH pernah disimpan.
+           Input tersembunyi/"tertutup" secara default; Edit membuka lagi. -->
+      <div class="ctour-summary" id="ctourSummary" style="display:none;">
+        <div class="ctour-summary-top">
+          <div class="ctour-summary-head">
+            <span class="ctour-summary-badge" id="ctourSummaryStatus"><i class="fa-solid fa-circle"></i> Aktif</span>
+            <h4 id="ctourSummaryTitle">—</h4>
+          </div>
+          <div class="ctour-summary-actions">
+            <button class="admin-icon-action edit" type="button" id="ctourEditBtn" title="Edit pengaturan turnamen"><i class="fa-solid fa-pen"></i></button>
+            <button class="admin-icon-action hapus" type="button" id="ctourDeleteBtn" title="Hapus turnamen"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+        <div class="ctour-summary-grid">
+          <div class="ctour-summary-item"><i class="fa-solid fa-calendar-days"></i> <span id="ctourSummaryDate">—</span></div>
+          <div class="ctour-summary-item"><i class="fa-solid fa-trophy" style="color:#F2C14E;"></i> <span id="ctourSummaryPrize1">—</span></div>
+          <div class="ctour-summary-item"><i class="fa-solid fa-medal" style="color:#C7D1E0;"></i> <span id="ctourSummaryPrize2">—</span></div>
+          <div class="ctour-summary-item"><i class="fa-solid fa-medal" style="color:#D98B4A;"></i> <span id="ctourSummaryPrize3">—</span></div>
+        </div>
+      </div>
+
+      <!-- Placeholder — tampil kalau BELUM ada turnamen yang disimpan sama sekali -->
+      <div class="ctour-empty-state" id="ctourEmptyState" style="display:none;">
+        <i class="fa-solid fa-chess-board"></i>
+        <p>Belum ada turnamen yang dibuat.</p>
+        <button class="btn btn-primary ripple" type="button" id="ctourCreateBtn"><i class="fa-solid fa-plus"></i> Buat Turnamen Baru</button>
+      </div>
+
+      <!-- Form input — dipakai untuk membuat baru maupun mengedit turnamen
+           yang sudah ada. Tersembunyi kecuali sedang membuat/mengedit. -->
+      <div class="ctour-form" id="ctourForm" style="display:none;">
+        <div class="ctour-config-grid">
+          <div class="admin-field">
+            <label for="ctourTitle">Judul Event</label>
+            <div class="admin-input-wrap"><i class="fa-solid fa-heading"></i>
+              <input type="text" id="ctourTitle" placeholder="Turnamen Catur Kemerdekaan 17 Agustus 2026">
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="ctourStart">Tanggal &amp; Jam Mulai (WIB)</label>
+            <div class="admin-input-wrap"><i class="fa-solid fa-calendar-days"></i>
+              <input type="datetime-local" id="ctourStart">
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="ctourPrize1"><i class="fa-solid fa-trophy" style="color:#F2C14E;"></i> Hadiah Juara 1</label>
+            <div class="admin-input-wrap"><i class="fa-solid fa-gift"></i>
+              <input type="text" id="ctourPrize1" placeholder="Rp 1.000.000 + Trofi + Sertifikat">
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="ctourPrize2"><i class="fa-solid fa-medal" style="color:#C7D1E0;"></i> Hadiah Juara 2</label>
+            <div class="admin-input-wrap"><i class="fa-solid fa-gift"></i>
+              <input type="text" id="ctourPrize2" placeholder="Rp 600.000 + Sertifikat">
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="ctourPrize3"><i class="fa-solid fa-medal" style="color:#D98B4A;"></i> Hadiah Juara 3</label>
+            <div class="admin-input-wrap"><i class="fa-solid fa-gift"></i>
+              <input type="text" id="ctourPrize3" placeholder="Rp 300.000 + Sertifikat">
+            </div>
+          </div>
+          <div class="admin-field ctour-active-field">
+            <label for="ctourActive">Tampilkan Banner di Modul Catur</label>
+            <label class="switch"><input type="checkbox" id="ctourActive" checked><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="ctour-form-actions">
+          <button class="btn btn-outline-dark" type="button" id="ctourCancelBtn"><i class="fa-solid fa-xmark"></i> Batal</button>
+          <button class="btn btn-primary ripple" id="ctourSaveConfig" type="button"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan Event</button>
+        </div>
+      </div>
     </div>
 
-    <div class="admin-list" id="ctourList"><!-- diisi via JS: admin-script.js -> renderChessTourneyList() --></div>
-    <p class="empty-hint" id="ctourEmpty" style="display:none;">Belum ada pendaftar turnamen.</p>
+    <!-- ===== PANEL 2: DAFTAR PENDAFTAR ===== -->
+    <div class="ctour-panel" data-panel="pendaftar" id="ctourPanelPendaftar">
+      <div class="adash-toolbar">
+        <div class="adash-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="ctourSearch" placeholder="Cari nama atau kode unik...">
+        </div>
+        <div class="adash-filters" id="ctourFilters">
+          <button class="adash-chip active" data-cfilter="semua">Semua <span class="adash-chip-count" id="ctourCountSemua">0</span></button>
+          <button class="adash-chip" data-cfilter="pending">Menunggu <span class="adash-chip-count" id="ctourCountPending">0</span></button>
+          <button class="adash-chip" data-cfilter="approved">Diterima <span class="adash-chip-count" id="ctourCountApproved">0</span></button>
+          <button class="adash-chip" data-cfilter="rejected">Ditolak <span class="adash-chip-count" id="ctourCountRejected">0</span></button>
+        </div>
+      </div>
+
+      <div class="admin-list" id="ctourList"><!-- diisi via JS: admin-script.js -> renderCtourList() --></div>
+      <p class="empty-hint" id="ctourEmpty" style="display:none;">Belum ada pendaftar turnamen.</p>
+    </div>
   </div>
 </div>
 
