@@ -1961,6 +1961,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const estimasiBtn = document.getElementById('estimasiBtn');
   const estimasiOverlay = document.getElementById('estimasiOverlay');
   const estimasiClose = document.getElementById('estimasiClose');
+  const estTabs = document.getElementById('estTabs');
+  const estProgress = document.getElementById('estProgress');
   const estimasiStageList = document.getElementById('estimasiStageList');
   const estCurrentStage = document.getElementById('estCurrentStage');
   const estCurrentStageSave = document.getElementById('estCurrentStageSave');
@@ -1968,6 +1970,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let estimasiDataCache = null;
   let estimasiUnsub = null;
+  // Mode tampilan per kartu tahap: 'view' (ringkas, tertutup) atau 'edit'
+  // (form terbuka). Tahap yang belum pernah diisi otomatis dianggap
+  // "kosong" di mode 'view' dan menampilkan tombol "Isi Estimasi".
+  let estStageMode = { 1: 'view', 2: 'view', 3: 'view', 4: 'view' };
 
   function programStatusRef(fb){
     return fb.doc(fb.db, PROGRAM_STATUS_COLLECTION, PROGRAM_STATUS_DOC_ID);
@@ -1989,37 +1995,101 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isNaN(d.getTime())) return null;
     return d.toISOString();
   }
+  // Tampilan tanggal yang enak dibaca untuk kartu ringkasan (mode 'view').
+  function formatTanggalIndo(iso){
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    } catch (err){ return null; }
+  }
+
+  // Stepper 4 tahap di panel "Tahap Aktif" — memberi gambaran progres
+  // sekilas tanpa perlu buka panel "Detail Tahapan".
+  function renderEstProgress(currentStage){
+    if (!estProgress) return;
+    estProgress.innerHTML = [1,2,3,4].map(n => {
+      const state = n < currentStage ? 'done' : (n === currentStage ? 'current' : 'upcoming');
+      const icon = state === 'done' ? 'fa-check' : (state === 'current' ? 'fa-flag-checkered' : 'fa-lock');
+      return `
+        <div class="est-progress-step ${state}">
+          <span class="est-progress-dot"><i class="fa-solid ${icon}"></i></span>
+          <span class="est-progress-label">${n}. ${escapeHtml(STAGE_LABELS[n])}</span>
+        </div>`;
+    }).join('');
+  }
 
   function renderEstimasiForm(){
     if (!estimasiStageList) return;
     const data = estimasiDataCache || {};
     const currentStage = Math.min(4, Math.max(1, parseInt(data.currentStage, 10) || 1));
     if (estCurrentStage) estCurrentStage.value = String(currentStage);
+    renderEstProgress(currentStage);
 
     estimasiStageList.innerHTML = '';
     [1,2,3,4].forEach(n => {
       const stage = data[`stage${n}`] || {};
+      const filled = !!(stage.estimasiISO || (stage.keterangan && stage.keterangan.trim() !== ''));
+      const mode = estStageMode[n] || 'view';
+      const statusTag = n === currentStage ? 'Tahap Aktif' : (n < currentStage ? 'Sudah Selesai' : 'Belum Dimulai');
+
       const card = document.createElement('div');
       card.className = 'estimasi-stage-card' + (n === currentStage ? ' is-current-stage' : '');
-      card.innerHTML = `
+
+      const head = `
         <div class="estimasi-stage-card-head">
           <h4><span class="estimasi-stage-num">${n}</span> ${escapeHtml(STAGE_LABELS[n])}</h4>
-          <span class="estimasi-stage-tag">${n === currentStage ? 'Tahap Aktif' : (n < currentStage ? 'Sudah Selesai' : 'Belum Dimulai')}</span>
-        </div>
-        <div class="estimasi-stage-grid">
-          <div class="form-group">
-            <label for="estDate${n}">Estimasi Tanggal &amp; Jam Selesai</label>
-            <input type="datetime-local" id="estDate${n}" value="${isoToDatetimeLocalValue(stage.estimasiISO)}">
+          <span class="estimasi-stage-tag">${statusTag}</span>
+        </div>`;
+
+      if (mode === 'edit'){
+        card.innerHTML = `
+          ${head}
+          <div class="estimasi-stage-grid">
+            <div class="form-group">
+              <label for="estDate${n}">Estimasi Tanggal &amp; Jam Selesai</label>
+              <input type="datetime-local" id="estDate${n}" value="${isoToDatetimeLocalValue(stage.estimasiISO)}">
+            </div>
+            <div class="form-group">
+              <label for="estNote${n}">Keterangan untuk Peserta</label>
+              <textarea id="estNote${n}" rows="2" placeholder="Contoh: Menunggu 10 peserta lagi sebelum produksi dimulai.">${escapeHtml(stage.keterangan || '')}</textarea>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="estNote${n}">Keterangan untuk Peserta</label>
-            <textarea id="estNote${n}" rows="2" placeholder="Contoh: Menunggu 10 peserta lagi sebelum produksi dimulai.">${escapeHtml(stage.keterangan || '')}</textarea>
+          <div class="estimasi-stage-actions">
+            ${filled ? `<button class="btn btn-outline-dark" type="button" data-cancel-stage="${n}"><i class="fa-solid fa-xmark"></i> Batal</button>` : ''}
+            <button class="btn btn-primary ripple" type="button" data-save-stage="${n}"><i class="fa-solid fa-floppy-disk"></i> Simpan Tahap ${n}</button>
           </div>
-        </div>
-        <div class="estimasi-stage-actions">
-          <button class="btn btn-primary ripple" type="button" data-save-stage="${n}"><i class="fa-solid fa-floppy-disk"></i> Simpan Tahap ${n}</button>
-        </div>
-      `;
+        `;
+      } else if (filled){
+        // Sudah pernah diisi & sedang tidak diedit -> tampil ringkas/tertutup.
+        const tanggalLabel = formatTanggalIndo(stage.estimasiISO);
+        card.innerHTML = `
+          ${head}
+          <div class="estimasi-stage-summary">
+            <div class="estimasi-stage-summary-item">
+              <i class="fa-solid fa-calendar-days"></i>
+              <span>${tanggalLabel ? escapeHtml(tanggalLabel) : 'Belum ada estimasi tanggal'}</span>
+            </div>
+            ${stage.keterangan ? `<div class="estimasi-stage-summary-note"><i class="fa-solid fa-message"></i> ${escapeHtml(stage.keterangan)}</div>` : ''}
+          </div>
+          <div class="estimasi-stage-actions">
+            <button class="admin-icon-action edit" type="button" title="Edit tahap ${n}" data-edit-stage="${n}"><i class="fa-solid fa-pen"></i></button>
+          </div>
+        `;
+      } else {
+        // Belum pernah diisi sama sekali -> placeholder kosong.
+        card.innerHTML = `
+          ${head}
+          <div class="estimasi-stage-empty">
+            <i class="fa-solid fa-calendar-plus"></i>
+            <span>Belum ada estimasi tanggal / keterangan untuk tahap ini.</span>
+          </div>
+          <div class="estimasi-stage-actions">
+            <button class="btn btn-outline-dark" type="button" data-edit-stage="${n}"><i class="fa-solid fa-pen"></i> Isi Estimasi</button>
+          </div>
+        `;
+      }
       estimasiStageList.appendChild(card);
     });
   }
@@ -2051,6 +2121,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   estimasiClose?.addEventListener('click', () => estimasiOverlay?.classList.remove('active'));
   estimasiOverlay?.addEventListener('click', (e) => { if (e.target === estimasiOverlay) estimasiOverlay.classList.remove('active'); });
+
+  // Tab "Tahap Aktif" <-> "Detail Tahapan"
+  estTabs?.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-etab]');
+    if (!tab) return;
+    const target = tab.dataset.etab;
+    estTabs.querySelectorAll('.est-tab').forEach(t => {
+      const active = t === tab;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', String(active));
+    });
+    estimasiOverlay?.querySelectorAll('.est-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.epanel === target);
+    });
+  });
+
+  // Buka form 1 kartu tahap untuk diedit / diisi pertama kali
+  estimasiStageList?.addEventListener('click', (e) => {
+    const editBtn = e.target.closest('[data-edit-stage]');
+    if (editBtn){
+      const n = parseInt(editBtn.dataset.editStage, 10);
+      estStageMode[n] = 'edit';
+      renderEstimasiForm();
+      return;
+    }
+    const cancelBtn = e.target.closest('[data-cancel-stage]');
+    if (cancelBtn){
+      const n = parseInt(cancelBtn.dataset.cancelStage, 10);
+      estStageMode[n] = 'view';
+      renderEstimasiForm();
+    }
+  });
 
   // Simpan 1 kartu tahap (estimasi tanggal/jam + keterangan) — event delegation
   // supaya tetap berfungsi walau kartu di-render ulang oleh listener realtime.
@@ -2084,6 +2186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
       }, { merge: true });
       await logAdminAction('edit', `Estimasi: ${estimasiISO ? new Date(estimasiISO).toLocaleString('id-ID') : 'kosong'} • Keterangan: ${keterangan || '-'}`, `Tahap ${n} — ${STAGE_LABELS[n]}`);
+      estStageMode[n] = 'view';
       showToast(`Estimasi tahap "${STAGE_LABELS[n]}" berhasil disimpan.`, 'success');
     } catch (err){
       console.warn('Gagal menyimpan estimasi tahap:', err.code, err.message);

@@ -485,7 +485,7 @@
      tinggal menggeser tanggal & menambahkan keterangan di sini. -->
 <!-- ===================================================== -->
 <div class="admin-overlay" id="estimasiOverlay">
-  <div class="admin-box history-box">
+  <div class="admin-box history-box estimasi-box">
     <button class="admin-close" id="estimasiClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
     <h3 class="addpeserta-title"><i class="fa-solid fa-hourglass-half"></i> Estimasi &amp; Progres Tahapan</h3>
     <p class="addpeserta-desc">
@@ -495,25 +495,45 @@
       Perubahan langsung tampil real-time ke semua pengunjung situs.
     </p>
 
-    <div class="estimasi-stage-select">
-      <label for="estCurrentStage"><i class="fa-solid fa-flag-checkered"></i> Tahap Aktif Saat Ini</label>
-      <div class="estimasi-stage-select-row">
-        <select id="estCurrentStage">
-          <option value="1">1 — Pendaftaran</option>
-          <option value="2">2 — Target Terkumpul</option>
-          <option value="3">3 — Produksi Massal</option>
-          <option value="4">4 — Distribusi</option>
-        </select>
-        <button class="btn btn-primary ripple" id="estCurrentStageSave" type="button"><i class="fa-solid fa-flag-checkered"></i> Update Tahap Aktif</button>
-      </div>
-      <small class="total-fee-note">Menaikkan tahap berarti tahap sebelumnya dianggap SELESAI dan tampil bertanda centang di situs publik.</small>
-    </div>
-
-    <div class="estimasi-stage-list" id="estimasiStageList">
-      <!-- 4 kartu tahap dirender oleh JS: admin-script.js -> renderEstimasiForm() -->
+    <!-- Tab: Tahap Aktif / Detail Tahapan — memisahkan kontrol tahap aktif
+         dari daftar 4 kartu tahap supaya lebih rapi & tidak jadi satu
+         scroll panjang (pola sama seperti menu Turnamen Catur). -->
+    <div class="est-tabs" id="estTabs" role="tablist">
+      <button class="est-tab active" type="button" data-etab="aktif" role="tab" aria-selected="true">
+        <i class="fa-solid fa-flag-checkered"></i> Tahap Aktif
+      </button>
+      <button class="est-tab" type="button" data-etab="detail" role="tab" aria-selected="false">
+        <i class="fa-solid fa-list-check"></i> Detail Tahapan
+      </button>
     </div>
 
     <small class="admin-error" id="estimasiError"></small>
+
+    <!-- ===== PANEL 1: TAHAP AKTIF ===== -->
+    <div class="est-panel active" data-epanel="aktif" id="estPanelAktif">
+      <div class="est-progress" id="estProgress"><!-- stepper 4 tahap dirender oleh JS --></div>
+
+      <div class="estimasi-stage-select">
+        <label for="estCurrentStage"><i class="fa-solid fa-flag-checkered"></i> Tahap Aktif Saat Ini</label>
+        <div class="estimasi-stage-select-row">
+          <select id="estCurrentStage">
+            <option value="1">1 — Pendaftaran</option>
+            <option value="2">2 — Target Terkumpul</option>
+            <option value="3">3 — Produksi Massal</option>
+            <option value="4">4 — Distribusi</option>
+          </select>
+          <button class="btn btn-primary ripple" id="estCurrentStageSave" type="button"><i class="fa-solid fa-flag-checkered"></i> Update Tahap Aktif</button>
+        </div>
+        <small class="total-fee-note">Menaikkan tahap berarti tahap sebelumnya dianggap SELESAI dan tampil bertanda centang di situs publik.</small>
+      </div>
+    </div>
+
+    <!-- ===== PANEL 2: DETAIL TAHAPAN ===== -->
+    <div class="est-panel" data-epanel="detail" id="estPanelDetail">
+      <div class="estimasi-stage-list" id="estimasiStageList">
+        <!-- 4 kartu tahap dirender oleh JS: admin-script.js -> renderEstimasiForm() -->
+      </div>
+    </div>
   </div>
 </div>
 
