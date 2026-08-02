@@ -148,6 +148,7 @@
             <button class="adash-icon-btn" id="adminExportPdfBtn" type="button" title="Unduh Daftar Peserta (PDF) — rapi, tajam & siap dibagikan"><i class="fa-solid fa-file-pdf"></i></button>
             <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
             <button class="adash-icon-btn" id="estimasiBtn" type="button" title="Kelola estimasi & progres tahapan"><i class="fa-solid fa-hourglass-half"></i></button>
+            <button class="adash-icon-btn" id="formPendaftaranBtn" type="button" title="Formulir Pendaftaran — daftarkan peserta baru"><i class="fa-solid fa-user-plus"></i></button>
             <button class="adash-icon-btn chess-tourney-btn" id="chessTourneyBtn" type="button" title="Turnamen Catur 17 Agustus 2026"><i class="fa-solid fa-chess-knight"></i></button>
           </div>
           <div class="adash-btn-divider" aria-hidden="true"></div>
@@ -220,6 +221,15 @@
             <span class="adi-text">
               <span class="adi-title">Estimasi &amp; Progres</span>
               <span class="adi-desc">Atur tahap aktif program &amp; estimasi waktu tiap tahap</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="formPendaftaranBtn">
+            <span class="adi-icon adi-blue"><i class="fa-solid fa-user-plus"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Formulir Pendaftaran</span>
+              <span class="adi-desc">Daftarkan peserta baru secara manual, langsung tersimpan</span>
             </span>
             <i class="fa-solid fa-chevron-right adi-chevron"></i>
           </button>
@@ -421,6 +431,137 @@
       <div class="admin-login-actions">
         <button class="btn btn-outline-dark" id="addPesertaCancelBtn" type="button">Batal</button>
         <button class="btn btn-primary ripple" id="addPesertaSubmitBtn" type="submit"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ADMIN: FORMULIR PENDAFTARAN
+     Dipindahkan dari situs publik ke sini. Panitia mengisi ini untuk
+     mendaftarkan peserta baru secara manual (mis. hasil chat WhatsApp).
+     Menyimpan langsung ke koleksi Firestore "pendaftaran" — begitu
+     tersimpan, peserta otomatis muncul di daftar Peserta di bawah
+     (real-time, tanpa perlu refresh) persis seperti pendaftaran lama
+     lewat situs publik. -->
+<!-- ===================================================== -->
+<div class="admin-overlay" id="formPendaftaranOverlay">
+  <div class="admin-box addpeserta-box">
+    <button class="admin-close" id="formPendaftaranClose" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+
+    <h3 class="addpeserta-title"><i class="fa-solid fa-user-plus"></i> Formulir Pendaftaran</h3>
+    <p class="addpeserta-desc">Daftarkan peserta baru secara manual. Kode Unik dibuatkan otomatis begitu disimpan, dan langsung muncul di daftar Peserta di bawah.</p>
+
+    <form id="formPendaftaranForm" class="addpeserta-form" novalidate>
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label for="fpNama">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="fpNama" placeholder="Contoh: Muhammad Daud" required minlength="3">
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="fpNamaBordir">Nama Yang Akan Dibordir <span class="req">*</span></label>
+          <input type="text" id="fpNamaBordir" placeholder="Contoh: M DAUD S.M" required minlength="3">
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="fpWhatsapp">Nomor WhatsApp (opsional)</label>
+          <input type="tel" id="fpWhatsapp" inputmode="numeric" placeholder="Contoh: 0812xxxxxxxx">
+        </div>
+
+        <div class="form-group">
+          <label for="fpDepartemen">Departemen <span class="req">*</span></label>
+          <select id="fpDepartemen" required>
+            <option value="">Pilih Departemen</option>
+            <option value="Distribusi">Distribusi</option>
+            <option value="Gudang">Gudang</option>
+            <option value="Sales & Marketing">Sales & Marketing</option>
+            <option value="Driver / Ekspedisi">Driver / Ekspedisi</option>
+            <option value="Administrasi">Administrasi</option>
+            <option value="Keuangan">Keuangan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="fpGender">Jenis Kelamin <span class="req">*</span></label>
+          <select id="fpGender" required>
+            <option value="">Pilih Jenis Kelamin</option>
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="fpUkuran">Ukuran Kemeja <span class="req">*</span></label>
+          <select id="fpUkuran" required>
+            <option value="">Pilih Ukuran</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+            <option value="XXXL">XXXL</option>
+          </select>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="fpJumlah">Jumlah Pesanan <span class="req">*</span></label>
+          <input type="number" id="fpJumlah" min="1" value="1" required>
+          <small class="error-msg"></small>
+        </div>
+
+        <div class="form-group full">
+          <label>Jenis Kemeja <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="fpJenis" value="pendek" data-harga="155000" checked>
+              <span><i class="fa-solid fa-shirt"></i> Lengan Pendek <b>Rp155.000</b></span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="fpJenis" value="panjang" data-harga="160000">
+              <span><i class="fa-solid fa-shirt"></i> Lengan Panjang <b>Rp160.000</b></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Metode Pembayaran <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="fpMetode" value="tunai" checked>
+              <span><i class="fa-solid fa-money-bill-wave"></i> Tunai / Lunas</span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="fpMetode" value="cicilan">
+              <span><i class="fa-solid fa-coins"></i> 2x Cicilan</span>
+            </label>
+          </div>
+          <small class="total-fee-note" id="fpMetodeNote"></small>
+        </div>
+
+        <div class="form-group">
+          <label>Total Harga</label>
+          <div id="fpTotalHarga" class="total-harga">Rp155.000</div>
+        </div>
+
+        <div class="form-group full">
+          <label for="fpCatatan">Catatan</label>
+          <textarea id="fpCatatan" rows="2"></textarea>
+        </div>
+      </div>
+
+      <small class="admin-error" id="formPendaftaranError"></small>
+
+      <div class="admin-login-actions">
+        <button class="btn btn-outline-dark" id="formPendaftaranCancelBtn" type="button">Batal</button>
+        <button class="btn btn-primary ripple" id="formPendaftaranSubmitBtn" type="submit"><i class="fa-solid fa-floppy-disk"></i> Simpan Pendaftaran</button>
       </div>
     </form>
   </div>

@@ -340,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const AKSI_ICON = {
     hapus: { cls:'aksi-hapus', icon:'fa-trash' },
     edit: { cls:'aksi-edit', icon:'fa-pen' },
+    tambah: { cls:'aksi-edit', icon:'fa-user-plus' },
     status: { cls:'aksi-status', icon:'fa-coins' },
     chat: { cls:'aksi-chat', icon:'fa-comment-slash' },
     login: { cls:'aksi-status', icon:'fa-right-to-bracket' }
@@ -1929,6 +1930,134 @@ document.addEventListener('DOMContentLoaded', () => {
       closeAddPesertaModal();
     } else {
       addPesertaError.textContent = 'Gagal menyimpan — lihat notifikasi di atas untuk detail.';
+    }
+  });
+
+  /* =========================================================
+     19b. ADMIN — FORMULIR PENDAFTARAN (PESERTA BARU)
+     -------------------------------------------------
+     Dipindahkan dari situs publik: dulu pengunjung mengisi sendiri
+     lewat form di halaman utama, sekarang panitia yang menginput
+     manual (mis. hasil chat WhatsApp) lewat menu ini. Kode Unik
+     dibuat otomatis dengan format & cara yang SAMA PERSIS dengan
+     yang dulu dipakai formulir publik (LP-YYYYMMDD-RAND), supaya
+     peserta tetap bisa pakai kode itu untuk login & cek status di
+     situs publik seperti biasa. Data tersimpan ke koleksi Firestore
+     yang sama ("pendaftaran"), jadi begitu disimpan peserta langsung
+     muncul real-time di daftar Peserta di bawah tanpa perlu refresh.
+  ========================================================= */
+  const formPendaftaranBtn = document.getElementById('formPendaftaranBtn');
+  const formPendaftaranOverlay = document.getElementById('formPendaftaranOverlay');
+  const formPendaftaranClose = document.getElementById('formPendaftaranClose');
+  const formPendaftaranCancelBtn = document.getElementById('formPendaftaranCancelBtn');
+  const formPendaftaranForm = document.getElementById('formPendaftaranForm');
+  const formPendaftaranError = document.getElementById('formPendaftaranError');
+  const formPendaftaranSubmitBtn = document.getElementById('formPendaftaranSubmitBtn');
+  const fpJumlahInput = document.getElementById('fpJumlah');
+  const fpJenisRadios = document.querySelectorAll('input[name="fpJenis"]');
+  const fpMetodeRadios = document.querySelectorAll('input[name="fpMetode"]');
+  const fpTotalHargaEl = document.getElementById('fpTotalHarga');
+  const fpMetodeNoteEl = document.getElementById('fpMetodeNote');
+
+  function hitungTotalFormPendaftaran(){
+    const checked = document.querySelector('input[name="fpJenis"]:checked');
+    const harga = checked ? parseInt(checked.dataset.harga, 10) : 0;
+    const jumlah = parseInt(fpJumlahInput?.value, 10) || 0;
+    const subtotal = harga * jumlah;
+    const metode = document.querySelector('input[name="fpMetode"]:checked')?.value || 'tunai';
+    const isCicilan = metode === 'cicilan';
+    const biayaAdmin = isCicilan ? ADMIN_FEE_CICILAN : 0;
+    const total = subtotal + biayaAdmin;
+
+    if (fpTotalHargaEl) fpTotalHargaEl.textContent = formatRupiah(total);
+    if (fpMetodeNoteEl){
+      fpMetodeNoteEl.innerHTML = isCicilan
+        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
+    }
+    return { harga, jumlah, subtotal, metode, biayaAdmin, total };
+  }
+  fpJenisRadios.forEach(r => r.addEventListener('change', hitungTotalFormPendaftaran));
+  fpJumlahInput?.addEventListener('input', hitungTotalFormPendaftaran);
+  fpMetodeRadios.forEach(r => r.addEventListener('change', hitungTotalFormPendaftaran));
+
+  function generateKodeUnikBaru(){
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const datePart = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+    const rand = Math.floor(1000 + Math.random() * 9000);
+    return `LP-${datePart}-${rand}`;
+  }
+
+  function openFormPendaftaranModal(){
+    formPendaftaranForm?.reset();
+    if (formPendaftaranError) formPendaftaranError.textContent = '';
+    if (fpJumlahInput) fpJumlahInput.value = 1;
+    hitungTotalFormPendaftaran();
+    formPendaftaranOverlay?.classList.add('active');
+  }
+  function closeFormPendaftaranModal(){
+    formPendaftaranOverlay?.classList.remove('active');
+  }
+  formPendaftaranBtn?.addEventListener('click', openFormPendaftaranModal);
+  formPendaftaranClose?.addEventListener('click', closeFormPendaftaranModal);
+  formPendaftaranCancelBtn?.addEventListener('click', closeFormPendaftaranModal);
+  formPendaftaranOverlay?.addEventListener('click', (e) => { if (e.target === formPendaftaranOverlay) closeFormPendaftaranModal(); });
+
+  formPendaftaranForm?.addEventListener('submit', async function(e){
+    e.preventDefault();
+    if (formPendaftaranError) formPendaftaranError.textContent = '';
+
+    const nama = document.getElementById('fpNama').value.trim();
+    const namaBordir = document.getElementById('fpNamaBordir').value.trim();
+    const whatsappRaw = document.getElementById('fpWhatsapp').value.trim();
+    const departemenSelect = document.getElementById('fpDepartemen');
+    const departemen = departemenSelect?.value
+      ? (departemenSelect.options[departemenSelect.selectedIndex]?.text || departemenSelect.value)
+      : '';
+    const gender = document.getElementById('fpGender').value;
+    const ukuranKemeja = document.getElementById('fpUkuran').value;
+    const catatan = document.getElementById('fpCatatan').value.trim();
+    const jenisChecked = document.querySelector('input[name="fpJenis"]:checked');
+    const jenis = jenisChecked?.value === 'panjang' ? 'Lengan Panjang' : 'Lengan Pendek';
+    const { jumlah, subtotal, metode, biayaAdmin, total } = hitungTotalFormPendaftaran();
+
+    if (!nama || nama.length < 3 || !namaBordir || namaBordir.length < 3 || !departemen || !gender || !ukuranKemeja || !jumlah || jumlah < 1){
+      formPendaftaranError.textContent = 'Mohon lengkapi semua kolom wajib (bertanda *) dengan benar.';
+      return;
+    }
+
+    formPendaftaranSubmitBtn.disabled = true;
+    formPendaftaranSubmitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+      const fb = await waitForFirebase(8000);
+      if (!fb) throw new Error('Firebase belum tersambung, coba lagi sebentar.');
+
+      const kodeUnik = generateKodeUnikBaru();
+      const payload = {
+        kodeUnik,
+        nama, namaBordir,
+        whatsapp: whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '',
+        departemen, gender, ukuranKemeja, jenis, jumlah,
+        subtotal, total,
+        catatan: catatan || '-',
+        createdAtLabel: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
+        timestamp: fb.serverTimestamp(),
+        pembayaran: buildPembayaranAwal(subtotal, metode, biayaAdmin)
+      };
+
+      await fb.addDoc(fb.collection(fb.db, fb.FIRESTORE_COLLECTION), payload);
+      await logAdminAction('tambah', `Pendaftaran baru diinput manual oleh panitia lewat menu Formulir Pendaftaran. Total ${formatRupiah(total)}.`, `${nama} (${kodeUnik})`);
+
+      showToast(`Pendaftaran ${nama} tersimpan! Kode Unik: ${kodeUnik}`, 'success');
+      closeFormPendaftaranModal();
+    } catch (err){
+      console.error('Gagal simpan Formulir Pendaftaran:', err);
+      formPendaftaranError.textContent = 'Gagal menyimpan — cek koneksi lalu coba lagi.';
+    } finally {
+      formPendaftaranSubmitBtn.disabled = false;
+      formPendaftaranSubmitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Pendaftaran';
     }
   });
 
