@@ -879,10 +879,28 @@
       <span class="eyebrow">Formulir</span>
 
       <h2>Pendaftaran Kemeja Kerja</h2>
-      <p class="section-desc">Lengkapi seluruh data dengan benar. Semua kolom wajib diisi.</p>
+      <p class="section-desc">Pendaftaran kini dikelola langsung oleh panitia. Hubungi salah satu penanggung jawab program di bawah ini untuk mendaftar.</p>
     </div>
 
-    <form id="regForm" class="reg-form fade-up" novalidate>
+    <div class="reg-form fade-up daftar-hubungi-card">
+      <div class="daftar-hubungi-icon"><i class="fa-solid fa-comments"></i></div>
+      <h3>Hubungi Panitia Jika Ingin Mendaftar</h3>
+      <p>Sampaikan nama lengkap, nama untuk bordir, departemen, jenis kelamin, ukuran &amp; jenis kemeja, jumlah pesanan, serta metode pembayaran pilihan Anda ke salah satu WhatsApp panitia berikut. Panitia akan membantu proses pendaftaran dan pembayaran Anda.</p>
+      <div class="daftar-hubungi-actions">
+        <a href="https://wa.me/6285697321423" target="_blank" rel="noopener" class="btn btn-primary btn-submit ripple">
+          <i class="fa-brands fa-whatsapp"></i> M Daud S.M — +62 856-9732-1423
+        </a>
+        <a href="https://wa.me/6283151144948" target="_blank" rel="noopener" class="btn btn-outline ripple">
+          <i class="fa-brands fa-whatsapp"></i> Kamil M — +62 831-5114-4948
+        </a>
+      </div>
+    </div>
+
+    <!-- Form asli disembunyikan (tidak dihapus) agar seluruh fungsi JavaScript
+         terkait (hitung total harga, struk, sinkronisasi Firestore, dll di
+         script.js) tetap berjalan tanpa error. Formulir ini sekarang hanya
+         dipakai lewat dashboard admin > menu "Formulir Pendaftaran". -->
+    <form id="regForm" class="reg-form fade-up" novalidate style="display:none;" aria-hidden="true">
 
       <div class="form-grid">
 
@@ -1186,107 +1204,6 @@
           produksi massal dimulai, perubahan data tidak dapat dilakukan lagi.</p>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================== -->
-<!-- LOKASI -->
-<!-- ===================================================== -->
-<section id="lokasi" class="section lokasi-section">
-  <div class="container">
-    <div class="lokasi-grid">
-
-      <div class="lokasi-info fade-up">
-        <span class="eyebrow"><i class="fa-solid fa-location-dot"></i> Lokasi Perusahaan</span>
-        <h2>Kunjungi Kantor &amp; Gudang Kami</h2>
-        <p class="section-desc lokasi-desc">
-          PT. LOKON PRIMA, distributor resmi Air Kemasan AQUA. Datang langsung atau
-          buka navigasi dari perangkat Anda untuk rute tercepat.
-        </p>
-
-        <ul class="lokasi-detail-list">
-          <li>
-            <span class="lokasi-detail-ico"><i class="fa-solid fa-building"></i></span>
-            <div>
-              <strong>PT. LOKON PRIMA</strong>
-              <span>Kantor &amp; gudang distribusi Air Kemasan AQUA</span>
-            </div>
-          </li>
-          <li>
-            <span class="lokasi-detail-ico"><i class="fa-regular fa-clock"></i></span>
-            <div>
-              <strong>Jam Operasional</strong>
-              <span>Senin – Sabtu, 08.00 – 17.00 WIB</span>
-            </div>
-          </li>
-          <li>
-            <span class="lokasi-detail-ico"><i class="fa-brands fa-whatsapp"></i></span>
-            <div>
-              <strong>Penanggung Jawab: M Daud S.M</strong>
-              <span>+62 856-9732-1423</span>
-            </div>
-          </li>
-          <li>
-            <span class="lokasi-detail-ico"><i class="fa-brands fa-whatsapp"></i></span>
-            <div>
-              <strong>Penanggung Jawab: Kamil M</strong>
-              <span>+62 831-5114-4948</span>
-            </div>
-          </li>
-        </ul>
-
-        <div class="lokasi-actions">
-          <a href="https://maps.app.goo.gl/xYbSSKz2L3DRwqnt9?g_st=ac" target="_blank" rel="noopener" class="btn btn-primary ripple">
-            <i class="fa-solid fa-location-arrow"></i> Buka di Google Maps
-          </a>
-          <a href="https://wa.me/6285697321423" target="_blank" rel="noopener" class="btn btn-outline ripple">
-            <i class="fa-brands fa-whatsapp"></i> Hubungi Kami
-          </a>
-        </div>
-      </div>
-
-      <div class="map-card-frame fade-up">
-        <div class="map-live-badge"><span class="map-live-dot"></span> Lokasi Real-Time</div>
-
-        <a href="https://maps.app.goo.gl/xYbSSKz2L3DRwqnt9?g_st=ac"
-           target="_blank"
-           rel="noopener"
-           class="map-card"
-           aria-label="Buka lokasi PT. LOKON PRIMA di Google Maps">
-
-          <div class="map-glow"></div>
-
-          <iframe
-              src="https://www.google.com/maps?q=PT%20LOKON%20PRIMA&output=embed"
-              loading="lazy"
-              title="Peta lokasi PT. LOKON PRIMA"
-              allowfullscreen>
-          </iframe>
-
-          <div class="map-corners" aria-hidden="true">
-            <span class="map-corner tl"></span>
-            <span class="map-corner tr"></span>
-            <span class="map-corner bl"></span>
-            <span class="map-corner br"></span>
-          </div>
-
-          <div class="map-overlay">
-            <div class="map-button">
-              <i class="fa-solid fa-location-arrow"></i>
-              Buka di Google Maps
-            </div>
-          </div>
-
-          <div class="map-radar" aria-hidden="true">
-            <span class="radar-ring"></span>
-            <span class="radar-ring"></span>
-            <span class="radar-ring"></span>
-            <span class="radar-dot"></span>
-          </div>
-        </a>
-      </div>
-
     </div>
   </div>
 </section>

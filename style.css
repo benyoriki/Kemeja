@@ -762,6 +762,25 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 [data-theme="dark"] .reg-form{ background:var(--white); }
 
+/* ============ KARTU "HUBUNGI PANITIA" (pengganti formulir publik) ============ */
+.daftar-hubungi-card{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:16px; }
+
+.daftar-hubungi-icon{
+  width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--gradient-brand); color:#fff; font-size:28px; box-shadow:var(--shadow-strong);
+}
+
+.daftar-hubungi-card h3{ font-size:1.4rem; margin:0; font-family:var(--font-display); color:var(--ink); }
+
+.daftar-hubungi-card p{ color:var(--ink-soft); max-width:640px; margin:0 auto; }
+
+.daftar-hubungi-actions{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:8px; }
+
+@media (max-width:576px){
+  .daftar-hubungi-actions{ flex-direction:column; width:100%; }
+  .daftar-hubungi-actions .btn{ width:100%; justify-content:center; }
+}
+
 .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
 
 .form-group{ display:flex; flex-direction:column; gap:8px; }
