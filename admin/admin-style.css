@@ -190,7 +190,8 @@ button{ cursor:pointer; border:none; background:none; }
 .admin-overlay#addPesertaOverlay,
 .admin-overlay#adminHistoryOverlay,
 .admin-overlay#estimasiOverlay,
-.admin-overlay#chessTourneyOverlay{
+.admin-overlay#chessTourneyOverlay,
+.admin-overlay#formPendaftaranOverlay{
   position:fixed; inset:0; opacity:0; visibility:hidden; pointer-events:none;
   backdrop-filter:blur(6px); background:rgba(4,10,20,.72);
   transition:opacity .3s ease, visibility .3s ease; padding:20px;
@@ -199,27 +200,28 @@ button{ cursor:pointer; border:none; background:none; }
 .admin-overlay#addPesertaOverlay.active,
 .admin-overlay#adminHistoryOverlay.active,
 .admin-overlay#estimasiOverlay.active,
-.admin-overlay#chessTourneyOverlay.active{
+.admin-overlay#chessTourneyOverlay.active,
+.admin-overlay#formPendaftaranOverlay.active{
   opacity:1; visibility:visible; pointer-events:auto;
 }
-#addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{
+#addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box, #formPendaftaranOverlay .admin-box{
   transform:translateY(14px) scale(.97); opacity:0;
   transition:transform .38s cubic-bezier(.2,.8,.3,1), opacity .3s ease;
   max-height:88vh; overflow-y:auto;
   background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-xl);
   padding:32px 28px; box-shadow:var(--shadow-strong);
 }
-#addPesertaOverlay.active .admin-box, #adminHistoryOverlay.active .admin-box, #estimasiOverlay.active .admin-box, #chessTourneyOverlay.active .admin-box{
+#addPesertaOverlay.active .admin-box, #adminHistoryOverlay.active .admin-box, #estimasiOverlay.active .admin-box, #chessTourneyOverlay.active .admin-box, #formPendaftaranOverlay.active .admin-box{
   transform:translateY(0) scale(1); opacity:1;
 }
 @media (prefers-reduced-motion: reduce){
-  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box, #formPendaftaranOverlay .admin-box{ transition:opacity .2s ease; transform:none; }
 }
 .history-box{ max-width:640px; }
 @media (min-width:1300px){ .admin-overlay{ padding-top:40px; } }
 @media (max-width:640px){
   .admin-overlay{ padding:14px 14px 32px; }
-  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box, #formPendaftaranOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
 }
 
 /* Atmosfer latar halus di dalam kartu modal — grid tipis + aurora sangat lambat */
