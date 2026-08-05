@@ -221,7 +221,7 @@ button{ cursor:pointer; border:none; background:none; }
 @media (min-width:1300px){ .admin-overlay{ padding-top:40px; } }
 @media (max-width:640px){
   .admin-overlay{ padding:14px 14px 32px; }
-  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box, #formPendaftaranOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
+  #addPesertaOverlay .admin-box, #adminHistoryOverlay .admin-box, #estimasiOverlay .admin-box, #chessTourneyOverlay .admin-box{ padding:24px 18px; border-radius:var(--radius-lg); }
 }
 
 /* Atmosfer latar halus di dalam kartu modal — grid tipis + aurora sangat lambat */

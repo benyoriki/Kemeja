@@ -60,7 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ============ HELPER UMUM (sama seperti situs publik) ============ */
-  const ADMIN_FEE_CICILAN = 5000;
+  // REVISI: biaya admin cicilan dihapus, Tunai/Lunas dan 2x Cicilan
+  // sekarang sama-sama tanpa biaya tambahan apapun.
+  const ADMIN_FEE_CICILAN = 0;
 
   function formatRupiah(angka){
     return 'Rp' + angka.toLocaleString('id-ID');
@@ -1669,7 +1671,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (apTotalHargaEl) apTotalHargaEl.textContent = formatRupiah(total);
     if (apMetodeNoteEl){
       apMetodeNoteEl.innerHTML = isCicilan
-        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        ? `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (2x Cicilan, tidak ada biaya tambahan)`
         : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
     }
     return { harga, jumlah, subtotal, metode, biayaAdmin, total };
@@ -1972,7 +1974,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (fpTotalHargaEl) fpTotalHargaEl.textContent = formatRupiah(total);
     if (fpMetodeNoteEl){
       fpMetodeNoteEl.innerHTML = isCicilan
-        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        ? `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (2x Cicilan, tidak ada biaya tambahan)`
         : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
     }
     return { harga, jumlah, subtotal, metode, biayaAdmin, total };
