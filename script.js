@@ -332,11 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const requiredFields = form.querySelectorAll('[required]');
 
   // Biaya admin khusus untuk metode "Bayar 2x (Cicilan)". Metode
-  // "Tunai/Lunas Langsung" TIDAK dikenakan biaya tambahan apapun.
-  // Diletakkan sebagai satu konstanta supaya perhitungan total harga,
-  // struk JPG, pesan WhatsApp, dan data yang tersimpan ke Firestore
-  // selalu konsisten memakai angka yang sama.
-  const ADMIN_FEE_CICILAN = 5000;
+  // REVISI: biaya admin cicilan DIHAPUS — sekarang Tunai/Lunas dan 2x
+  // Cicilan sama-sama TIDAK dikenakan biaya tambahan apapun. Harga akhir
+  // selalu = harga kemeja normal (Lengan Pendek Rp155.000 / Lengan
+  // Panjang Rp160.000) dikali jumlah pesanan, apapun metode bayarnya.
+  const ADMIN_FEE_CICILAN = 0;
 
   function formatRupiah(angka){
     return 'Rp' + angka.toLocaleString('id-ID');
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     totalHargaEl.textContent = formatRupiah(total);
     if (totalFeeNoteEl){
       totalFeeNoteEl.innerHTML = isCicilan
-        ? `Termasuk Subtotal Kemeja ${formatRupiah(subtotal)} + Biaya Admin Cicilan <b>${formatRupiah(biayaAdmin)}</b>`
+        ? `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (2x Cicilan, tidak ada biaya tambahan)`
         : `Subtotal Kemeja ${formatRupiah(subtotal)} — <b>Tanpa Biaya Admin</b> (Tunai/Lunas)`;
     }
     return { harga, jumlah, subtotal, biayaAdmin, total };
@@ -810,7 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvasEl = document.getElementById('strukCanvas');
     const isCicilan = data.metodeBayar === 'cicilan';
     const subtotalProduk = (data.subtotal !== undefined && data.subtotal !== null) ? data.subtotal : data.harga * data.jumlah;
-    const biayaAdminStruk = isCicilan ? (data.biayaAdmin || 5000) : 0;
+    const biayaAdminStruk = isCicilan ? (data.biayaAdmin || 0) : 0;
 
     // Data dikelompokkan jadi 2 bagian supaya lebih mudah dipindai mata,
     // bukan satu daftar panjang tak berujung seperti sebelumnya.
@@ -822,7 +822,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     if (isCicilan){
       pesananRows.push(['Subtotal Kemeja', formatRupiah(subtotalProduk)]);
-      pesananRows.push(['Biaya Admin Cicilan', '+ ' + formatRupiah(biayaAdminStruk)]);
+      if (biayaAdminStruk > 0){
+        pesananRows.push(['Biaya Admin Cicilan', '+ ' + formatRupiah(biayaAdminStruk)]);
+      }
     }
     const sections = [
       { title: 'DATA PESERTA', rows: [
@@ -1310,8 +1312,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function openWhatsApp(data){
     const isCicilan = data.metodeBayar === 'cicilan';
     const subtotalProduk = (data.subtotal !== undefined && data.subtotal !== null) ? data.subtotal : data.harga * data.jumlah;
-    const biayaAdminWa = isCicilan ? (data.biayaAdmin || 5000) : 0;
-    const rincianBiaya = isCicilan
+    const biayaAdminWa = isCicilan ? (data.biayaAdmin || 0) : 0;
+    const rincianBiaya = (isCicilan && biayaAdminWa > 0)
       ? `Subtotal Kemeja : ${formatRupiah(subtotalProduk)}\nBiaya Admin Cicilan : ${formatRupiah(biayaAdminWa)}\n`
       : '';
     const pesan =
@@ -1328,7 +1330,7 @@ Jenis : ${data.jenis}
 Jumlah : ${data.jumlah}
 Harga : ${formatRupiah(data.harga)}
 ${rincianBiaya}Total : ${formatRupiah(data.total)}
-Metode Bayar : ${isCicilan ? '2x Cicilan (DP 50% Kemeja + Rp5.000 Admin, lalu Pelunasan 50%)' : 'Tunai / Lunas Langsung (Tanpa Biaya Admin)'}
+Metode Bayar : ${isCicilan ? '2x Cicilan (DP 50% Kemeja, lalu Pelunasan 50%, tanpa biaya tambahan)' : 'Tunai / Lunas Langsung (Tanpa Biaya Admin)'}
 Catatan : ${data.catatan}
 --------------------------------
 Transfer ke : BCA 0830142452 a.n. KAMIL MUHAMAD NUR
@@ -2206,7 +2208,7 @@ Mohon konfirmasi & input ke Dasbor Admin ya. Bukti transfer menyusul di chat ini
         return {
           nominal: dpMinimal,
           label: 'Pembayaran Awal (DP) — Tahap 1/2',
-          note: `DP 50% harga kemeja + Rp5.000 biaya admin, dari total pesanan ${formatRupiah(total)}. Sisa pelunasan ${formatRupiah(sisaPelunasan)} dibayar belakangan saat kemeja siap diambil.`
+          note: `DP 50% harga kemeja (tanpa biaya tambahan), dari total pesanan ${formatRupiah(total)}. Sisa pelunasan ${formatRupiah(sisaPelunasan)} dibayar belakangan saat kemeja siap diambil.`
         };
       }
       // status === 'dp' -> tinggal pelunasan tahap ke-2

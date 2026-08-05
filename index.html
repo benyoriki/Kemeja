@@ -60,7 +60,7 @@
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
 <!-- Stylesheet: style.min.css = fungsi sistem/layout (minified), particles.min.css = efek visual/partikel (minified) -->
-<link rel="stylesheet" href="style.min.css?v=24">
+<link rel="stylesheet" href="style.min.css?v=25">
 <link rel="stylesheet" href="particles.min.css?v=7">
 </head>
 <body>
@@ -993,17 +993,17 @@
             <label class="radio-card payment-card">
               <input type="radio" name="metodeBayar" value="cicilan">
               <span><i class="fa-solid fa-coins"></i> Bayar 2x (Cicilan)</span>
-              <div class="fee-tag fee-tag-paid"><i class="fa-solid fa-plus"></i> Rp5.000 Biaya Admin</div>
+              <div class="fee-tag fee-tag-free"><i class="fa-solid fa-circle-check"></i> Tanpa Biaya Admin</div>
             </label>
           </div>
           <small class="hint-msg payment-explainer">
             <i class="fa-solid fa-circle-info"></i>
-            <b>Tunai/Lunas</b>: bayar sekaligus, <b>tidak ada biaya tambahan apapun</b>. <b>2x Cicilan</b>: bayar bertahap, dikenakan <b>biaya admin Rp5.000</b> (satu kali saja, bukan per cicilan) untuk pencatatan &amp; pengelolaan tagihan cicilan Anda.
+            <b>Tunai/Lunas</b>: bayar sekaligus. <b>2x Cicilan</b>: bayar bertahap. Kedua metode <b>sama-sama tidak dikenakan biaya tambahan apapun</b>.
           </small>
         </div>
 
         <div class="form-group full" id="cicilanOptionWrap" style="display:none;">
-          <small class="hint-msg cicilan-detail-hint"><i class="fa-solid fa-circle-info"></i> Rincian cicilan: Pembayaran ke-1 (uang muka) minimal <b>50% dari harga kemeja</b> ditambah <b>Rp5.000 biaya admin</b> dibayar di awal, lalu Pembayaran ke-2 (pelunasan sisa 50% harga kemeja, tanpa biaya tambahan) dibayar saat kemeja siap diambil/diantar.</small>
+          <small class="hint-msg cicilan-detail-hint"><i class="fa-solid fa-circle-info"></i> Rincian cicilan: Pembayaran ke-1 (uang muka) minimal <b>50% dari harga kemeja</b> dibayar di awal, lalu Pembayaran ke-2 (pelunasan sisa 50% harga kemeja) dibayar saat kemeja siap diambil/diantar. Tidak ada biaya tambahan apapun.</small>
         </div>
 
         <div class="form-group full checkbox-group">
@@ -1559,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.min.js?v=29" defer></script>
+<script src="script.min.js?v=30" defer></script>
 <script src="particles.min.js?v=6" defer></script>
 </body>
 </html>
