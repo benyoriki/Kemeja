@@ -149,6 +149,7 @@
             <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
             <button class="adash-icon-btn" id="estimasiBtn" type="button" title="Kelola estimasi & progres tahapan"><i class="fa-solid fa-hourglass-half"></i></button>
             <button class="adash-icon-btn" id="formPendaftaranBtn" type="button" title="Formulir Pendaftaran — daftarkan peserta baru"><i class="fa-solid fa-user-plus"></i></button>
+            <button class="adash-icon-btn" id="fixOldFeeBtn" type="button" title="Perbaiki data lama — hapus sisa biaya admin Rp5.000 dari pendaftaran cicilan sebelum revisi"><i class="fa-solid fa-broom"></i></button>
             <button class="adash-icon-btn chess-tourney-btn" id="chessTourneyBtn" type="button" title="Turnamen Catur 17 Agustus 2026"><i class="fa-solid fa-chess-knight"></i></button>
           </div>
           <div class="adash-btn-divider" aria-hidden="true"></div>
@@ -230,6 +231,15 @@
             <span class="adi-text">
               <span class="adi-title">Formulir Pendaftaran</span>
               <span class="adi-desc">Daftarkan peserta baru secara manual, langsung tersimpan</span>
+            </span>
+            <i class="fa-solid fa-chevron-right adi-chevron"></i>
+          </button>
+
+          <button class="adash-drawer-item" type="button" data-target="fixOldFeeBtn">
+            <span class="adi-icon adi-amber"><i class="fa-solid fa-broom"></i></span>
+            <span class="adi-text">
+              <span class="adi-title">Perbaiki Biaya Admin Lama</span>
+              <span class="adi-desc">Hapus sisa biaya admin Rp5.000 dari pendaftaran cicilan sebelum revisi</span>
             </span>
             <i class="fa-solid fa-chevron-right adi-chevron"></i>
           </button>
@@ -869,7 +879,7 @@
 })();
 </script>
 
-<script src="admin-script.js?v=6"></script>
+<script src="admin-script.js?v=7"></script>
 
 <!-- Efek visual layar login (partikel jaringan tipis, ikon radar,
      tilt magnetik tombol). Berdiri sendiri, tidak menyentuh logika

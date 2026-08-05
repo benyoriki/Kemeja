@@ -2064,6 +2064,89 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* =========================================================
+     19c. ADMIN — PERBAIKI BIAYA ADMIN LAMA (Rp5.000)
+     -------------------------------------------------
+     Sebelum revisi, metode 2x Cicilan dikenakan biaya admin
+     tambahan Rp5.000 yang sudah "kebaked" ke field `total` &
+     `pembayaran.dpMinimal`/`biayaAdmin` di Firestore untuk
+     pendaftaran yang dibuat sebelum revisi ini. Menghapus biaya
+     itu di kode saja TIDAK mengubah data yang SUDAH tersimpan —
+     makanya peserta lama tetap terlihat kena Rp5.000 di kartu
+     mereka. Tombol ini mencari semua peserta metode "cicilan"
+     yang `pembayaran.biayaAdmin` > 0, lalu:
+       - total pesanan dikurangi persis sebesar biaya admin lama
+       - sisa tagihan cicilan ke-2 (yang BELUM dibayar) dikurangi
+         sebesar itu juga, supaya jumlah yang masih harus dibayar
+         peserta otomatis berkurang Rp5.000
+       - kalau ternyata jumlah yang sudah dibayar peserta sekarang
+         sudah menutupi total baru, status otomatis naik jadi Lunas
+       - jumlah yang SUDAH dibayar peserta (totalDibayar) TIDAK
+         diubah/dikembalikan — ini murni koreksi biaya admin, bukan
+         refund.
+  ========================================================= */
+  const fixOldFeeBtn = document.getElementById('fixOldFeeBtn');
+
+  fixOldFeeBtn?.addEventListener('click', async () => {
+    const target = (pesertaData || []).filter(p =>
+      p.pembayaran?.metode === 'cicilan' && (p.pembayaran?.biayaAdmin || 0) > 0
+    );
+
+    if (target.length === 0){
+      showToast('Tidak ada data lama yang masih kena biaya admin — semua sudah bersih.', 'success');
+      return;
+    }
+
+    const confirmed = await showAdminConfirm({
+      title: 'Perbaiki Biaya Admin Lama?',
+      messageHtml: `Ditemukan <b>${target.length} peserta</b> (metode 2x Cicilan) yang masih tercatat dengan biaya admin Rp5.000 dari sistem sebelum revisi. Total pesanan &amp; sisa tagihan mereka akan dikurangi persis sebesar biaya admin itu (uang yang SUDAH mereka bayar tidak berubah). Lanjutkan?`,
+      confirmLabel: 'Ya, Perbaiki Sekarang'
+    });
+    if (!confirmed) return;
+
+    const fb = await waitForFirebase(10000);
+    if (!fb){
+      showToast('Gagal: Firebase belum tersambung. Coba tombol refresh dulu.', 'error');
+      return;
+    }
+
+    let sukses = 0, gagal = 0;
+    for (const p of target){
+      try {
+        const oldFee = p.pembayaran.biayaAdmin || 0;
+        const oldTotal = p.total || 0;
+        const newTotal = Math.max(oldTotal - oldFee, 0);
+        const totalDibayar = p.pembayaran.totalDibayar || 0;
+
+        const pembayaranBaru = JSON.parse(JSON.stringify(p.pembayaran));
+        pembayaranBaru.biayaAdmin = 0;
+        pembayaranBaru.cicilan = (pembayaranBaru.cicilan || []).map(c =>
+          c.dibayar ? c : { ...c, nominal: Math.max((c.nominal || 0) - oldFee, 0) }
+        );
+
+        if (totalDibayar >= newTotal){
+          pembayaranBaru.status = 'lunas';
+          pembayaranBaru.totalDibayar = newTotal;
+          const tgl = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+          pembayaranBaru.cicilan = pembayaranBaru.cicilan.map(c => ({ ...c, dibayar:true, tanggalBayar: c.tanggalBayar || tgl }));
+        }
+
+        await fb.updateDoc(fb.doc(fb.db, fb.FIRESTORE_COLLECTION, p.id), {
+          total: newTotal,
+          pembayaran: pembayaranBaru,
+          adminEditedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date()
+        });
+        await logAdminAction('edit', `Biaya admin cicilan lama (${formatRupiah(oldFee)}) dihapus otomatis. Total: ${formatRupiah(oldTotal)} → ${formatRupiah(newTotal)}.`, `${p.nama || '-'} (${p.kodeUnik || '-'})`);
+        sukses++;
+      } catch (err){
+        console.error('Gagal perbaiki biaya admin lama untuk', p.id, err);
+        gagal++;
+      }
+    }
+
+    showToast(`Selesai! ${sukses} data diperbaiki${gagal ? `, ${gagal} gagal (coba lagi)` : ''}.`, gagal ? 'error' : 'success');
+  });
+
+  /* =========================================================
      20. ADMIN — ESTIMASI & PROGRES TAHAPAN PROSES
      -------------------------------------------------
      Mengelola dokumen Firestore "program_status/estimasi":
