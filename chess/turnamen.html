@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Turnamen Catur HUT RI ke-81 — Lokon Prima Parung</title>
+<title>♟ Turnamen Catur Kemerdekaan — HUT RI ke-81 | Lokon Prima Parung</title>
+<meta name="description" content="Turnamen Catur HUT RI ke-81 di Lokon Prima Parung. Pantau room pertandingan, bagan gugur, dan daftar peserta secara real-time — langsung dari lapangan!">
 <link rel="icon" href="../favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,7 +77,7 @@
   @keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
 
   /* ---------- Hero ---------- */
-  .hero{padding:48px 0 32px; text-align:center; position:relative; overflow:hidden; border-radius:0 0 28px 28px;}
+  .hero{padding:56px 0 40px; text-align:center; position:relative; overflow:hidden; border-radius:0 0 32px 32px; background:linear-gradient(180deg, rgba(230,0,38,.05), transparent 70%);}
   .hero::before{
     content:'🦅'; position:absolute; top:-40px; left:50%; transform:translateX(-50%); font-size:min(60vw,420px);
     opacity:.05; filter:grayscale(1) brightness(.4); z-index:0; pointer-events:none; line-height:1;
@@ -89,11 +90,13 @@
   .hero > *{position:relative; z-index:1;}
   .hero-eyebrow{display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--merah-tua); background:var(--putih); border:1.5px solid var(--merah); padding:6px 14px; border-radius:999px; margin-bottom:18px; box-shadow:0 3px 10px rgba(230,0,38,.1);}
   .hero-eyebrow i.dot{width:6px; height:6px; border-radius:50%; background:var(--hijau-live); box-shadow:0 0 0 3px rgba(29,166,90,.2);}
-  .hero-title{font-family:var(--font-display); font-weight:400; font-size:clamp(26px,5vw,46px); letter-spacing:.01em; color:var(--teks); text-transform:uppercase; line-height:1.1;}
+  .hero-title{font-family:var(--font-display); font-weight:400; font-size:clamp(30px,6vw,54px); letter-spacing:.01em; color:var(--teks); text-transform:uppercase; line-height:1.08;}
   .hero-title em{font-style:normal; color:var(--merah); -webkit-text-stroke:1px var(--emas-gelap);}
-  .hero-sub{max-width:560px; margin:14px auto 26px; color:var(--teks-muted); font-size:14.5px; line-height:1.6;}
+  .hero-sub{max-width:580px; margin:16px auto 28px; color:var(--teks-muted); font-size:15.5px; line-height:1.65;}
   .hero-cta{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:32px;}
-  .btn{font-family:var(--font-body); font-weight:700; font-size:14px; cursor:pointer; padding:13px 26px; border-radius:12px; border:none; letter-spacing:.01em; display:inline-flex; align-items:center; gap:8px; transition:.18s;}
+  .btn{font-family:var(--font-body); font-weight:700; font-size:14px; cursor:pointer; padding:13px 26px; border-radius:12px; border:none; letter-spacing:.01em; display:inline-flex; align-items:center; gap:8px; transition:.18s cubic-bezier(.2,.8,.2,1);}
+  .btn:hover{filter:brightness(1.03);}
+  .btn:active{transform:translateY(0) scale(.98) !important;}
   .btn-primary{background:linear-gradient(135deg, var(--merah-terang), var(--merah-tua)); color:#fff; box-shadow:0 6px 20px rgba(230,0,38,.3);}
   .btn-primary:hover{transform:translateY(-2px); box-shadow:0 10px 26px rgba(230,0,38,.42);}
   .btn-ghost{background:var(--putih); color:var(--merah-tua); border:1.5px solid var(--merah);}
@@ -103,13 +106,14 @@
   .btn-sm{padding:8px 14px; font-size:12px; border-radius:9px;}
   .btn:disabled{opacity:.4; cursor:not-allowed; transform:none !important;}
 
-  .countdown{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
-  .cd-cell{background:var(--putih); border:1.5px solid var(--merah); border-radius:14px; padding:14px 18px; min-width:74px; text-align:center; box-shadow:var(--shadow-merah); transition:.2s;}
+  .countdown{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+  .cd-cell{background:var(--putih); border:1.5px solid var(--merah); border-radius:16px; padding:16px 20px; min-width:80px; text-align:center; box-shadow:var(--shadow-merah); transition:.2s;}
   .cd-cell:hover{transform:translateY(-3px); box-shadow:0 14px 28px rgba(230,0,38,.2);}
-  .cd-cell b{display:block; font-family:var(--font-mono); font-size:26px; color:var(--merah);}
+  .cd-cell b{display:block; font-family:var(--font-mono); font-size:28px; color:var(--merah); font-weight:700;}
   .cd-cell span{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--teks-muted);}
-  .prize-row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:26px;}
-  .prize-chip{background:var(--putih); border:1px solid var(--emas-gelap); border-radius:12px; padding:10px 16px; font-size:12.5px; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-emas);}
+  .prize-row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:28px;}
+  .prize-chip{background:var(--putih); border:1px solid var(--emas-gelap); border-radius:12px; padding:11px 18px; font-size:13px; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-emas); transition:.2s;}
+  .prize-chip:hover{transform:translateY(-2px); box-shadow:0 12px 24px rgba(201,152,18,.28);}
   .prize-chip b{color:var(--emas-gelap); font-family:var(--font-mono);}
 
   /* ---------- My status callout ---------- */
@@ -121,8 +125,8 @@
 
   /* ---------- Section headers ---------- */
   .sec-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:6px 0 20px; flex-wrap:wrap;}
-  .sec-head h2{font-family:var(--font-display); font-weight:400; font-size:24px; text-transform:uppercase; letter-spacing:.01em; color:var(--merah-tua);}
-  .sec-head p{color:var(--teks-muted); font-size:13px; margin-top:4px;}
+  .sec-head h2{font-family:var(--font-display); font-weight:400; font-size:26px; text-transform:uppercase; letter-spacing:.01em; color:var(--merah-tua);}
+  .sec-head p{color:var(--teks-muted); font-size:13.5px; margin-top:5px; max-width:480px;}
   .pill{font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:999px; background:rgba(29,166,90,.1); color:var(--hijau-live); border:1px solid rgba(29,166,90,.35); display:inline-flex; align-items:center; gap:6px;}
   .pill.muted{background:var(--putih-lembut); color:var(--teks-muted); border-color:var(--abu);}
   .pill i.dot{width:6px; height:6px; border-radius:50%; background:var(--hijau-live); animation:pulse 1.6s infinite;}
@@ -131,8 +135,9 @@
 
   /* ---------- Room grid ---------- */
   .room-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:16px;}
-  .room-card{background:var(--putih); border:1px solid var(--abu); border-radius:16px; padding:16px; cursor:pointer; transition:.2s; position:relative; overflow:hidden; box-shadow:0 4px 14px rgba(36,16,18,.05);}
-  .room-card:hover{border-color:var(--merah); transform:translateY(-4px); box-shadow:0 16px 30px rgba(230,0,38,.14);}
+  .room-card{background:var(--putih); border:1px solid var(--abu); border-radius:16px; padding:16px; cursor:pointer; transition:.22s cubic-bezier(.2,.8,.2,1); position:relative; overflow:hidden; box-shadow:0 4px 14px rgba(36,16,18,.05);}
+  .room-card:hover{border-color:var(--merah); transform:translateY(-5px) scale(1.01); box-shadow:0 18px 34px rgba(230,0,38,.16);}
+  .room-card:active{transform:translateY(-2px) scale(1);}
   .room-card::before{content:''; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg, var(--merah), var(--emas));}
   .room-card.mine{border-color:var(--emas-gelap); box-shadow:0 0 0 1.5px var(--emas), 0 10px 24px rgba(255,213,74,.22);}
   .room-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
@@ -298,14 +303,16 @@
   <div class="ticker-track">
     <span>🇮🇩 MERDEKA! MERDEKA! MERDEKA!</span>
     <span>🎉 SEMARAK PESTA RAKYAT HUT RI KE-81</span>
+    <span>♟ SATU LANGKAH LAGI MENUJU JUARA</span>
     <span>🎊 17 AGUSTUS 2026 — DIRGAHAYU REPUBLIK INDONESIA</span>
-    <span>♟ TURNAMEN CATUR KEMERDEKAAN</span>
-    <span>🏆 AYO IKUT MERIAHKAN LOMBA!</span>
+    <span>🔥 PANTAU PERTANDINGAN LANGSUNG DI SINI</span>
+    <span>🏆 SIAPA JAGO CATUR LOKON PRIMA PARUNG?</span>
     <span>🇮🇩 MERDEKA! MERDEKA! MERDEKA!</span>
     <span>🎉 SEMARAK PESTA RAKYAT HUT RI KE-81</span>
+    <span>♟ SATU LANGKAH LAGI MENUJU JUARA</span>
     <span>🎊 17 AGUSTUS 2026 — DIRGAHAYU REPUBLIK INDONESIA</span>
-    <span>♟ TURNAMEN CATUR KEMERDEKAAN</span>
-    <span>🏆 AYO IKUT MERIAHKAN LOMBA!</span>
+    <span>🔥 PANTAU PERTANDINGAN LANGSUNG DI SINI</span>
+    <span>🏆 SIAPA JAGO CATUR LOKON PRIMA PARUNG?</span>
   </div>
 </div>
 
@@ -319,8 +326,8 @@
       </div>
     </a>
     <nav class="tabs" id="tabs">
-      <button data-target="rooms" class="active">🏆 Room Pertandingan</button>
-      <button data-target="bagan">🥊 Bagan Turnamen</button>
+      <button data-target="rooms" class="active">♟️ Pertandingan Live</button>
+      <button data-target="bagan">🥊 Bagan Juara</button>
       <button data-target="peserta">👥 Peserta</button>
     </nav>
     <button class="hamburger" id="hamburgerBtn" aria-label="Buka menu" aria-expanded="false" aria-controls="tabs">
@@ -354,9 +361,10 @@
       <i style="left:95%; background:var(--merah-tua); animation-duration:3.7s; animation-delay:1.8s;"></i>
     </div>
     <div style="font-size:11px; font-weight:700; letter-spacing:.15em; color:var(--emas-gelap); text-transform:uppercase; margin-bottom:10px;">🎉 Dirgahayu Republik Indonesia · HUT RI ke-81 · 17 Agustus 2026 🎉</div>
-    <div class="hero-eyebrow"><i class="dot"></i> <span id="heroStatusLabel">Memuat data turnamen…</span></div>
+    <div class="hero-eyebrow"><i class="dot"></i> <span id="heroStatusLabel">Menyiapkan papan catur…</span></div>
     <div class="hero-title" id="heroTitle">Turnamen Catur <em>Kemerdekaan</em></div>
-    <p class="hero-sub" id="heroSub">Menghubungkan ke Firestore untuk data peserta &amp; bagan pertandingan asli…</p>
+    <p class="hero-sub" id="heroSub">Warga Lokon Mandiri Parung, saatnya unjuk strategi! Ikuti setiap langkah, skakmat, dan kejutan fial atau jadi gugur —.</p>
+    <div style="font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--teks-muted); margin-bottom:10px;">⏳ Hitung mundur menuju hari pertandingan</div>
     <div class="countdown" id="countdown">
       <div class="cd-cell"><b id="cd-d">00</b><span>Hari</span></div>
       <div class="cd-cell"><b id="cd-h">00</b><span>Jam</span></div>
@@ -375,7 +383,7 @@
   <!-- ROOMS -->
   <section id="rooms" class="active">
     <div class="sec-head">
-      <div><h2 id="roomsHeading">Room Pertandingan</h2><p id="roomsSub">Setiap room = satu papan, satu pasangan pemain pada babak berjalan.</p></div>
+      <div><h2 id="roomsHeading">Pertandingan Berlangsung</h2><p id="roomsSub">Setiap room adalah satu papan dan satu duel — geser layar dan saksikan langkah demi langkah secara langsung.</p></div>
       <span class="pill" id="roomsPill"><i class="dot"></i> Live</span>
     </div>
     <div class="room-grid" id="roomGrid"></div>
@@ -384,22 +392,22 @@
   <!-- BAGAN -->
   <section id="bagan">
     <div class="sec-head">
-      <div><h2>Bagan Turnamen</h2><p>Sistem gugur — kalah satu kali langsung tersingkir, pemenang tiap room maju ke babak berikutnya.</p></div>
+      <div><h2>Jalan Menuju Juara</h2><p>Format gugur tunggal — sekali kalah, langsung tersingkir. Ikuti jalur setiap pemain dari babak awal sampai final!</p></div>
     </div>
-    <div id="baganWrap"><div class="empty-note">Bagan belum dibuat oleh admin.</div></div>
+    <div id="baganWrap"><div class="empty-note">🏗️ Bagan sedang disiapkan wasit — pantau terus, akan tampil begitu peserta dikocok!</div></div>
   </section>
 
   <!-- PESERTA -->
   <section id="peserta">
     <div class="sec-head">
-      <div><h2>Peserta Terdaftar</h2><p>Data asli dari pendaftaran turnamen — status disetujui admin lewat Dasbor Admin.</p></div>
-      <span class="pill muted" id="pesertaCountPill">0 disetujui</span>
+      <div><h2>Para Kesatria Catur</h2><p>Inilah warga yang sudah resmi terdaftar dan siap bertanding memperebutkan gelar juara.</p></div>
+      <span class="pill muted" id="pesertaCountPill">0 peserta siap bertanding</span>
     </div>
     <div class="peserta-grid" id="pesertaGrid"></div>
   </section>
 </main>
 
-<footer>🇮🇩 Dirgahayu Republik Indonesia ke-81 — Dasbor Turnamen Catur data real-time dari Firestore (<b>chess_tournament_agustus17</b>, <b>chess_tournament_config</b>, <b>chess_tournament_bracket</b>). Papan dirender ringan (CSS/Unicode, tanpa engine 3D) supaya lancar di HP maupun PC.</footer>
+<footer>🇮🇩 <b>Dirgahayu Republik Indonesia ke-81</b> — Dasbor turnamen ini menampilkan data pertandingan asli secara langsung, diperbarui detik itu juga, dan dirancang ringan agar tetap lancar dibuka dari HP maupun laptop.<br>Selamat bertanding, dan semoga yang terbaik membawa pulang piala! ♟🏆</footer>
 
 <!-- Modal room / spectate / play -->
 <div class="modal-bg" id="modalBg">
@@ -429,12 +437,12 @@
 <!-- Admin drawer -->
 <div class="drawer-bg" id="drawerBg"></div>
 <div class="drawer" id="adminDrawer">
-  <h3>Panel Admin Turnamen</h3>
+  <h3>Panel Wasit &amp; Panitia</h3>
   <div id="drawerPinGate">
     <label>Masukkan PIN Admin</label>
-    <input type="password" id="pinInput" placeholder="PIN admin">
-    <button class="btn btn-primary btn-sm" style="margin-top:10px; width:100%;" id="pinSubmitBtn">Masuk</button>
-    <p style="font-size:11px; color:rgba(251,239,217,.5); margin-top:10px;">PIN diatur lewat dokumen <code>chess_tournament_config</code> (field <code>adminPin</code>).</p>
+    <input type="password" id="pinInput" placeholder="Contoh: 1234">
+    <button class="btn btn-primary btn-sm" style="margin-top:10px; width:100%;" id="pinSubmitBtn">Masuk sebagai Wasit</button>
+    <p style="font-size:11px; color:var(--teks-muted); margin-top:10px;">Khusus panitia turnamen. Hubungi penyelenggara jika Anda belum memiliki PIN.</p>
   </div>
   <div id="drawerAdminBody" style="display:none;">
     <div class="pill" style="margin-bottom:14px;"><i class="dot"></i> Mode admin aktif</div>
@@ -452,13 +460,13 @@
     <button class="btn btn-ghost btn-sm" style="margin-top:10px; width:100%;" id="cfgSaveBtn"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan</button>
 
     <div style="margin-top:22px; padding-top:16px; border-top:1px dashed rgba(242,183,5,.25);">
-      <p style="font-size:12px; color:rgba(251,239,217,.6); margin-bottom:8px;" id="bracketStatusTxt">Bagan belum dibuat.</p>
+      <p style="font-size:12px; color:var(--teks-muted); margin-bottom:8px;" id="bracketStatusTxt">Bagan belum dibuat.</p>
       <button class="btn btn-primary btn-sm" style="width:100%;" id="genBracketBtn"><i class="fa-solid fa-shuffle"></i> Kocok Peserta &amp; Buat Bagan</button>
       <button class="btn btn-danger btn-sm" style="width:100%; margin-top:8px;" id="resetBracketBtn"><i class="fa-solid fa-trash"></i> Reset Turnamen</button>
     </div>
 
     <div style="margin-top:22px; padding-top:16px; border-top:1px dashed rgba(242,183,5,.25);">
-      <p style="font-size:12px; color:rgba(251,239,217,.6); margin-bottom:10px;">Room babak berjalan</p>
+      <p style="font-size:12px; color:var(--teks-muted); margin-bottom:10px;">Room babak berjalan</p>
       <div id="adminMatchList"></div>
     </div>
   </div>
@@ -544,7 +552,7 @@ function listenConfig(){
 function applyConfigToDom(){
   document.getElementById('brandTitle').textContent = config.title.split(' ').slice(0,3).join(' ');
   document.getElementById('heroTitle').innerHTML = escapeHtml(config.title).replace(/(\S+)$/, '<em>$1</em>');
-  document.getElementById('heroSub').textContent = 'Semua data di bawah ini diambil langsung dari Firestore — peserta, bagan, dan room pertandingan sungguhan, bukan simulasi.';
+  document.getElementById('heroSub').textContent = 'Warga Lokon Mandiri Parung, saatnya unjuk strategi! Ikuti setiap langkah, skakmat, dan kejutan final atau gugur —.';
   document.getElementById('prize1').textContent = config.prize1;
   document.getElementById('prize2').textContent = config.prize2;
   document.getElementById('prize3').textContent = config.prize3;
@@ -571,10 +579,10 @@ function startCountdown(){
     document.getElementById('cd-m').textContent = String(m).padStart(2,'0');
     document.getElementById('cd-s').textContent = String(s).padStart(2,'0');
     const label = document.getElementById('heroStatusLabel');
-    if(bracket && bracket.status === 'finished') label.textContent = 'Turnamen selesai — juara sudah ditentukan 🏆';
-    else if(bracket && bracket.status === 'ongoing') label.textContent = 'Turnamen sedang berlangsung! 🔥';
-    else if(diff <= 0) label.textContent = 'Hari-H tiba — menunggu bagan dimulai admin';
-    else label.textContent = 'Menuju hari-H…';
+    if(bracket && bracket.status === 'finished') label.textContent = 'Turnamen usai — juara sudah dinobatkan 🏆';
+    else if(bracket && bracket.status === 'ongoing') label.textContent = 'Sedang berlangsung sekarang — jangan lewatkan! 🔥';
+    else if(diff <= 0) label.textContent = 'Hari-H telah tiba — bagan segera dimulai oleh wasit';
+    else label.textContent = 'Hitung mundur menuju hari pertandingan…';
   };
   tick();
   countdownTimer = setInterval(tick, 1000);
@@ -594,9 +602,9 @@ function listenApproved(){
 
 function renderPeserta(){
   const grid = document.getElementById('pesertaGrid');
-  document.getElementById('pesertaCountPill').textContent = approved.length + ' disetujui';
+  document.getElementById('pesertaCountPill').textContent = approved.length + ' peserta siap bertanding';
   if(approved.length === 0){
-    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Belum ada peserta yang disetujui admin.</div>';
+    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">👋 Belum ada peserta yang disetujui. Segera daftarkan diri dan jadilah yang pertama tampil di sini!</div>';
     return;
   }
   grid.innerHTML = approved.map((p,i) => `
@@ -708,7 +716,7 @@ function buildInitialBracket(participants){
 function renderBagan(){
   const wrap = document.getElementById('baganWrap');
   if(!bracket || !bracket.rounds || !bracket.rounds.length){
-    wrap.innerHTML = '<div class="empty-note">Bagan belum dibuat oleh admin. Setelah admin mengocok peserta, bagan lengkap akan tampil di sini secara real-time.</div>';
+    wrap.innerHTML = '<div class="empty-note">🏗️ Bagan belum dikocok wasit. Begitu peserta diundi, jalur menuju juara akan langsung tampil di sini secara real-time.</div>';
     return;
   }
   const roundsHtml = bracket.rounds.map((round, r) => `
@@ -771,20 +779,20 @@ function renderRooms(){
   const sub = document.getElementById('roomsSub');
 
   if(!bracket || !bracket.rounds || !bracket.rounds.length){
-    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Belum ada room — menunggu admin membuat bagan turnamen.</div>';
+    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">⏳ Room pertandingan belum dibuka — bagan sedang disiapkan. Kembali lagi sebentar lagi, ya!</div>';
     pill.innerHTML = '<i class="dot"></i> Menunggu';
     return;
   }
   const r = currentRoundIndex();
   const round = bracket.rounds[r];
-  heading.textContent = 'Room Pertandingan — ' + round.name;
-  sub.textContent = round.matches.length + ' room pada babak ini, berjalan paralel.';
+  heading.textContent = round.name + ' — Sedang Berjalan';
+  sub.textContent = round.matches.length + ' room bertanding paralel di babak ini. Klik salah satu untuk menonton langsung.';
   const anyLive = round.matches.some(m => m.status === 'live');
   pill.innerHTML = anyLive ? '<i class="dot"></i> Live sekarang' : '<i class="dot" style="animation:none;"></i> Menunggu dimulai';
 
   const realMatches = round.matches.filter(m => m.playerA || m.playerB);
   if(!realMatches.length){
-    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Room babak ini belum terisi.</div>';
+    grid.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">⏳ Room babak ini belum terisi pemain.</div>';
     return;
   }
   grid.innerHTML = '';
@@ -1033,8 +1041,8 @@ document.getElementById('modalResignBtn').addEventListener('click', async () => 
       if(info.finished){ data.champion = info.champion; data.runnerUp = info.runnerUp; data.status = 'finished'; }
       tx.set(ref, data);
     });
-    toast('Anda menyerah dari pertandingan.');
-  }catch(err){ console.error(err); toast('Gagal memproses menyerah.'); }
+    toast('Anda menyerah dari pertandingan. Semangat untuk turnamen berikutnya!');
+  }catch(err){ console.error(err); toast('Gagal memproses menyerah, coba lagi ya.'); }
 });
 
 /* Auto-detect timeout, checked while any modal open or room grid rendered */
@@ -1088,9 +1096,9 @@ document.getElementById('pinSubmitBtn').addEventListener('click', () => {
     document.getElementById('drawerAdminBody').style.display = 'block';
     renderAdminMatchList();
     if(currentModal) refreshModal();
-    toast('Mode admin aktif.');
+    toast('Mode admin aktif — selamat bertugas, wasit!');
   }else{
-    toast('PIN salah.');
+    toast('PIN salah, coba periksa lagi.');
   }
 });
 if(sessionStorage.getItem('tourneyAdmin') === '1'){
@@ -1112,8 +1120,8 @@ document.getElementById('cfgSaveBtn').addEventListener('click', async () => {
   };
   try{
     await fns.setDoc(fns.doc(db, COL_TOURNEY_CONFIG, TOURNEY_ID), payload, { merge:true });
-    toast('Pengaturan turnamen disimpan.');
-  }catch(err){ console.error(err); toast('Gagal menyimpan pengaturan.'); }
+    toast('Pengaturan turnamen berhasil disimpan.');
+  }catch(err){ console.error(err); toast('Gagal menyimpan pengaturan, coba lagi ya.'); }
 });
 
 function renderAdminGenerateState(){
@@ -1133,23 +1141,23 @@ document.getElementById('genBracketBtn').addEventListener('click', async () => {
   const data = buildInitialBracket(approved);
   try{
     await fns.setDoc(fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID), data);
-    toast('Bagan turnamen berhasil dibuat!');
-  }catch(err){ console.error(err); toast('Gagal membuat bagan.'); }
+    toast('Bagan turnamen berhasil dibuat — semoga sukses semua peserta! 🏆');
+  }catch(err){ console.error(err); toast('Gagal membuat bagan, coba lagi ya.'); }
 });
 
 document.getElementById('resetBracketBtn').addEventListener('click', async () => {
   if(!confirm('Reset seluruh bagan & room turnamen? Semua progres akan hilang.')) return;
   try{
     await fns.deleteDoc(fns.doc(db, COL_TOURNEY_BRACKET, TOURNEY_ID));
-    toast('Turnamen direset.');
-  }catch(err){ console.error(err); toast('Gagal reset.'); }
+    toast('Turnamen telah direset.');
+  }catch(err){ console.error(err); toast('Gagal mereset turnamen, coba lagi ya.'); }
 });
 
 function renderAdminMatchList(){
   const wrap = document.getElementById('adminMatchList');
   if(!wrap) return;
   if(!isAdmin) return;
-  if(!bracket || !bracket.rounds){ wrap.innerHTML = '<div class="empty-note">Belum ada bagan.</div>'; return; }
+  if(!bracket || !bracket.rounds){ wrap.innerHTML = '<div class="empty-note">Bagan belum dibuat.</div>'; return; }
   const r = currentRoundIndex();
   const round = bracket.rounds[r];
   wrap.innerHTML = round.matches.filter(m=>m.playerA||m.playerB).map(m => {
@@ -1193,8 +1201,8 @@ async function handleAdminMatchAction(act, r, i){
       }
       tx.set(ref, data);
     });
-    toast('Berhasil diperbarui.');
-  }catch(err){ console.error(err); toast('Gagal memperbarui room.'); }
+    toast('Room berhasil diperbarui.');
+  }catch(err){ console.error(err); toast('Gagal memperbarui room, coba lagi ya.'); }
 }
 
 function renderModalAdmin(m){
