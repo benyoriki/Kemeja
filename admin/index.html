@@ -142,17 +142,23 @@
           </div>
         </div>
         <div class="adash-header-right">
+          <!-- Grup 1: data & laporan -->
           <div class="adash-btn-group">
             <button class="adash-icon-btn" id="adminRefreshBtn" type="button" title="Segarkan data"><i class="fa-solid fa-rotate"></i></button>
             <button class="adash-icon-btn" id="adminExportBtn" type="button" title="Export ke CSV"><i class="fa-solid fa-file-arrow-down"></i></button>
             <button class="adash-icon-btn" id="adminExportPdfBtn" type="button" title="Unduh Daftar Peserta (PDF) — rapi, tajam & siap dibagikan"><i class="fa-solid fa-file-pdf"></i></button>
             <button class="adash-icon-btn" id="adminHistoryBtn" type="button" title="Riwayat aktivitas admin"><i class="fa-solid fa-clock-rotate-left"></i></button>
+          </div>
+          <div class="adash-btn-divider" aria-hidden="true"></div>
+          <!-- Grup 2: kelola program & peserta (formulir pendaftaran ditonjolkan sebagai aksi utama) -->
+          <div class="adash-btn-group">
             <button class="adash-icon-btn" id="estimasiBtn" type="button" title="Kelola estimasi & progres tahapan"><i class="fa-solid fa-hourglass-half"></i></button>
-            <button class="adash-icon-btn" id="formPendaftaranBtn" type="button" title="Formulir Pendaftaran — daftarkan peserta baru"><i class="fa-solid fa-user-plus"></i></button>
-            <button class="adash-icon-btn" id="fixOldFeeBtn" type="button" title="Perbaiki data lama — hapus sisa biaya admin Rp5.000 dari pendaftaran cicilan sebelum revisi"><i class="fa-solid fa-broom"></i></button>
+            <button class="adash-icon-btn adash-icon-btn-accent" id="formPendaftaranBtn" type="button" title="Formulir Pendaftaran — daftarkan peserta baru"><i class="fa-solid fa-user-plus"></i></button>
+            <button class="adash-icon-btn adash-icon-btn-muted" id="fixOldFeeBtn" type="button" title="Perbaiki data lama — hapus sisa biaya admin Rp5.000 dari pendaftaran cicilan sebelum revisi"><i class="fa-solid fa-broom"></i></button>
             <button class="adash-icon-btn chess-tourney-btn" id="chessTourneyBtn" type="button" title="Turnamen Catur 17 Agustus 2026"><i class="fa-solid fa-chess-knight"></i></button>
           </div>
           <div class="adash-btn-divider" aria-hidden="true"></div>
+          <!-- Grup 3: aksi sensitif & sesi -->
           <div class="adash-btn-group">
             <button class="adash-danger-btn" id="adminResetChatBtn" type="button" title="Hapus semua pesan di grup chat peserta"><i class="fa-solid fa-comment-slash"></i><span>Reset Chat</span></button>
             <button class="adash-logout-btn" id="adminLogoutBtn" type="button" title="Keluar dari dasbor admin"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
