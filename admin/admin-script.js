@@ -219,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminRefreshBtn = document.getElementById('adminRefreshBtn');
   const adminExportBtn = document.getElementById('adminExportBtn');
   const adminExportPdfBtn = document.getElementById('adminExportPdfBtn');
+  const adiPdfDesc = document.getElementById('adiPdfDesc');
   const adminSearchInput = document.getElementById('adminSearch');
   const adminFiltersWrap = document.getElementById('adminFilters');
   const adashClock = document.getElementById('adashClock');
@@ -255,6 +256,33 @@ document.addEventListener('DOMContentLoaded', () => {
   let adminUnlocked = false;
   let captchaAnswer = null;
   let adminFilter = 'semua';
+
+  // Label yang sama dipakai untuk: teks bantuan di menu "Unduh Daftar (PDF)",
+  // pesan konfirmasi, nama file, dan toast sukses/error — supaya konsisten
+  // di semua tempat begitu admin mengganti chip filter di dasbor.
+  const PDF_FILTER_LABELS = {
+    semua: 'Semua Peserta',
+    belum_dp: 'Menunggu DP (Belum Bayar)',
+    dp: 'DP Terbayar',
+    cicilan: 'Cicilan 2x',
+    lunas: 'Lunas'
+  };
+  const PDF_FILTER_SLUGS = {
+    semua: '', belum_dp: 'belum-bayar', dp: 'dp', cicilan: 'cicilan', lunas: 'lunas'
+  };
+  function updatePdfFilterHint(){
+    const isFiltered = adminFilter !== 'semua';
+    if (adiPdfDesc){
+      adiPdfDesc.textContent = isFiltered
+        ? `Mengikuti filter aktif di dasbor: "${PDF_FILTER_LABELS[adminFilter]}" — tap chip "Semua" dulu untuk unduh semua peserta`
+        : 'Dokumen PDF rapi & tajam, tidak buram walau data banyak';
+    }
+    if (adminExportPdfBtn){
+      adminExportPdfBtn.title = isFiltered
+        ? `Unduh Daftar (PDF) — hanya kategori "${PDF_FILTER_LABELS[adminFilter]}"`
+        : 'Unduh Daftar Peserta (PDF) — rapi, tajam & siap dibagikan';
+    }
+  }
   let adminSearch = '';
   let adminClockTimer = null;
 
@@ -655,8 +683,10 @@ document.addEventListener('DOMContentLoaded', () => {
     adminFiltersWrap.querySelectorAll('.adash-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     adminFilter = btn.dataset.filter;
+    updatePdfFilterHint();
     renderAdminList();
   });
+  updatePdfFilterHint();
 
   /* ---- Export data peserta ke file CSV (dibuka di Excel/Sheets) ---- */
   adminExportBtn?.addEventListener('click', () => {
@@ -742,8 +772,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function exportPesertaAsPdf(){
-    if (!pesertaData.length){
-      showToast('Belum ada data peserta untuk diunduh.', 'error');
+    // PDF mengikuti filter status yang sedang AKTIF di chip dasbor (Semua /
+    // Menunggu DP / DP Terbayar / Cicilan 2x / Lunas) — filter yang sama
+    // persis dipakai untuk daftar di layar, supaya hasilnya konsisten dan
+    // tidak perlu UI terpisah. Tampilan/tata-letak dokumen PDF itu sendiri
+    // tidak berubah sama sekali, hanya baris pesertanya yang disaring.
+    const filterLabel = PDF_FILTER_LABELS[adminFilter] || 'Semua Peserta';
+    const sourceData = adminFilter === 'semua'
+      ? pesertaData
+      : pesertaData.filter(p => (p.pembayaran?.status || 'belum_dp') === adminFilter);
+
+    if (!sourceData.length){
+      showToast(
+        adminFilter === 'semua'
+          ? 'Belum ada data peserta untuk diunduh.'
+          : `Tidak ada peserta pada kategori "${filterLabel}" untuk diunduh. Ganti chip filter dasbor lalu coba lagi.`,
+        'error'
+      );
       return;
     }
     if (!window.jspdf || !window.jspdf.jsPDF){
@@ -756,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
     iconEl?.classList.add('fa-spin');
     try {
       const { jsPDF } = window.jspdf;
-      const rows = [...pesertaData].sort((a, b) => (a._ms || 0) - (b._ms || 0));
+      const rows = [...sourceData].sort((a, b) => (a._ms || 0) - (b._ms || 0));
       const lunasCount = rows.filter(p => p.pembayaran?.status === 'lunas').length;
       const dpCount = rows.filter(p => p.pembayaran?.status !== 'lunas' && (p.pembayaran?.totalDibayar || 0) > 0).length;
       const totalTerkumpul = rows.reduce((sum, p) => sum + (p.pembayaran?.totalDibayar || 0), 0);
@@ -1134,8 +1179,15 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text(`Halaman ${p} dari ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 24, { align: 'right' });
       }
 
-      doc.save(`daftar-peserta-kemeja-${new Date().toISOString().slice(0,10)}.pdf`);
-      showToast('Dokumen PDF daftar peserta berhasil diunduh — rapi, tajam & siap dibagikan.', 'success');
+      const filterSlug = PDF_FILTER_SLUGS[adminFilter] || '';
+      const fileSuffix = filterSlug ? `-${filterSlug}` : '';
+      doc.save(`daftar-peserta-kemeja${fileSuffix}-${new Date().toISOString().slice(0,10)}.pdf`);
+      showToast(
+        adminFilter === 'semua'
+          ? `Dokumen PDF daftar peserta (${rows.length} peserta) berhasil diunduh — rapi, tajam & siap dibagikan.`
+          : `Dokumen PDF kategori "${filterLabel}" (${rows.length} peserta) berhasil diunduh.`,
+        'success'
+      );
     } catch (err){
       console.error('Gagal membuat PDF daftar peserta:', err);
       showToast('Terjadi kesalahan saat membuat PDF.', 'error');

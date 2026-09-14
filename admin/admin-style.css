@@ -100,7 +100,7 @@ button{ cursor:pointer; border:none; background:none; }
 @keyframes shake{ 10%,90%{ transform:translateX(-1px); } 20%,80%{ transform:translateX(2px); } 30%,50%,70%{ transform:translateX(-4px); } 40%,60%{ transform:translateX(4px); } }
 @keyframes adashFadeUp{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
 @keyframes adashRowIn{ from{ opacity:0; transform:translateY(8px) scale(.99); } to{ opacity:1; transform:translateY(0) scale(1); } }
-@keyframes adashBeacon{ 0%,100%{ box-shadow:0 0 0 0 rgba(15,216,184,.35); } 50%{ box-shadow:0 0 0 8px rgba(15,216,184,0); } }
+@keyframes adashBeacon { to { box-shadow:0 0 0 0 rgba(15,216,184,.35); } }
 @keyframes adashShimmer{ 0%{ background-position:0% 50%; } 100%{ background-position:200% 50%; } }
 @keyframes adashSpring{ 0%{ opacity:0; transform:translateY(14px) scale(.96); } 100%{ opacity:1; transform:translateY(0) scale(1); } }
 
@@ -193,7 +193,7 @@ button{ cursor:pointer; border:none; background:none; }
 .admin-overlay#estimasiOverlay,
 .admin-overlay#chessTourneyOverlay{
   position:fixed; inset:0; opacity:0; visibility:hidden; pointer-events:none;
-  backdrop-filter:blur(6px); background:rgba(4,10,20,.72);
+  background:rgba(4,10,20,.72);
   transition:opacity .3s ease, visibility .3s ease; padding:20px;
   align-items:center; justify-content:center; z-index:5000;
 }
@@ -235,7 +235,7 @@ button{ cursor:pointer; border:none; background:none; }
     radial-gradient(50% 35% at -10% 20%, rgba(18,169,224,.08), transparent 60%);
   animation:adashAuroraDrift 22s ease-in-out infinite alternate;
 }
-@keyframes adashAuroraDrift{ 0%{ opacity:.7; } 100%{ opacity:1; } }
+@keyframes adashAuroraDrift { to { opacity:.7; } }
 @media (prefers-reduced-motion: reduce){ .admin-box::after{ animation:none; } }
 .admin-box > *{ position:relative; z-index:1; }
 
@@ -314,15 +314,9 @@ button{ cursor:pointer; border:none; background:none; }
    besar. Di HP, kolom branding disembunyikan sepenuhnya dan
    hanya form yang tampil (perilaku lama tetap dipertahankan).
 --------------------------------------------------------- */
-@keyframes aloginOrbitSpin{ to{ transform:rotate(360deg); } }
-@keyframes aloginBlobDrift{
-  0%,100%{ transform:translate(0,0) scale(1); }
-  50%{ transform:translate(-4%,3%) scale(1.06); }
-}
-@keyframes aloginDotFloat{
-  0%,100%{ transform:translate(-50%,-50%) rotate(0deg) translateX(0); }
-  50%{ transform:translate(-50%,-50%) rotate(180deg) translateX(6px); }
-}
+@keyframes aloginOrbitSpin { to {  } }
+@keyframes aloginBlobDrift { to { transform:translate(0,0) scale(1); } }
+@keyframes aloginDotFloat { to { transform:translate(-50%,-50%) rotate(0deg) translateX(0); } }
 
 .alogin-grid{ display:grid; grid-template-columns:1fr; align-items:stretch; min-width:0; }
 
@@ -421,9 +415,7 @@ button{ cursor:pointer; border:none; background:none; }
   .adash-header{
     position:sticky; top:16px; z-index:40;
     padding:14px 20px; border-radius:var(--radius-lg);
-    background:rgba(15,32,58,.68); backdrop-filter:blur(14px) saturate(140%);
-    -webkit-backdrop-filter:blur(14px) saturate(140%);
-    border:1px solid var(--line); box-shadow:var(--shadow-soft);
+    background:rgba(15,32,58,.68); border:1px solid var(--line); box-shadow:var(--shadow-soft);
   }
 }
 .adash-header-left{ display:flex; align-items:center; gap:14px; min-width:0; }
@@ -776,8 +768,7 @@ button{ cursor:pointer; border:none; background:none; }
    10. MODAL KONFIRMASI GENERIK & TAMBAH/EDIT PESERTA
 ========================================================= */
 .confirm-overlay{
-  position:fixed; inset:0; z-index:10050; background:rgba(7,16,34,.65); backdrop-filter:blur(6px);
-  display:flex; align-items:center; justify-content:center; padding:20px;
+  position:fixed; inset:0; z-index:10050; background:rgba(7,16,34,.65); display:flex; align-items:center; justify-content:center; padding:20px;
   opacity:0; visibility:hidden; pointer-events:none; transition:var(--transition);
 }
 .confirm-overlay.active{ opacity:1; visibility:visible; pointer-events:auto; }
@@ -962,8 +953,7 @@ button{ cursor:pointer; border:none; background:none; }
 }
 
 .adash-drawer-backdrop{
-  position:fixed; inset:0; z-index:940; background:rgba(4,10,20,.6); backdrop-filter:blur(4px);
-  opacity:0; visibility:hidden; pointer-events:none; transition:opacity .28s ease, visibility .28s ease;
+  position:fixed; inset:0; z-index:940; background:rgba(4,10,20,.6); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .28s ease, visibility .28s ease;
 }
 .adash-drawer-backdrop.active{ opacity:1; visibility:visible; pointer-events:auto; }
 
@@ -1031,7 +1021,7 @@ button{ cursor:pointer; border:none; background:none; }
    Begitu ada aktivitas lagi, widget ini langsung disembunyikan.
 ========================================================= */
 @keyframes adashIdleIn{ from{ opacity:0; transform:translateY(14px) scale(.94); } to{ opacity:1; transform:translateY(0) scale(1); } }
-@keyframes adashIdlePulseRing{ 0%,100%{ box-shadow:0 0 0 0 rgba(240,180,41,.35); } 50%{ box-shadow:0 0 0 7px rgba(240,180,41,0); } }
+@keyframes adashIdlePulseRing { to { box-shadow:0 0 0 0 rgba(240,180,41,.35); } }
 
 .adash-idle-banner{
   position:fixed; right:18px; bottom:18px; z-index:4000;
@@ -1039,7 +1029,7 @@ button{ cursor:pointer; border:none; background:none; }
   background:linear-gradient(180deg, rgba(20,32,50,.96), rgba(10,20,36,.96));
   border:1px solid rgba(240,180,41,.35); border-radius:18px;
   padding:12px 14px; box-shadow:0 20px 46px rgba(2,6,16,.55), 0 0 0 1px rgba(240,180,41,.08);
-  backdrop-filter:blur(10px); max-width:min(340px, calc(100vw - 32px));
+  max-width:min(340px, calc(100vw - 32px));
   animation:adashIdleIn .3s cubic-bezier(.2,.8,.3,1) both;
 }
 .adash-idle-banner.show{ display:flex; }
@@ -1129,18 +1119,13 @@ button{ cursor:pointer; border:none; background:none; }
   .admin-overlay:not(.admin-dash-mode) .admin-box{
     background:rgba(15,37,64,.78);
     border-radius:var(--radius-xl);
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-  }
+    }
 }
 
 /* Sapuan cahaya di kartu login — HANYA desktop (transform-only,
    murah, tapi tetap dibatasi ke layar besar supaya jumlah animasi
    yang berjalan bersamaan di HP lebih sedikit). */
-@keyframes aloginSheen{
-  0%{ transform:translateX(-140%) rotate(8deg); }
-  55%,100%{ transform:translateX(220%) rotate(8deg); }
-}
+@keyframes aloginSheen { to { transform:translateX(-140%) rotate(8deg); } }
 @media (min-width:960px){
   .admin-overlay:not(.admin-dash-mode) .admin-box::before{
     content:''; position:absolute; top:0; bottom:0; left:0; width:38%;
@@ -1162,7 +1147,7 @@ button{ cursor:pointer; border:none; background:none; }
   0%,100%{ opacity:.4; transform:scale(1); }
   50%{ opacity:.75; transform:scale(1.1); }
 }
-@keyframes aloginRing2Spin{ to{ transform:rotate(-360deg); } }
+@keyframes aloginRing2Spin { to {  } }
 .admin-icon::before{
   content:''; position:absolute; inset:-14px; z-index:-1; border-radius:50%;
   background:radial-gradient(circle, rgba(15,216,184,.35), transparent 68%);
@@ -1240,10 +1225,7 @@ button{ cursor:pointer; border:none; background:none; }
 /* --- Orbit dekoratif panel branding: HANYA ada & animasi di layar
    besar (elemen sudah display:none di HP lewat .alogin-brand, jadi
    ini murni jaga-jaga & kejelasan intent, bukan perubahan biaya). --- */
-@keyframes aloginDotFloat2{
-  0%,100%{ transform:translate(-50%,-50%) rotate(0deg) translateX(0); }
-  50%{ transform:translate(-50%,-50%) rotate(-180deg) translateX(9px); }
-}
+@keyframes aloginDotFloat2 { to { transform:translate(-50%,-50%) rotate(0deg) translateX(0); } }
 .orbit-dot.dot2{
   width:5px; height:5px; background:var(--aqua);
   box-shadow:0 0 10px 2px rgba(18,169,224,.5);
