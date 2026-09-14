@@ -83,12 +83,9 @@
   50%{ transform:translate(-50px,-30px) scale(1.1); }
 }
 
-@keyframes gradFlow{ to{ background-position:-200% center; } }
+@keyframes gradFlow { to {  } }
 
-@keyframes bounceDown{
-  0%,100%{ transform:translate(-50%,0); }
-  50%{ transform:translate(-50%,10px); }
-}
+@keyframes bounceDown { to { transform:translate(-50%,0); } }
 
 @keyframes rippleAnim{ to{ transform:scale(2.6); opacity:0; } }
 
@@ -99,7 +96,7 @@
   100%{ transform:translateY(-620px) scale(1.15); opacity:0; }
 }
 
-@keyframes galleryShine{ from{ background-position:200% 0; } to{ background-position:-50% 0; } }
+@keyframes galleryShine { to { background-position:200% 0; } }
 
 @keyframes shake{
   0%,100%{ transform:translateX(0); }
@@ -113,11 +110,7 @@
 
 @keyframes toastOut{ to{ opacity:0; transform:translateY(20px); } }
 
-@keyframes borderFlow{
-    to{
-        background-position:300% 0;
-    }
-}
+@keyframes borderFlow { to {  } }
 
 @keyframes shineMove{
     to{
@@ -125,22 +118,8 @@
     }
 }
 
-@keyframes floatParticle{
-
-    0%{
-        transform:translateY(15px) scale(.4);
-        opacity:0;
-    }
-
-    20%{
-        opacity:1;
-    }
-
-    100%{
-        transform:translateY(-30px) scale(1.2);
-        opacity:0;
-    }
-}
+@keyframes floatParticle { to { transform:translateY(15px) scale(.4);
+        opacity:0; } }
 
 @keyframes mapGlow{
     0%{ transform:rotate(0deg); }
@@ -154,46 +133,28 @@
     100%{ transform:translate(-50%,-50%) scale(1); opacity:0; }
 }
 
-@keyframes mapLiveDotGlow{
-    0%,100%{ box-shadow:0 0 0 0 rgba(46,230,166,.55); }
-    50%{ box-shadow:0 0 0 6px rgba(46,230,166,0); }
-}
+@keyframes mapLiveDotGlow { to { box-shadow:0 0 0 0 rgba(46,230,166,.55); } }
 
 @keyframes mapCornerBreathe{
     0%,100%{ opacity:.55; }
     50%{ opacity:1; }
 }
 
-@keyframes pfloatDrift{
-    0%,100%{ transform:translateY(0) rotate(0deg); }
-    50%{ transform:translateY(-30px) rotate(12deg); }
-}
+@keyframes pfloatDrift { to { transform:translateY(0) rotate(0deg); } }
 
-@keyframes newPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.72; } }
+@keyframes newPulse { to { opacity:1; } }
 
-@keyframes picAvatarBreathe{
-    0%,100%{ transform:scale(1); }
-    50%{ transform:scale(1.04); }
-}
+@keyframes picAvatarBreathe { to { transform:scale(1); } }
 
-@keyframes picRingPulse{
-    0%{ transform:scale(1); opacity:.5; }
-    100%{ transform:scale(1.18); opacity:0; }
-}
+@keyframes picRingPulse { to { transform:scale(1); opacity:.5; } }
 
-@keyframes picSparkFloat{
-    0%, 100%{ transform:translateY(0) scale(.8); opacity:0; }
-    50%{ transform:translateY(-9px) scale(1.15); opacity:1; }
-}
+@keyframes picSparkFloat { to { transform:translateY(0) scale(.8); opacity:0; } }
 
-@keyframes picRingSpin{ to{ transform:rotate(360deg); } }
+@keyframes picRingSpin { to {  } }
 
-@keyframes lunasGlow{
-    0%,100%{ box-shadow:0 0 0 rgba(15,216,184,0); }
-    50%{ box-shadow:0 0 16px rgba(15,216,184,.35); }
-}
+@keyframes lunasGlow { to { box-shadow:0 0 0 rgba(15,216,184,0); } }
 
-@keyframes skeletonShimmer{ to{ background-position:-200% 0; } }
+@keyframes skeletonShimmer { to {  } }
 
 @keyframes chatPing{ 0%{ transform:scale(1); opacity:.5; } 100%{ transform:scale(1.6); opacity:0; } }
 
@@ -221,7 +182,7 @@
 }
 
 /* ---- 2026 refresh: chat panel ---- */
-@keyframes fabFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+@keyframes fabFloat { to { transform:translateY(0); } }
 
 @keyframes badgePop{ 0%{ transform:scale(0); } 60%{ transform:scale(1.25); } 100%{ transform:scale(1); } }
 

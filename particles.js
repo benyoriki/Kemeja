@@ -1,47 +1,56 @@
 /* =========================================================
-   LOKON PRIMA — particles.js
+   LOKON PRIMA — particles.js (VERSI RINGAN / LOW-PERFORMANCE MODE)
    -------------------------------------------------
-   File terpisah khusus untuk EFEK VISUAL / PARTIKEL:
-   - Partikel tetesan air + ripple di background Hero
-   - Confetti burst saat pendaftaran berhasil
-   - Cursor glow (ambient, desktop saja)
-   - Tombol magnetik (desktop saja)
-   - Efek ripple saat tombol ditekan
-   - Glow mengikuti kursor di kartu Keunggulan
+   File ini sudah dioptimasi supaya jauh lebih ringan di PC lama
+   (mis. Windows 7 / GPU terintegrasi lama). Perubahan utama vs
+   versi sebelumnya:
 
-   Kenapa dipisah dari script.js?
-   - script.js     -> FUNGSI SISTEM (wajib): navbar, form
-                      pendaftaran, Firebase, dasbor admin,
-                      chat grup, dsb. Situs tetap berjalan
-                      normal tanpa file ini.
-   - particles.js  -> murni hiasan. Kalau file ini gagal
-                      dimuat/error, fitur INTI (daftar, admin,
-                      chat) tetap aman — yang hilang hanya
-                      efek visualnya. Ini sengaja, supaya
-                      lebih mudah melacak bug: bug fungsi vs
-                      bug tampilan jadi jelas terpisah.
+   1. Partikel latar Hero: jumlah dipangkas jauh, frame rate
+      dibatasi ~24fps (bukan 60fps), DPR dipatok maksimal 1
+      (bukan 2), dan animasi OTOMATIS BERHENTI saat tab tidak
+      aktif atau Hero tidak terlihat di layar (IntersectionObserver).
+   2. "Ambient cursor glow" & "tombol magnetik" (efek yang terus
+      menerus menulis ulang style setiap gerakan mouse) DIMATIKAN
+      total — efeknya nyaris tidak terlihat tapi cukup mahal untuk
+      GPU lama.
+   3. Tilt 3D kartu (Keunggulan/Galeri/Peta) & glow kartu Keunggulan
+      tetap ada (masih terasa "hidup"), tapi sekarang DIBATASI lewat
+      requestAnimationFrame supaya tidak menulis style di setiap
+      event mousemove mentah-mentah.
+   4. Bintang kelap-kelip di Hero: jumlah dipangkas.
+   5. Confetti tetap ada (cuma muncul sekali saat pendaftaran
+      berhasil, jadi aman) tapi jumlah partikelnya dikurangi.
 
-   PENTING: file ini HARUS tetap disertakan di index.html
-   SETELAH script.js (lihat urutan <script> di bagian bawah
-   halaman), karena efek confetti dipicu dari script.js lewat
-   window.lokonFireConfetti.
+   Fitur INTI situs (navbar, form pendaftaran, Firebase, dasbor
+   admin, chat) tidak disentuh sama sekali oleh file ini.
 ========================================================= */
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  const reduceMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isFinePointer = window.matchMedia('(pointer: fine)').matches;
+  const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+  const saveData = !!(navigator.connection && navigator.connection.saveData);
+  // Mode ringan aktif kalau: pengguna minta reduced motion, mode hemat data aktif,
+  // ATAU perangkat hanya punya sedikit inti CPU (indikasi PC/HP lama & lemah).
+  const lowPowerMode = reduceMotionGlobal || saveData || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
+
   /* ============ 7. WATER DROPLET + RIPPLE PARTICLE BACKGROUND (HERO) ============ */
   const canvas = document.getElementById('particleCanvas');
-  if (canvas){
+  if (canvas && !lowPowerMode){
     const ctx = canvas.getContext('2d');
     const hero = document.getElementById('home');
     let particles = [];
     let ripples = [];
     let W, H, DPR;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+    let running = false;
+    let rafId = null;
+    let lastFrame = 0;
+    const FRAME_MS = 42; // ~24fps — cukup halus untuk hiasan latar, jauh lebih hemat CPU/GPU
 
     function resizeCanvas(){
-      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      DPR = 1; // dipatok 1 (bukan devicePixelRatio asli) — memangkas jumlah piksel
+                // yang harus digambar tiap frame, penyebab utama "berat" di layar HD/retina
       W = hero.offsetWidth;
       H = hero.offsetHeight;
       canvas.width = W * DPR;
@@ -53,9 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initParticles(){
-      // Slightly lighter density on touch devices to keep scrolling smooth
-      const cap = isCoarse ? 46 : 70;
-      const density = Math.min(cap, Math.max(24, Math.floor((W * H) / 24000)));
+      // Jumlah partikel dipangkas jauh dari versi awal (dulu sampai 70).
+      const cap = isCoarse ? 16 : 22;
+      const density = Math.min(cap, Math.max(8, Math.floor((W * H) / 60000)));
       particles = Array.from({ length: density }, () => makeDroplet());
     }
 
@@ -76,24 +85,29 @@ document.addEventListener('DOMContentLoaded', () => {
       ripples.push({ x, y, r: 4, maxR: 70 + Math.random() * 50, alpha: 0.5 });
     }
 
-    // Ambient ripples appear occasionally on their own
+    // Riak ambient dibuat lebih jarang muncul (hemat CPU)
     let rippleTimer = 0;
     function maybeSpawnAmbientRipple(){
       rippleTimer++;
-      if (rippleTimer > (isCoarse ? 130 : 90)){
+      if (rippleTimer > (isCoarse ? 220 : 170)){
         rippleTimer = 0;
         spawnRipple(Math.random() * W, H * (0.55 + Math.random() * 0.4));
       }
     }
 
-    // Interactive ripple on tap/click within the hero
+    // Riak interaktif saat tap/klik di area Hero
     hero.addEventListener('pointerdown', (e) => {
-      if (reduceMotion) return;
       const rect = hero.getBoundingClientRect();
       spawnRipple(e.clientX - rect.left, e.clientY - rect.top);
     });
 
-    function draw(){
+    function draw(ts){
+      if (!running) return;
+      if (ts - lastFrame < FRAME_MS){
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrame = ts;
       ctx.clearRect(0, 0, W, H);
 
       particles.forEach(p => {
@@ -122,30 +136,51 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke();
       });
 
-      if (!reduceMotion) requestAnimationFrame(draw);
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function start(){
+      if (running) return;
+      running = true;
+      lastFrame = 0;
+      rafId = requestAnimationFrame(draw);
+    }
+    function stop(){
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    // Animasi otomatis berhenti kalau tab tidak aktif ATAU Hero sedang di luar layar
+    // (mis. pengguna sudah scroll jauh ke bawah) — tidak buang-buang CPU untuk sesuatu
+    // yang tidak terlihat sama sekali.
+    let heroVisible = true;
+    function syncRunning(){
+      if (document.hidden || !heroVisible) stop(); else start();
+    }
+    document.addEventListener('visibilitychange', syncRunning);
+    if ('IntersectionObserver' in window){
+      const io = new IntersectionObserver((entries) => {
+        heroVisible = entries[0].isIntersecting;
+        syncRunning();
+      }, { threshold: 0.05 });
+      io.observe(hero);
     }
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    if (!reduceMotion){
-      requestAnimationFrame(draw);
-    } else {
-      draw();
-    }
+    syncRunning();
   }
 
-  /* ============ 7a2. CONFETTI BURST (2026 refresh) ============
-     Ledakan konfeti singkat (2.4 detik) di atas seluruh layar saat
-     pendaftaran berhasil dikirim — efek "menjual" & merayakan momen
-     pendaftaran, memakai canvas terpisah supaya tidak mengganggu
-     animasi hero yang lain. Otomatis dihormati prefers-reduced-motion. */
+  /* ============ 7a2. CONFETTI BURST (saat pendaftaran berhasil) ============
+     Tetap dipertahankan karena cuma tampil sekali & singkat (2 detik),
+     tapi jumlah partikelnya dikurangi supaya lebih ringan. */
   function fireConfetti(){
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) return;
+    if (reduceMotionGlobal) return;
     const cCanvas = document.getElementById('confettiCanvas');
     if (!cCanvas) return;
     const cCtx = cCanvas.getContext('2d');
-    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const DPR = 1;
     cCanvas.width = window.innerWidth * DPR;
     cCanvas.height = window.innerHeight * DPR;
     cCanvas.style.width = window.innerWidth + 'px';
@@ -153,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
     const colors = ['#12A9E0', '#0FD8B8', '#F2C94C', '#FFFFFF', '#0A84C4'];
-    const count = window.matchMedia('(pointer: coarse)').matches ? 70 : 120;
+    const count = isCoarse ? 36 : 60; // dulu 70/120, dipangkas ~separuh
     const pieces = Array.from({ length: count }, () => ({
       x: window.innerWidth / 2 + (Math.random() - 0.5) * window.innerWidth * 0.5,
       y: window.innerHeight * 0.32,
@@ -168,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     const start = performance.now();
-    const duration = 2400;
+    const duration = 2000;
     function step(now){
       const t = now - start;
       cCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
@@ -193,41 +228,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     requestAnimationFrame(step);
   }
-  // Diekspos secara global supaya script.js (logika inti pendaftaran)
-  // bisa memicu confetti tanpa perlu tahu detail implementasinya di sini.
   window.lokonFireConfetti = fireConfetti;
 
-  /* ============ 7b. AMBIENT CURSOR GLOW (desktop / fine pointer only) ============ */
-  const cursorGlow = document.getElementById('cursorGlow');
-  if (cursorGlow && window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-    let glowRAF = null, gx = 0, gy = 0;
-    window.addEventListener('mousemove', (e) => {
-      gx = e.clientX; gy = e.clientY;
-      cursorGlow.classList.add('active');
-      if (!glowRAF){
-        glowRAF = requestAnimationFrame(() => {
-          cursorGlow.style.transform = `translate(${gx}px, ${gy}px) translate(-50%, -50%)`;
-          glowRAF = null;
-        });
-      }
-    });
-    window.addEventListener('mouseleave', () => cursorGlow.classList.remove('active'));
-  }
+  /* ============ 7b. AMBIENT CURSOR GLOW — DIMATIKAN ============
+     Efek ini dulu menulis ulang style setiap gerakan mouse di
+     seluruh halaman. Dampak visualnya kecil tapi biayanya besar
+     di GPU lama, jadi dinonaktifkan sepenuhnya. */
 
-  /* ============ 7c. MAGNETIC BUTTONS (desktop / fine pointer only) ============ */
-  if (window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-    document.querySelectorAll('.magnetic').forEach(btn => {
-      btn.addEventListener('mousemove', (e) => {
-        const rect = btn.getBoundingClientRect();
-        const relX = e.clientX - rect.left - rect.width / 2;
-        const relY = e.clientY - rect.top - rect.height / 2;
-        btn.style.transform = `translate(${relX * 0.18}px, ${relY * 0.28 - 3}px)`;
-      });
-      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
-    });
-  }
+  /* ============ 7c. MAGNETIC BUTTONS — DIMATIKAN ============
+     Sama seperti di atas: efek "magnet" pada tombol dihilangkan
+     karena menulis transform di setiap event mousemove tanpa
+     pembatasan. Tombol tetap punya efek hover normal lewat CSS. */
 
-  /* ============ 9. RIPPLE BUTTON EFFECT ============ */
+  /* ============ 9. RIPPLE BUTTON EFFECT (tetap, ringan) ============ */
   document.querySelectorAll('.ripple').forEach(btn => {
     btn.addEventListener('click', function(e){
       const circle = document.createElement('span');
@@ -244,25 +257,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* ============ 10. FEATURE CARD MOUSE GLOW ============ */
-  document.querySelectorAll('.feature-card').forEach(card => {
-    card.addEventListener('mousemove', (e) => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
-      card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+  /* ============ 10. FEATURE CARD MOUSE GLOW (dibatasi via rAF) ============ */
+  if (isFinePointer && !lowPowerMode){
+    document.querySelectorAll('.feature-card').forEach(card => {
+      let ticking = false, lastX = 0, lastY = 0;
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        lastX = e.clientX - rect.left;
+        lastY = e.clientY - rect.top;
+        if (!ticking){
+          ticking = true;
+          requestAnimationFrame(() => {
+            card.style.setProperty('--mx', `${lastX}px`);
+            card.style.setProperty('--my', `${lastY}px`);
+            ticking = false;
+          });
+        }
+      });
     });
-  });
+  }
 
-  /* =========================================================
-     2026 VISUAL REFRESH — EFEK TAMBAHAN (murni hiasan)
-  ========================================================= */
-  const reduceMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isFinePointer = window.matchMedia('(pointer: fine)').matches;
-
-  /* ---- 11. Bintang kelap-kelip di Hero ---- */
+  /* ---- 11. Bintang kelap-kelip di Hero (jumlah dipangkas) ---- */
   const twinkleLayer = document.getElementById('heroTwinkleLayer');
-  if (twinkleLayer && !reduceMotionGlobal){
-    const starCount = window.matchMedia('(pointer: coarse)').matches ? 18 : 30;
+  if (twinkleLayer && !lowPowerMode){
+    const starCount = isCoarse ? 8 : 14; // dulu 18/30
     const frag = document.createDocumentFragment();
     for (let i = 0; i < starCount; i++){
       const star = document.createElement('span');
@@ -278,20 +296,27 @@ document.addEventListener('DOMContentLoaded', () => {
     twinkleLayer.appendChild(frag);
   }
 
-  /* ---- 12. Tilt 3D lembut untuk kartu Keunggulan & Galeri (desktop) ---- */
-  if (isFinePointer && !reduceMotionGlobal){
+  /* ---- 12. Tilt 3D lembut untuk kartu Keunggulan & Galeri (dibatasi via rAF) ---- */
+  if (isFinePointer && !lowPowerMode){
     document.querySelectorAll('.tilt-card').forEach(card => {
+      let ticking = false, lastPx = 0, lastPy = 0;
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
-        const px = (e.clientX - rect.left) / rect.width - 0.5;
-        const py = (e.clientY - rect.top) / rect.height - 0.5;
-        card.style.transform = `perspective(700px) rotateX(${(-py * 7).toFixed(2)}deg) rotateY(${(px * 7).toFixed(2)}deg) translateY(-2px)`;
+        lastPx = (e.clientX - rect.left) / rect.width - 0.5;
+        lastPy = (e.clientY - rect.top) / rect.height - 0.5;
+        if (!ticking){
+          ticking = true;
+          requestAnimationFrame(() => {
+            card.style.transform = `perspective(700px) rotateX(${(-lastPy * 7).toFixed(2)}deg) rotateY(${(lastPx * 7).toFixed(2)}deg) translateY(-2px)`;
+            ticking = false;
+          });
+        }
       });
       card.addEventListener('mouseleave', () => { card.style.transform = ''; });
     });
   }
 
-  /* ---- 13. Sparkle burst kecil saat memilih kartu metode pembayaran ---- */
+  /* ---- 13. Sparkle burst kecil saat memilih kartu metode pembayaran (tetap, ringan) ---- */
   document.querySelectorAll('input[name="metodeBayar"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       if (reduceMotionGlobal || !e.target.checked) return;
@@ -312,15 +337,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* ---- 14. Tilt 3D + lift untuk Kartu Peta Lokasi (desktop) ---- */
+  /* ---- 14. Tilt 3D + lift untuk Kartu Peta Lokasi (dibatasi via rAF) ---- */
   const mapCardEl = document.querySelector('.map-card');
-  if (mapCardEl && isFinePointer && !reduceMotionGlobal){
+  if (mapCardEl && isFinePointer && !lowPowerMode){
+    let ticking = false, lastPx = 0, lastPy = 0;
     mapCardEl.addEventListener('mousemove', (e) => {
       const rect = mapCardEl.getBoundingClientRect();
-      const px = (e.clientX - rect.left) / rect.width - 0.5;
-      const py = (e.clientY - rect.top) / rect.height - 0.5;
-      mapCardEl.style.transform =
-        `perspective(900px) rotateX(${(-py * 5).toFixed(2)}deg) rotateY(${(px * 5).toFixed(2)}deg) translateY(-8px) scale(1.012)`;
+      lastPx = (e.clientX - rect.left) / rect.width - 0.5;
+      lastPy = (e.clientY - rect.top) / rect.height - 0.5;
+      if (!ticking){
+        ticking = true;
+        requestAnimationFrame(() => {
+          mapCardEl.style.transform =
+            `perspective(900px) rotateX(${(-lastPy * 5).toFixed(2)}deg) rotateY(${(lastPx * 5).toFixed(2)}deg) translateY(-8px) scale(1.012)`;
+          ticking = false;
+        });
+      }
     });
     mapCardEl.addEventListener('mouseleave', () => { mapCardEl.style.transform = ''; });
   }

@@ -244,8 +244,6 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 .navbar.scrolled{
   background: rgba(242,250,252,0.72);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
   box-shadow: var(--shadow-soft);
   padding:12px 0;
   border-bottom:1px solid var(--border);
@@ -351,7 +349,6 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .hero-badge{
   display:inline-flex; align-items:center; gap:9px;
   background:rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
   border:1px solid rgba(255,255,255,0.25);
   padding:9px 20px; border-radius:30px;
   font-size:13px; font-weight:600; margin-bottom:28px; letter-spacing:.02em;
@@ -443,8 +440,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 
 .btn-outline{
   background:rgba(255,255,255,0.06); color:#fff;
-  border:1.5px solid rgba(255,255,255,0.4); backdrop-filter:blur(8px);
-}
+  border:1.5px solid rgba(255,255,255,0.4); }
 
 .btn-outline:hover{ background:rgba(255,255,255,0.16); transform:translateY(-3px); }
 
@@ -869,8 +865,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 /* ============ MODAL & LOADING ============ */
 .modal-overlay, .submit-loading{
   position:fixed; inset:0; z-index:3000;
-  background:rgba(4,10,20,0.68); backdrop-filter:blur(4px);
-  display:flex; align-items:center; justify-content:center;
+  background:rgba(4,10,20,0.68); display:flex; align-items:center; justify-content:center;
   opacity:0; visibility:hidden; transition:var(--transition);
 }
 
@@ -1002,8 +997,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
   .nav-links.open{ right:0; }
 
   .nav-overlay{
-    display:block; position:fixed; inset:0; background:rgba(7,16,34,.55); backdrop-filter:blur(2px);
-    z-index:1150; opacity:0; visibility:hidden; transition:var(--transition);
+    display:block; position:fixed; inset:0; background:rgba(7,16,34,.55); z-index:1150; opacity:0; visibility:hidden; transition:var(--transition);
   }
   .nav-overlay.active{ opacity:1; visibility:visible; }
 
@@ -1322,8 +1316,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     position:absolute; top:14px; left:14px; z-index:4;
     display:inline-flex; align-items:center; gap:8px;
     padding:7px 14px; border-radius:999px;
-    background:rgba(7,16,34,.55); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-    color:#fff; font-size:11.5px; font-weight:700; letter-spacing:.3px;
+    background:rgba(7,16,34,.55); color:#fff; font-size:11.5px; font-weight:700; letter-spacing:.3px;
     border:1px solid rgba(255,255,255,.18);
     pointer-events:none;
 }
@@ -1596,7 +1589,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     font-size:12.5px; color:var(--ink-soft); margin:12px 0 0; font-weight:600;
     animation: hintBounce 1.6s ease-in-out infinite;
 }
-@keyframes hintBounce{ 0%,100%{ transform:translateY(0); opacity:.55; } 50%{ transform:translateY(4px); opacity:1; } }
+@keyframes hintBounce { to { transform:translateY(0); opacity:.55; } }
 @media (prefers-reduced-motion: reduce){ .peserta-scroll-hint{ animation:none; } }
 
 .peserta-grid{
@@ -1727,10 +1720,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     border-color:rgba(240,180,41,.3);
     box-shadow:0 14px 34px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04) inset;
 }
-@keyframes lunasShowcaseGlow{
-    0%, 100%{ box-shadow:0 14px 34px rgba(201,138,12,.16), 0 0 0 1px rgba(255,255,255,.4) inset; }
-    50%{ box-shadow:0 16px 40px rgba(201,138,12,.26), 0 0 0 1px rgba(255,255,255,.4) inset; }
-}
+@keyframes lunasShowcaseGlow { to { box-shadow:0 14px 34px rgba(201,138,12,.16), 0 0 0 1px rgba(255,255,255,.4) inset; } }
 @media (prefers-reduced-motion: reduce){ .lunas-showcase{ animation:none; } }
 
 /* Blob cahaya dekoratif di latar showcase — murni hiasan, tidak
@@ -1742,7 +1732,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 .lunas-showcase-blob.b1{ width:160px; height:160px; top:-60px; right:-40px; animation:lunasBlobFloat 7s ease-in-out infinite; }
 .lunas-showcase-blob.b2{ width:120px; height:120px; bottom:-50px; left:-30px; animation:lunasBlobFloat 8s ease-in-out infinite reverse; }
-@keyframes lunasBlobFloat{ 0%,100%{ transform:translate(0,0) scale(1); } 50%{ transform:translate(-10px,10px) scale(1.12); } }
+@keyframes lunasBlobFloat { to { transform:translate(0,0) scale(1); } }
 @media (prefers-reduced-motion: reduce){ .lunas-showcase-blob{ animation:none; } }
 
 /* Ikon-ikon kecil melayang santai di latar (mahkota/bintang/koin) */
@@ -1754,7 +1744,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .lunas-showcase-float.f1{ font-size:22px; top:14px; right:18%; animation-delay:0s; }
 .lunas-showcase-float.f2{ font-size:14px; top:70%; right:8%; animation-delay:1.4s; }
 .lunas-showcase-float.f3{ font-size:16px; top:40%; left:6%; animation-delay:.7s; }
-@keyframes lunasFloatDrift{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-8px) rotate(8deg); } }
+@keyframes lunasFloatDrift { to { transform:translateY(0) rotate(0deg); } }
 @media (max-width:560px){ .lunas-showcase-float.f2{ display:none; } }
 @media (prefers-reduced-motion: reduce){ .lunas-showcase-float{ animation:none; } }
 
@@ -1768,14 +1758,14 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     box-shadow:0 6px 16px rgba(201,138,12,.35);
     animation: lunasBadgeBounce 2.4s ease-in-out infinite;
 }
-@keyframes lunasBadgeBounce{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-3px) rotate(-6deg); } }
+@keyframes lunasBadgeBounce { to { transform:translateY(0) rotate(0deg); } }
 @media (prefers-reduced-motion: reduce){ .lunas-showcase-badge{ animation:none; } }
 .lunas-showcase-head-text h4{
     font-family:var(--font-body); font-size:17px; font-weight:800; color:#8A5A00; margin:0 0 2px; display:flex; align-items:center; gap:6px;
 }
 [data-theme="dark"] .lunas-showcase-head-text h4{ color:#F0C24A; }
 .lunas-showcase-emoji{ display:inline-block; animation: lunasEmojiWiggle 1.8s ease-in-out infinite; }
-@keyframes lunasEmojiWiggle{ 0%,100%{ transform:rotate(0deg) scale(1); } 50%{ transform:rotate(14deg) scale(1.15); } }
+@keyframes lunasEmojiWiggle { to { transform:rotate(0deg) scale(1); } }
 @media (prefers-reduced-motion: reduce){ .lunas-showcase-emoji{ animation:none; } }
 .lunas-showcase-head-text p{ font-size:12.5px; color:#9A7418; margin:0; }
 [data-theme="dark"] .lunas-showcase-head-text p{ color:#C9A050; }
@@ -1794,7 +1784,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 }
 [data-theme="dark"] .lunas-showcase-hint{ color:#C9A050; }
 .lunas-showcase-hint i{ animation: lunasHintNudge 1.6s ease-in-out infinite; }
-@keyframes lunasHintNudge{ 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(-4px); } }
+@keyframes lunasHintNudge { to { transform:translateX(0); } }
 @media (prefers-reduced-motion: reduce){ .lunas-showcase-hint i{ animation:none; } }
 
 /* ---- Kartu individu di dalam showcase ---- */
@@ -1825,10 +1815,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     transform:translateX(-200%) skewX(-20deg);
     animation: lunasShineSweep 3.6s ease-in-out infinite;
 }
-@keyframes lunasShineSweep{
-    0%{ transform:translateX(-200%) skewX(-20deg); }
-    55%, 100%{ transform:translateX(300%) skewX(-20deg); }
-}
+@keyframes lunasShineSweep { to { transform:translateX(-200%) skewX(-20deg); } }
 @media (prefers-reduced-motion: reduce){ .lunas-card-shine::after{ animation:none; display:none; } }
 
 .lunas-card-sparkle{
@@ -1838,10 +1825,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 .lunas-card-sparkle.lcs1{ top:8px; left:10px; animation-delay:0s; }
 .lunas-card-sparkle.lcs2{ top:14px; right:10px; font-size:6px; animation-delay:.8s; }
 .lunas-card-sparkle.lcs3{ bottom:34px; right:14px; animation-delay:1.5s; }
-@keyframes lunasTwinkle{
-    0%, 100%{ opacity:0; transform:scale(.3) rotate(0deg); }
-    50%{ opacity:1; transform:scale(1) rotate(25deg); }
-}
+@keyframes lunasTwinkle { to { opacity:0; transform:scale(.3) rotate(0deg); } }
 @media (prefers-reduced-motion: reduce){ .lunas-card-sparkle{ animation:none; display:none; } }
 
 .lunas-card-flag{
@@ -1863,7 +1847,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(201,138,12,.4);
     animation: lunasCrownBounce 2s ease-in-out infinite;
 }
-@keyframes lunasCrownBounce{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-2px) rotate(-10deg); } }
+@keyframes lunasCrownBounce { to { transform:translateY(0) rotate(0deg); } }
 @media (prefers-reduced-motion: reduce){ .lunas-card-crown{ animation:none; } }
 
 .lunas-card-name{
@@ -1903,10 +1887,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     animation: crownBounce 2.4s ease-in-out infinite;
 }
 [data-theme="dark"] .peserta-crown{ box-shadow:0 0 0 2px var(--foam), 0 2px 6px rgba(201,122,0,.5); }
-@keyframes crownBounce{
-    0%, 100%{ transform:translateY(0) rotate(-6deg); }
-    50%{ transform:translateY(-2px) rotate(6deg); }
-}
+@keyframes crownBounce { to { transform:translateY(0) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce){ .peserta-crown{ animation:none; } }
 
 .peserta-row-info{
@@ -1959,7 +1940,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
     color:#5a3d00; font-weight:800;
     animation: lunasGlow 2.4s ease-in-out infinite, lunasSweep 3s linear infinite;
 }
-@keyframes lunasSweep{ 0%{ background-position:0% 50%; } 100%{ background-position:220% 50%; } }
+@keyframes lunasSweep { to { background-position:0% 50%; } }
 @media (prefers-reduced-motion: reduce){ .badge-success{ animation:none; } }
 
 .peserta-badge{
@@ -2001,8 +1982,7 @@ button{ font-family:var(--font-body); cursor:pointer; border:none; background:no
 ========================================================= */
 .peserta-modal-overlay{
     position:fixed; inset:0; z-index:4500;
-    background:rgba(4,10,20,.55); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
-    display:flex; align-items:center; justify-content:center; padding:20px;
+    background:rgba(4,10,20,.55); display:flex; align-items:center; justify-content:center; padding:20px;
     opacity:0; visibility:hidden; transition:var(--transition);
 }
 
@@ -2082,7 +2062,6 @@ body.peserta-modal-lock{ overflow:hidden; }
 ========================================== */
 .admin-overlay{
     position:fixed; inset:0; z-index:5000; background:rgba(4,10,20,.72);
-    backdrop-filter:blur(6px);
     display:flex; align-items:center; justify-content:center; padding:20px;
     opacity:0; visibility:hidden; transition:var(--transition);
 }
@@ -2280,7 +2259,7 @@ body.peserta-modal-lock{ overflow:hidden; }
     display:flex; align-items:center; justify-content:space-between; gap:16px;
     flex-wrap:wrap; margin:-26px -26px 22px; padding:18px 26px; border-bottom:1px solid rgba(255,255,255,.08);
     background:linear-gradient(180deg, #0E2440 0%, #0B1D35 100%); position:sticky; top:-26px; z-index:20;
-    backdrop-filter:blur(16px); box-shadow:0 14px 26px -10px rgba(2,8,18,.55);
+    box-shadow:0 14px 26px -10px rgba(2,8,18,.55);
 }
 
 @media (max-width:640px){ .adash-header{ margin:-18px -14px 16px; padding:14px 14px; top:-18px; } }
@@ -2361,8 +2340,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 /* ---- Modal Konfirmasi Hapus Chat Grup ---- */
 .confirm-overlay{
-  position:fixed; inset:0; z-index:10050; background:rgba(7,16,34,.6); backdrop-filter:blur(6px);
-  display:flex; align-items:center; justify-content:center; padding:20px;
+  position:fixed; inset:0; z-index:10050; background:rgba(7,16,34,.6); display:flex; align-items:center; justify-content:center; padding:20px;
   opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s ease;
 }
 
@@ -2859,25 +2837,15 @@ body.peserta-modal-lock{ overflow:hidden; }
   animation:chessCalloutHold 5s cubic-bezier(.2,.8,.3,1) forwards;
 }
 
-@keyframes chessCalloutHold{
-  0%{ opacity:0; transform:translateY(6px) scale(.96); }
-  12%, 82%{ opacity:1; transform:translateY(0) scale(1); }
-  100%{ opacity:0; transform:translateY(6px) scale(.96); }
-}
+@keyframes chessCalloutHold { to { opacity:0; transform:translateY(6px) scale(.96); } }
 
 /* Nudge berkala — sesekali (tiap ~20 detik) bola "melambai" lebih
    besar dari ambang mengapung biasa, supaya kalau sempat terlewat
    pengunjung, ada kesempatan menarik perhatian lagi tanpa mengganggu
    terus-menerus (99% waktunya diam mengapung seperti biasa). */
-@keyframes chessNudge{
-  0%, 90%, 100%{ transform:scale(1) rotate(0deg); }
-  92%{ transform:scale(1.18) rotate(-10deg); }
-  94%{ transform:scale(.94) rotate(8deg); }
-  96%{ transform:scale(1.1) rotate(-5deg); }
-  98%{ transform:scale(1) rotate(0deg); }
-}
+@keyframes chessNudge { to { transform:scale(1) rotate(0deg); } }
 
-@keyframes chessBadgePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.16); } }
+@keyframes chessBadgePulse { to { transform:scale(1); } }
 
 @media (max-width:640px){
   .chess-fab-wrap{ right:16px; bottom:80px; }
@@ -2927,8 +2895,7 @@ body.peserta-modal-lock{ overflow:hidden; }
    LIVE CHAT — OVERLAY & PANEL — kaca (glassmorphism) 2026
 ========================================================= */
 .chat-overlay{
-  position:fixed; inset:0; background:rgba(7,16,34,.55); backdrop-filter:blur(5px);
-  z-index:5998; opacity:0; visibility:hidden; transition:var(--transition);
+  position:fixed; inset:0; background:rgba(7,16,34,.55); z-index:5998; opacity:0; visibility:hidden; transition:var(--transition);
 }
 
 .chat-overlay.active{ opacity:1; visibility:visible; }
@@ -2936,8 +2903,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 .chat-panel{
   position:fixed; right:24px; bottom:24px; z-index:5999;
   width:400px; max-width:calc(100vw - 32px); height:min(660px, calc(100vh - 48px));
-  background:rgba(242,250,252,.88); backdrop-filter:blur(26px) saturate(160%);
-  border-radius:26px; overflow:hidden;
+  background:rgba(242,250,252,.88); border-radius:26px; overflow:hidden;
   box-shadow:var(--shadow-strong), 0 0 0 1px rgba(255,255,255,.5) inset;
   display:flex; flex-direction:column;
   transform:translateY(30px) scale(.94); opacity:0; visibility:hidden; filter:blur(6px);
@@ -3068,7 +3034,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 
 @media (hover:none){ .chat-msg-del{ opacity:.7; } }
 
-.chat-footer{ flex-shrink:0; border-top:1px solid var(--line); background:rgba(255,255,255,.6); backdrop-filter:blur(14px); }
+.chat-footer{ flex-shrink:0; border-top:1px solid var(--line); background:rgba(255,255,255,.6); }
 
 [data-theme="dark"] .chat-footer{ background:rgba(14,32,51,.6); }
 
@@ -3397,10 +3363,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 .timeline-step.is-done .timeline-dot .timeline-dot-check{ opacity:1; transform:scale(1); }
 
 .timeline-step.is-active .timeline-dot{ animation:etaPulseDot 2.2s ease-in-out infinite; }
-@keyframes etaPulseDot{
-  0%,100%{ box-shadow:0 0 0 6px rgba(18,169,224,0.14); }
-  50%{ box-shadow:0 0 0 11px rgba(18,169,224,0.24); }
-}
+@keyframes etaPulseDot { to { box-shadow:0 0 0 6px rgba(18,169,224,0.14); } }
 
 .timeline-step.is-locked .timeline-content{ opacity:.5; }
 
@@ -3438,7 +3401,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 .eta-countdown::after{
   content:''; position:absolute; inset:2px; z-index:0; border-radius:14px; background:var(--white);
 }
-@keyframes etaSpin{ to{ transform:rotate(360deg); } }
+@keyframes etaSpin { to {  } }
 
 .eta-countdown-inner{ position:relative; z-index:1; }
 
@@ -3457,10 +3420,7 @@ body.peserta-modal-lock{ overflow:hidden; }
   transform:translateY(0); opacity:1;
 }
 .eta-unit-value.tick{ animation:etaTick .45s cubic-bezier(.4,0,.2,1); }
-@keyframes etaTick{
-  0%{ transform:translateY(-7px) scale(.92); opacity:.35; }
-  100%{ transform:translateY(0) scale(1); opacity:1; }
-}
+@keyframes etaTick { to { transform:translateY(-7px) scale(.92); opacity:.35; } }
 
 .eta-unit-label{ font-size:8.5px; color:var(--ink-soft); margin-top:4px; text-transform:uppercase; letter-spacing:.04em; }
 
@@ -3618,8 +3578,7 @@ body.peserta-modal-lock{ overflow:hidden; }
   display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
   background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.14);
   border-radius:16px; padding:16px 18px; margin-bottom:18px;
-  backdrop-filter:blur(6px);
-}
+  }
 
 .btc-account-info{ display:flex; flex-direction:column; gap:6px; }
 
@@ -3681,8 +3640,7 @@ body.peserta-modal-lock{ overflow:hidden; }
 /* ---------- Modal "Bayar Sekarang" ---------- */
 .pay-modal-overlay{
   position:fixed; inset:0; z-index:4600;
-  background:rgba(4,10,20,.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
-  display:flex; align-items:center; justify-content:center; padding:20px;
+  background:rgba(4,10,20,.6); display:flex; align-items:center; justify-content:center; padding:20px;
   opacity:0; visibility:hidden; transition:var(--transition);
 }
 
