@@ -2532,7 +2532,7 @@ Mohon konfirmasi ya, bukti transfer terlampir di chat ini. Terima kasih.`;
     try {
       const n = new Notification(`💬 ${msg.nama || 'Peserta'} (Grup LOKON PRIMA)`, {
         body: (msg.pesan || '').slice(0, 120),
-        icon: 'https://benyoriki.github.io/Kemeja/favicon.ico',
+        icon: 'https://kemeja-lp.netlify.app/favicon.png',
         tag: 'lokon-chat' // gantikan notifikasi lama, tidak menumpuk
       });
       n.onclick = () => { window.focus(); openChatPanel(); n.close(); };
