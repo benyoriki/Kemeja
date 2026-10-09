@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // pengguna. Ini membuat seluruh situs (termasuk tombol "Daftar")
   // terlihat macet/tidak responsif selama 15 detik setiap kali halaman
   // dibuka. Diturunkan ke durasi wajar untuk animasi splash singkat.
-  const MIN_LOADING_MS = 7000;
+  const MIN_LOADING_MS = window.__LP_LITE ? 1200 : 3000; // Mode Ringan: loading singkat
   const loadingStartedAt = Date.now();
   function hideLoadingScreen(){
     const elapsed = Date.now() - loadingStartedAt;
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backToTop.classList.toggle('show', scrollTop > 400);
 
     // Parallax hero background
-    if (parallaxBg) {
+    if (parallaxBg && !window.__LP_LITE) {
       parallaxBg.style.transform = `translateY(${scrollTop * 0.25}px)`;
     }
   }
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const lightboxCaption = document.getElementById('lightboxCaption');
   const lightboxClose = document.getElementById('lightboxClose');
   const isFinePointer = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prefersReducedMotion = (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!window.__LP_LITE);
 
   galleryItems.forEach(item => {
     const img = item.querySelector('img');

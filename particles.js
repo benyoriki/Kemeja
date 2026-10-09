@@ -27,7 +27,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  const reduceMotionGlobal = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduceMotionGlobal = (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!window.__LP_LITE);
   const isFinePointer = window.matchMedia('(pointer: fine)').matches;
   const isCoarse = window.matchMedia('(pointer: coarse)').matches;
   const saveData = !!(navigator.connection && navigator.connection.saveData);

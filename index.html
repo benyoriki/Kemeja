@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- MODE RINGAN: default animasi OFF (tersimpan di browser). Harus paling awal agar tidak berkedip. -->
+<script>(function(){var l=1;try{if(localStorage.getItem('lpAnim')==='on')l=0}catch(e){}window.__LP_LITE=l;if(l)document.documentElement.className+=' lite'})();</script>
+
 <!-- ===== SEO META ===== -->
 <title>Part02 Selesai | Kemeja Kerja PT. LOKON PRIMA - Distributor AQUA</title>
 <meta name="title" content="✅ Part02 Selesai – Kemeja Kerja PT. LOKON PRIMA 2026">
@@ -63,7 +66,8 @@
 <!-- Stylesheet: style.min.css = fungsi sistem/layout (minified), particles.min.css = efek visual/partikel (minified) -->
 <link rel="stylesheet" href="style.min.css?v=25">
 <link rel="stylesheet" href="particles.min.css?v=7">
-<link rel="stylesheet" href="p3-glass.css?v=6">
+<link rel="stylesheet" href="p3-glass.css?v=11">
+<link rel="stylesheet" href="lite.css?v=2">
 </head>
 <body>
 
@@ -1562,7 +1566,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <!-- ===== PART 03 : COMING SOON (panel kaca, setengah layar) ===== -->
 <aside id="p3Glass" role="dialog" aria-label="Part 03 segera hadir" aria-hidden="true">
-  <img class="p3-bg" src="p3-teaser.jpg" alt="" width="480" height="720">
+  <img class="p3-bg" src="p3-teaser.jpg" alt="" width="540" height="810" decoding="async">
   <div class="p3-shade"></div>
   <div class="p3-sheen"></div>
   <button type="button" class="p3-close" aria-label="Tutup">&times;</button>
@@ -1584,14 +1588,35 @@ document.addEventListener('DOMContentLoaded', function () {
       <button type="button" class="p3-btn p3-ok">Lihat Website</button>
       <p class="p3-note">Pantau terus website ini untuk pengumuman berikutnya.</p>
     </div>
+    <div class="p3-dev">
+      <span class="p3-dev-ic" aria-hidden="true">&lt;/&gt;</span>
+      <span class="p3-dev-tx"><small>Sistem &amp; Website Developer</small><a href="https://benyoriki.com" target="_blank" rel="noopener noreferrer">benyoriki.com <i aria-hidden="true">&#8599;</i></a></span>
+    </div>
+  </div>
+  <!-- Kunci: harus menjawab soal logika matematika untuk menutup -->
+  <div class="p3-quiz" id="p3Quiz" aria-live="polite">
+    <form class="p3-qcard" id="p3Form" autocomplete="off" novalidate>
+      <span class="p3-qlock">&#128274;</span>
+      <p class="p3-qtag">Verifikasi &bull; <span id="p3QType">Logika Komputer</span></p>
+      <h3 class="p3-qtitle">Jawab dulu untuk menutup layar ini</h3>
+      <p class="p3-qtext" id="p3QText">...</p>
+      <p class="p3-qhint" id="p3QHint"></p>
+      <input type="text" id="p3QInput" class="p3-qinput" inputmode="numeric" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="Ketik jawaban" aria-label="Jawaban">
+      <p class="p3-qmsg" id="p3QMsg"></p>
+      <div class="p3-qbtns">
+        <button type="submit" class="p3-btn">Jawab</button>
+        <button type="button" class="p3-qcancel" id="p3QCancel">Kembali</button>
+      </div>
+    </form>
   </div>
 </aside>
 <button type="button" id="p3Pill" aria-label="Buka info Part 03"><i></i>Part 03 &bull; Segera Hadir</button>
-<script src="p3-glass.js?v=1" defer></script>
+<script src="p3-glass.js?v=4" defer></script>
+<script src="lite.js?v=1" defer></script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
-<script src="script.min.js?v=30" defer></script>
-<script src="particles.min.js?v=6" defer></script>
+<script src="script.min.js?v=31" defer></script>
+<script src="particles.min.js?v=7" defer></script>
 </body>
 </html>
 

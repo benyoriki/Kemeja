@@ -1,0 +1,55 @@
+/* ==========================================================
+   MODE RINGAN  (aktif secara default = "Animasi: OFF")
+   Animasi TIDAK dihapus: semua kode animasi tetap ada di
+   style.css / particles.css. Mode ini hanya mematikannya lewat
+   class "lite" di <html>. Klik tombol "Animasi" di kiri bawah
+   untuk menyalakan lagi (disimpan di browser pengunjung).
+   ========================================================== */
+
+/* 1) Semua animasi dibuat selesai seketika (bukan dibuang), jadi elemen
+      yang awalnya tersembunyi tetap muncul dengan benar. */
+html.lite *, html.lite *::before, html.lite *::after {
+  animation-duration: .001s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+}
+/* 2) Muncul-saat-scroll langsung tampil, tanpa geser/transisi */
+html.lite .fade-up { opacity: 1; -webkit-transform: none; transform: none; transition: none; }
+
+/* 3) Hiasan kecil yang hanya berguna kalau bergerak */
+html.lite .particle, html.lite .loader-particles, html.lite .galeri-bokeh,
+html.lite .twinkle-star, html.lite .pic-spark, html.lite .lunas-showcase-float,
+html.lite .btc-particle, html.lite .pm-particle, html.lite .chat-body-deco,
+html.lite .radar-ring, html.lite .chess-fab-ping, html.lite .chat-fab-ping,
+html.lite .pfloat, html.lite #particleCanvas { display: none !important; }
+
+/* 4) Layar kaca Part 03 tanpa blur latar (blur di belakang halaman yang
+      bisa di-scroll sangat berat di PC lama / Windows 7) */
+html.lite #p3Glass {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  background: -webkit-linear-gradient(315deg, rgba(16,52,96,.80), rgba(7,22,44,.88));
+  background: linear-gradient(135deg, rgba(16,52,96,.80), rgba(7,22,44,.88));
+  transition-duration: .25s;
+}
+html.lite .p3-sheen { display: none; }
+
+/* ---------- Tombol Animasi ON/OFF ---------- */
+#lpToggle {
+  position: fixed; z-index: 470; left: 16px; bottom: 16px;
+  padding: 9px 14px; border-radius: 999px; cursor: pointer;
+  font: 700 12px/1 'Outfit', Arial, sans-serif; letter-spacing: .02em; color: #fff;
+  background: rgba(10, 34, 64, .88); border: 1px solid rgba(255,255,255,.35);
+  box-shadow: 0 6px 18px rgba(3,10,22,.35);
+}
+#lpToggle i { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #8aa0b4; }
+#lpToggle.lp-on i { background: #0FD8B8; }
+#lpToggle:hover { background: rgba(18,100,160,.95); }
+#lpToggle:focus { outline: 2px solid #0FD8B8; outline-offset: 2px; }
+@media (max-width: 820px) { #lpToggle { left: 10px; bottom: 10px; padding: 8px 12px; } }
+@media print { #lpToggle { display: none !important; } }
+
+/* Loading screen tetap cantik saat animasi OFF: ikon kemeja & teks status tampil statis */
+html.lite .loader-shirt .shirt-path { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
+html.lite .loader-status span { opacity: 0; }
+html.lite .loader-status span:first-child { opacity: 1; }
+html.lite .loader-ring-b { display: none; }
