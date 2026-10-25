@@ -89,3 +89,15 @@ pembayaran: {
 ```
 
 Status ini yang menentukan badge warna dan filter pada kartu peserta.
+
+## Tambahan: Polling Part 03 & Penghitung Pengunjung
+Dokumen: `part3_stats/summary` (field: `views`, `yes`, `no`). Tambahkan aturan ini di Firestore Rules:
+
+```
+match /part3_stats/{docId} {
+  allow read: if true;
+  allow create, update: if true;
+  allow delete: if false;
+}
+```
+Field tambahan di dokumen yang sama: `jaket` = jumlah orang (per perangkat) yang membuka gambar "Lihat Model Jaket".

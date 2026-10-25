@@ -27,8 +27,8 @@ html.lite .pfloat, html.lite #particleCanvas { display: none !important; }
       bisa di-scroll sangat berat di PC lama / Windows 7) */
 html.lite #p3Glass {
   -webkit-backdrop-filter: none; backdrop-filter: none;
-  background: -webkit-linear-gradient(315deg, rgba(16,52,96,.80), rgba(7,22,44,.88));
-  background: linear-gradient(135deg, rgba(16,52,96,.80), rgba(7,22,44,.88));
+  background: -webkit-linear-gradient(315deg, #0c2a4d, #06142a);
+  background: linear-gradient(135deg, #0c2a4d, #06142a);
   transition-duration: .25s;
 }
 html.lite .p3-sheen { display: none; }

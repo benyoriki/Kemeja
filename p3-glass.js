@@ -155,6 +155,105 @@
     qInput.value = '';
   }
 
+  /* ---------- POLLING MINAT + JUMLAH PENGUNJUNG (Firestore: part3_stats/summary) ---------- */
+  var pollBox = document.getElementById('p3Poll');
+  var elViews = document.getElementById('p3Views');
+  var elTotal = document.getElementById('p3Total');
+  var pMsg = document.getElementById('p3PMsg');
+  var STAT_COL = 'part3_stats', STAT_DOC = 'summary';
+  var myVote = '', jaketCounted = false, viewCounted = false, subscribed = false, lastData = null;
+  try { myVote = localStorage.getItem('p3Vote') || ''; viewCounted = localStorage.getItem('p3Viewed') === '1'; jaketCounted = localStorage.getItem('p3JaketSeen') === '1'; } catch (e) {}
+
+  function fmt(n) { n = Number(n) || 0; try { return n.toLocaleString('id-ID'); } catch (e) { return String(n); } }
+  function render(d) {
+    lastData = d;
+    document.getElementById('p3JView').innerHTML = fmt(d.jaket);
+    document.getElementById('p3GCount').innerHTML = fmt(d.jaket);
+    var y = Math.max(0, Number(d.yes) || 0), n = Math.max(0, Number(d.no) || 0), t = y + n;
+    var py = t ? Math.round(y * 100 / t) : 0, pn = t ? 100 - py : 0;
+    elViews.innerHTML = fmt(d.views);
+    elTotal.innerHTML = fmt(t);
+    document.getElementById('p3PctYes').innerHTML = py + '%';
+    document.getElementById('p3PctNo').innerHTML = pn + '%';
+    document.getElementById('p3BarYes').style.width = py + '%';
+    document.getElementById('p3BarNo').style.width = pn + '%';
+  }
+  function paintVote() {
+    var yb = document.getElementById('p3Yes'), nb = document.getElementById('p3No');
+    yb.className = 'p3-pbtn p3-yes' + (myVote === 'yes' ? ' p3-sel' : '');
+    nb.className = 'p3-pbtn p3-no' + (myVote === 'no' ? ' p3-sel' : '');
+    pollBox.className = 'p3-poll' + (myVote ? ' p3-voted' : '');
+    if (myVote === 'yes') pMsg.innerHTML = 'Terima kasih! Dukungan Anda menjadi semangat kami untuk menghadirkan yang terbaik.';
+    else if (myVote === 'no') pMsg.innerHTML = 'Terima kasih atas kejujuran Anda. Masukan ini membantu kami terus berbenah. Anda boleh mengubah pilihan kapan saja.';
+  }
+  function fb() { var f = window.__lokonFirebase; return (f && f.db && f.doc && f.setDoc && f.increment) ? f : null; }
+
+  function connect() {
+    var f = fb();
+    if (!f) return;
+    var ref = f.doc(f.db, STAT_COL, STAT_DOC);
+    if (!viewCounted) {
+      viewCounted = true;
+      try { localStorage.setItem('p3Viewed', '1'); } catch (e) {}
+      f.setDoc(ref, { views: f.increment(1) }, { merge: true }).catch(function () {
+        viewCounted = false; try { localStorage.removeItem('p3Viewed'); } catch (e) {}
+      });
+    }
+    if (!subscribed) {
+      subscribed = true;
+      f.onSnapshot(ref, function (snap) {
+        var d = snap.exists() ? snap.data() : {};
+        render({ views: d.views || 0, yes: d.yes || 0, no: d.no || 0, jaket: d.jaket || 0 });
+      }, function () { subscribed = false; });
+    }
+  }
+  window.addEventListener('lokon-firebase-ready', connect);
+  connect();
+
+  function vote(v) {
+    if (v === myVote) return;
+    var prev = myVote, f = fb();
+    myVote = v;
+    try { localStorage.setItem('p3Vote', v); } catch (e) {}
+    paintVote();
+    if (!f) { pMsg.innerHTML += ' (Koneksi belum tersambung, suara belum terhitung.)'; return; }
+    var upd = {};
+    upd[v] = f.increment(1);
+    if (prev) upd[prev] = f.increment(-1);
+    f.setDoc(f.doc(f.db, STAT_COL, STAT_DOC), upd, { merge: true }).catch(function () {
+      myVote = prev; try { if (prev) localStorage.setItem('p3Vote', prev); else localStorage.removeItem('p3Vote'); } catch (e) {}
+      paintVote();
+      pMsg.innerHTML = 'Maaf, suara belum dapat dikirim. Silakan coba lagi sebentar lagi.';
+      pollBox.className = 'p3-poll' + (myVote ? ' p3-voted' : '');
+    });
+  }
+  document.getElementById('p3Yes').onclick = function () { vote('yes'); };
+  document.getElementById('p3No').onclick = function () { vote('no'); };
+  paintVote();
+
+  /* ---------- PENAMPIL MODEL JAKET (dihitung sekali per perangkat) ---------- */
+  var gallery = document.getElementById('p3Gallery');
+  function openGallery() {
+    gallery.className = 'p3-gopen';
+    gallery.setAttribute('aria-hidden', 'false');
+    var f = fb();
+    if (!jaketCounted && f) {
+      jaketCounted = true;
+      try { localStorage.setItem('p3JaketSeen', '1'); } catch (e) {}
+      f.setDoc(f.doc(f.db, STAT_COL, STAT_DOC), { jaket: f.increment(1) }, { merge: true }).catch(function () {
+        jaketCounted = false; try { localStorage.removeItem('p3JaketSeen'); } catch (e) {}
+      });
+    }
+  }
+  function closeGallery() { gallery.className = ''; gallery.setAttribute('aria-hidden', 'true'); }
+  document.getElementById('p3Jaket').onclick = openGallery;
+  document.getElementById('p3GClose').onclick = closeGallery;
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.keyCode === 27) && gallery.className.indexOf('p3-gopen') > -1) {
+      closeGallery(); if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    }
+  });
+
   /* ---------- BUKA / TUTUP ---------- */
   function openPanel() {
     panel.setAttribute('aria-hidden', 'false');
@@ -178,8 +277,7 @@
   function hideQuiz() { quiz.className = 'p3-quiz'; }
 
   panel.querySelector('.p3-close').onclick = showQuiz;
-  panel.querySelector('.p3-ok').onclick = showQuiz;
-  document.getElementById('p3QCancel').onclick = hideQuiz;
+    document.getElementById('p3QCancel').onclick = hideQuiz;
   pill.onclick = openPanel;
 
   form.onsubmit = function (e) {
