@@ -926,3 +926,26 @@ input[type="range"].level-range{ width:100%; margin:10px 0 20px; }
   .dash-menu-drawer{ transition:none; }
   .dash-menu-overlay{ transition:none; }
 }
+
+
+/* =========================================================
+   MODE RINGAN (kelas .perf-low di <html>, diset otomatis untuk
+   HP, PC dengan CPU <=4 core / RAM <=4GB, dan Windows 7/XP).
+   Tampilan tetap sama: latar kaca dibuat sedikit lebih pekat
+   sebagai pengganti blur, animasi dekoratif yang berat dimatikan.
+========================================================= */
+html.perf-low *, html.perf-low *::before, html.perf-low *::after{
+  -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+}
+html.perf-low .glass{ background:rgba(18,26,45,.94); }
+html.perf-low .modal-backdrop{ background:rgba(4,8,18,.84); }
+html.perf-low .lobby-orb{ filter:none !important; animation:none !important; opacity:.45; }
+html.perf-low .tourney-banner,
+html.perf-low .tourney-banner-flecks,
+html.perf-low .tourney-banner-icon,
+html.perf-low .tourney-modal-flecks,
+html.perf-low .tw-burst,
+html.perf-low .online-pulse-dot{ animation:none !important; }
+html.perf-low .tourney-banner-flecks,
+html.perf-low .tourney-modal-flecks,
+html.perf-low .tw-burst{ display:none !important; }

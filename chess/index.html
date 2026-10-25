@@ -12,7 +12,12 @@
 
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></noscript>
-<link rel="stylesheet" href="style.css?v=5">
+<script>
+/* Deteksi perangkat ringan lebih awal agar CSS hemat langsung aktif (HP, PC lama, Windows 7) */
+(function(){try{var u=navigator.userAgent||'',n=navigator;
+if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.deviceMemory||4)<=4||(window.matchMedia&&matchMedia('(pointer:coarse)').matches)||(n.connection&&n.connection.saveData)){document.documentElement.className+=' perf-low';}}catch(e){}})();
+</script>
+<link rel="stylesheet" href="style.css?v=6">
 
 <!-- Three.js sudah di-bundle & di-tree-shake langsung ke dalam effects.js (lihat effects.source.js untuk versi asli/edit) -->
 </head>
@@ -496,6 +501,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <div id="toastContainer"></div>
 <div id="challengeContainer"></div>
 
-<script type="module" src="script.js?v=5"></script>
+<script type="module" src="script.js?v=6"></script>
 </body>
 </html>

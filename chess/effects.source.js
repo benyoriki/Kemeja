@@ -47,6 +47,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const FILES = ['a','b','c','d','e','f','g','h'];
 const SQUARE_SIZE = 1;
@@ -76,18 +77,42 @@ export class Chess3DScene{
     this._raf = null;
     this._paused = false;
     this.quality = { bloom: true, shadows: true };
+    this.defaults = { bloom: true, shadows: true };
+    this.isLite = false;
+    this._activeUntil = 0;
+    this._lastFrameAt = 0;
+    this.composer = null;
+
+    // PERFORMA: setiap pemanggilan metode publik (gerak bidak, highlight, zoom,
+    // perayaan, dst.) membangunkan render loop. Saat papan diam, loop turun
+    // ke frame-rate rendah & bayangan tidak digambar ulang.
+    const proto = Object.getPrototypeOf(this);
+    Object.getOwnPropertyNames(proto).forEach((name) => {
+      if (name === 'constructor' || name[0] === '_' || name === 'init' || name === 'dispose' || name === 'resize') return;
+      const fn = proto[name];
+      if (typeof fn !== 'function') return;
+      this[name] = (...args) => { this._wake(5000); return fn.apply(this, args); };
+    });
+  }
+
+  _wake(ms = 1500){
+    const until = performance.now() + ms;
+    if (until > this._activeUntil) this._activeUntil = until;
   }
 
   async init(){
     const el = this.container;
     const w = el.clientWidth, h = el.clientHeight;
 
-    // --- Deteksi perangkat: turunkan beban render di HP/tablet, tetap penuh di PC ---
+    // --- Deteksi perangkat: HP, PC lemah, Windows 7/XP, atau GPU software -> mode ringan ---
+    const ua = navigator.userAgent || '';
     const isCoarse = window.matchMedia('(pointer: coarse)').matches;
-    const lowCores = (navigator.hardwareConcurrency || 4) <= 4;
-    this._lite = isCoarse || lowCores;
-    const dprCap = this._lite ? 1.5 : 2;
-    const shadowSize = this._lite ? 1024 : 2048;
+    const cores = navigator.hardwareConcurrency || 4;
+    const mem = navigator.deviceMemory || 4;
+    const isOldWin = /Windows NT (5\.|6\.0|6\.1)/.test(ua);
+    this._lite = isCoarse || cores <= 4 || mem <= 4 || isOldWin;
+    this.isLite = this._lite;
+    this._isCoarse = isCoarse;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0d1526);
@@ -97,12 +122,30 @@ export class Chess3DScene{
     this._setCameraForOrientation('w', true);
 
     this.renderer = new THREE.WebGLRenderer({
-      antialias: !this._lite, alpha: false,
+      antialias: !isCoarse, alpha: false,
       powerPreference: this._lite ? 'low-power' : 'high-performance'
     });
+
+    // GPU software (SwiftShader/llvmpipe/Basic Render) = paling lambat -> mode paling hemat
+    let software = false;
+    try {
+      const gl = this.renderer.getContext();
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      if (ext) software = /swiftshader|llvmpipe|software|basic render/i.test(String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)));
+    } catch (e) {}
+    this._software = software;
+
+    const dprCap = software ? 1 : (this._lite ? (isCoarse ? 1.25 : (isOldWin ? 1 : 1.25)) : 2);
+    const shadowSize = software ? 512 : (this._lite ? 1024 : 2048);
+    this.defaults = { bloom: !this._lite, shadows: !software };
+    this.quality = { bloom: this.defaults.bloom, shadows: this.defaults.shadows };
+
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
     this.renderer.setSize(w, h);
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = this.quality.shadows;
+    // Peta bayangan hanya digambar ulang saat ada gerakan (lihat _animate)
+    this.renderer.shadowMap.autoUpdate = false;
+    this.renderer.shadowMap.needsUpdate = true;
     this.renderer.shadowMap.type = this._lite ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -118,13 +161,19 @@ export class Chess3DScene{
     this.controls.maxPolarAngle = 1.15;
     this.controls.enablePan = false;
     this.controls.target.set(0, 0, 0);
+    this.controls.addEventListener('change', () => this._wake(1200));
 
     this._setupLights(shadowSize);
     this._setupBoard();
     this._setupAmbientParticles();
     this._setupParticlePools();
-    this._setupComposer(w, h);
+    if (this.quality.bloom) this._setupComposer(w, h);
     this._setupRaycast();
+    const wakeEv = () => this._wake(1500);
+    this.renderer.domElement.addEventListener('pointerdown', wakeEv);
+    this.renderer.domElement.addEventListener('pointermove', wakeEv);
+    this.renderer.domElement.addEventListener('wheel', wakeEv, { passive: true });
+    this._wake(4000);
 
     this._onResize = () => this._scheduleResize();
     window.addEventListener('resize', this._onResize);
@@ -374,7 +423,7 @@ export class Chess3DScene{
   }
 
   _setupAmbientParticles(){
-    const COUNT = this._lite ? 80 : 140;
+    const COUNT = this._software ? 24 : (this._lite ? 48 : 140);
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(COUNT * 3);
     const speeds = new Float32Array(COUNT);
@@ -443,12 +492,16 @@ export class Chess3DScene{
   }
 
   _setupComposer(w, h){
+    if (this.composer) return;
+    if (!w || !h){ w = this.container.clientWidth || 300; h = this.container.clientHeight || 300; }
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
     const bloomScale = this._lite ? 0.55 : 1;
     this.bloomPass = new UnrealBloomPass(new THREE.Vector2(w * bloomScale, h * bloomScale), 0.4, 0.4, 0.62);
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
+    if (this.composer) this.composer.setSize(w, h);
+    this._wake(1200);
   }
 
   _setupRaycast(){
@@ -523,30 +576,55 @@ export class Chess3DScene{
    * cukup return sebuah THREE.Group berisi model yang dimuat.
    */
   createPiece(type, color){
-    const isWhite = color === 'w';
-    const mat = new THREE.MeshStandardMaterial({
-      color: isWhite ? 0xEDEFF3 : 0x717CAD,
-      metalness: isWhite ? 0.08 : 0.22,
-      roughness: isWhite ? 0.48 : 0.46,
-      emissive: isWhite ? 0x0d1520 : 0x3a2570,
-      emissiveIntensity: isWhite ? 0.04 : 0.42
-    });
-    const group = new THREE.Group();
-    const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; m.castShadow = true; m.receiveShadow = true; group.add(m); return m; };
+    // Material dipakai bersama (2 material total) & geometri tiap jenis bidak
+    // digabung jadi SATU mesh dan di-cache -> 1 draw call per bidak (dulu 4-6),
+    // tidak ada alokasi geometri/material baru tiap papan di-reset.
+    if (!this._pieceMats) this._pieceMats = {};
+    if (!this._pieceGeos) this._pieceGeos = {};
+    let mat = this._pieceMats[color];
+    if (!mat){
+      const isWhite = color === 'w';
+      mat = new THREE.MeshStandardMaterial({
+        color: isWhite ? 0xEDEFF3 : 0x717CAD,
+        metalness: isWhite ? 0.08 : 0.22,
+        roughness: isWhite ? 0.48 : 0.46,
+        emissive: isWhite ? 0x0d1520 : 0x3a2570,
+        emissiveIntensity: isWhite ? 0.04 : 0.42
+      });
+      this._pieceMats[color] = mat;
+    }
+    let geo = this._pieceGeos[type];
+    if (!geo){ geo = this._buildPieceGeometry(type); this._pieceGeos[type] = geo; }
 
-    const base = add(new THREE.CylinderGeometry(0.24, 0.28, 0.1, 24), 0.05);
-    add(new THREE.CylinderGeometry(0.16, 0.22, 0.14, 24), 0.16);
+    const group = new THREE.Group();
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    group.userData.type = type;
+    group.userData.color = color;
+    group.scale.setScalar(0.92);
+    return group;
+  }
+
+  _buildPieceGeometry(type){
+    const q = (n) => this._lite ? Math.max(8, Math.round(n * 0.7)) : n; // segmen lebih sedikit di mode ringan
+    const parts = [];
+    const add = (geo, y) => { const m = new THREE.Mesh(geo); m.position.y = y; parts.push(m); return m; };
+
+    add(new THREE.CylinderGeometry(0.24, 0.28, 0.1, q(24)), 0.05);
+    add(new THREE.CylinderGeometry(0.16, 0.22, 0.14, q(24)), 0.16);
 
     switch (type){
-      case 'p': // pion
-        add(new THREE.SphereGeometry(0.15, 20, 16), 0.36);
+      case 'p':
+        add(new THREE.SphereGeometry(0.15, q(20), q(16)), 0.36);
         break;
-      case 'r': // benteng
-        add(new THREE.CylinderGeometry(0.19, 0.19, 0.42, 20), 0.42);
+      case 'r':
+        add(new THREE.CylinderGeometry(0.19, 0.19, 0.42, q(20)), 0.42);
         { const crown = add(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 8), 0.66); crown.rotation.y = Math.PI/8; }
         break;
-      case 'n': { // kuda (stilisasi kepala L)
-        add(new THREE.CylinderGeometry(0.16, 0.2, 0.4, 18), 0.4);
+      case 'n': {
+        add(new THREE.CylinderGeometry(0.16, 0.2, 0.4, q(18)), 0.4);
         const head = add(new THREE.BoxGeometry(0.16, 0.28, 0.34), 0.66);
         head.position.z = 0.06;
         head.rotation.x = -0.25;
@@ -554,27 +632,32 @@ export class Chess3DScene{
         nose.position.z = 0.2;
         break;
       }
-      case 'b': // gajah/uskup
-        add(new THREE.ConeGeometry(0.19, 0.5, 22), 0.5);
-        add(new THREE.SphereGeometry(0.09, 16, 12), 0.82);
+      case 'b':
+        add(new THREE.ConeGeometry(0.19, 0.5, q(22)), 0.5);
+        add(new THREE.SphereGeometry(0.09, q(16), q(12)), 0.82);
         break;
-      case 'q': // menteri
-        add(new THREE.CylinderGeometry(0.1, 0.22, 0.58, 22), 0.55);
-        add(new THREE.TorusGeometry(0.19, 0.045, 10, 24), 0.86);
-        add(new THREE.SphereGeometry(0.09, 16, 12), 0.98);
+      case 'q':
+        add(new THREE.CylinderGeometry(0.1, 0.22, 0.58, q(22)), 0.55);
+        add(new THREE.TorusGeometry(0.19, 0.045, 10, q(24)), 0.86);
+        add(new THREE.SphereGeometry(0.09, q(16), q(12)), 0.98);
         break;
-      case 'k': // raja
-        add(new THREE.CylinderGeometry(0.1, 0.22, 0.62, 22), 0.57);
-        add(new THREE.TorusGeometry(0.2, 0.04, 10, 24), 0.9);
+      case 'k':
+        add(new THREE.CylinderGeometry(0.1, 0.22, 0.62, q(22)), 0.57);
+        add(new THREE.TorusGeometry(0.2, 0.04, 10, q(24)), 0.9);
         add(new THREE.BoxGeometry(0.06, 0.2, 0.06), 1.06);
         add(new THREE.BoxGeometry(0.16, 0.06, 0.06), 1.03);
         break;
     }
 
-    group.userData.type = type;
-    group.userData.color = color;
-    group.scale.setScalar(0.92);
-    return group;
+    const geos = parts.map((m) => {
+      m.updateMatrix();
+      const g = m.geometry;
+      g.applyMatrix4(m.matrix);
+      return g;
+    });
+    const merged = mergeGeometries(geos, false);
+    geos.forEach((g) => g.dispose());
+    return merged;
   }
 
   /** Set seluruh posisi papan dari array chess.js board() (8x8, baris a8..h1). */
@@ -858,11 +941,18 @@ export class Chess3DScene{
 
   /* ---------------- Kualitas / performa ---------------- */
 
-  setBloom(enabled){ this.quality.bloom = enabled; if (this.bloomPass) this.bloomPass.enabled = enabled; }
+  setBloom(enabled){
+    this.quality.bloom = enabled;
+    if (enabled && !this.composer) this._setupComposer();
+    if (this.bloomPass) this.bloomPass.enabled = enabled;
+    this._wake(1500);
+  }
   setShadows(enabled){
     this.quality.shadows = enabled;
     this.renderer.shadowMap.enabled = enabled;
     if (this.sun) this.sun.castShadow = enabled;
+    this.renderer.shadowMap.needsUpdate = true;
+    this._wake(1500);
   }
 
   /* ---------------- Util tween & loop ---------------- */
@@ -914,35 +1004,36 @@ export class Chess3DScene{
     if (this._paused) return;
     this._raf = requestAnimationFrame(() => this._animate());
 
-    // PERFORMA: di perangkat "lite" (HP/PC lemah), batasi render ke
-    // ~30fps alih-alih mengikuti refresh rate layar (bisa 60-120fps).
-    // Mata nyaris tidak bisa membedakan 30fps vs 60fps untuk papan
-    // catur yang sebagian besar statis, tapi bedanya besar untuk
-    // panas/baterai HP dan kelancaran keseluruhan halaman.
-    if (this._lite){
-      const now = performance.now();
-      if (this._lastFrameAt && now - this._lastFrameAt < 33) return;
-      this._lastFrameAt = now;
-    }
+    // PERFORMA: dua tingkat frame-rate.
+    //  - AKTIF (ada gerakan/interaksi): ringan 30fps, PC kuat bebas (refresh layar)
+    //  - DIAM (papan tidak berubah): 10fps (ringan) / 30fps (PC kuat), bayangan tidak digambar ulang
+    const now = performance.now();
+    const active = now < this._activeUntil;
+    const minGap = active ? (this._lite ? 33 : 0) : (this._lite ? 100 : 33);
+    if (this._lastFrameAt && now - this._lastFrameAt < minGap) return;
+    const dtScale = this._lastFrameAt ? Math.min(6, (now - this._lastFrameAt) / 16.7) : 1;
+    this._lastFrameAt = now;
 
     this.controls.update();
 
-    // Partikel ambient melayang pelan ke atas lalu reset
+    // Partikel ambient melayang pelan ke atas lalu reset (kecepatan dikompensasi dt)
     const ap = this._ambientParticles;
     const pos = ap.points.geometry.attributes.position;
     for (let i = 0; i < ap.speeds.length; i++){
-      pos.array[i*3 + 1] += ap.speeds[i] * 0.01;
+      pos.array[i*3 + 1] += ap.speeds[i] * 0.01 * dtScale;
       if (pos.array[i*3 + 1] > 5.5) pos.array[i*3 + 1] = 0.3;
     }
     pos.needsUpdate = true;
 
-    const t = performance.now() * 0.001;
+    const t = now * 0.001;
     if (this._energyRing) this._energyRing.material.emissiveIntensity = 1.8 + Math.sin(t * 2) * 0.5;
     if (this.checkRing) this.checkRing.material.opacity = 0.5 + Math.sin(t * 8) * 0.35;
     if (this._cyanLight) this._cyanLight.intensity = 5 + Math.sin(t * 1.3) * 1.2;
     if (this._violetLight) this._violetLight.intensity = 5 + Math.cos(t * 1.1) * 1.2;
 
-    if (this.quality.bloom) this.composer.render();
+    this.renderer.shadowMap.needsUpdate = active && this.quality.shadows;
+
+    if (this.quality.bloom && this.composer) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
   }
 

@@ -84,6 +84,16 @@ export class ChessMatch {
    LAWAN KOMPUTER
 ========================================================= */
 
+function isLiteDevice(){
+  try {
+    const ua = navigator.userAgent || '';
+    return /Windows NT (5\.|6\.0|6\.1)/.test(ua) ||
+      (navigator.hardwareConcurrency || 4) <= 4 ||
+      (navigator.deviceMemory || 4) <= 4 ||
+      window.matchMedia('(pointer: coarse)').matches;
+  } catch { return false; }
+}
+
 const STOCKFISH_URLS = {
   wasm: 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.wasm.js',
   asm:  'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js'
@@ -123,7 +133,7 @@ export class ComputerOpponent {
         settled = true;
         try { worker && worker.terminate(); } catch {}
         reject(new Error('Timeout memuat Stockfish'));
-      }, 6000);
+      }, 12000);
 
       try {
         worker = new Worker(url);
@@ -147,6 +157,7 @@ export class ComputerOpponent {
           settled = true;
           clearTimeout(timeout);
           this.worker = worker;
+          worker.postMessage('setoption name Hash value 16');
           worker.postMessage(`setoption name Skill Level value ${this.level}`);
           worker.onmessage = (ev) => this._onEngineMessage(ev);
           resolve();
@@ -183,16 +194,20 @@ export class ComputerOpponent {
     if (!this.usingFallback && this.worker){
       return new Promise((resolve) => {
         this._pending = { resolve };
-        const depth = 2 + Math.round(this.level * 0.7); // level 1 -> depth ~3, level 20 -> depth ~16
+        // PERFORMA: kedalaman & waktu berpikir dibatasi di HP / PC lama / Windows 7
+        // supaya komputer tidak membuat perangkat panas atau "hang".
+        const lite = isLiteDevice();
+        const depth = Math.min(lite ? 10 : 16, 2 + Math.round(this.level * 0.7));
+        const movetime = lite ? 1200 : 3000;
         this.worker.postMessage(`position fen ${fen}`);
-        this.worker.postMessage(`go depth ${depth}`);
-        // Jaga-jaga: bila worker diam saja (jarang terjadi), pakai fallback setelah 8 detik.
+        this.worker.postMessage(`go depth ${depth} movetime ${movetime}`);
+        // Jaga-jaga: bila worker diam saja (jarang terjadi), pakai fallback.
         setTimeout(() => {
           if (this._pending){
             this._pending = null;
             resolve(this._fallbackMove(legalMovesProvider));
           }
-        }, 8000);
+        }, movetime + 6000);
       });
     }
     return this._fallbackMove(legalMovesProvider);

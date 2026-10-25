@@ -340,7 +340,7 @@ function getActivePlayers(){
    terasa realtime, tapi tidak lagi rebuild DOM berkali-kali
    per detik.
 ========================================================= */
-const RENDER_LISTS_MIN_GAP_MS = 1200;
+const RENDER_LISTS_MIN_GAP_MS = document.documentElement.classList.contains('perf-low') ? 2500 : 1200;
 let _renderListsTimer = null;
 let _renderListsLastAt = 0;
 function scheduleRenderLists(){
@@ -1122,8 +1122,13 @@ async function setupBoardForNewGame(fen){
     const Chess3DScene = await loadScene3DModule();
     state.scene = new Chess3DScene(el.board3d, { onSquareClick: onBoardSquareClick });
     await state.scene.init();
-    state.scene.setBloom(el.settingBloom ? el.settingBloom.checked : true);
-    state.scene.setShadows(el.settingShadow ? el.settingShadow.checked : true);
+    // Perangkat lemah (HP, PC lama/Windows 7, GPU software) mulai dengan glow mati
+    // (dan bayangan mati bila GPU software). Pemain tetap bisa menyalakannya di Pengaturan.
+    const dq = state.scene.defaults || { bloom: true, shadows: true };
+    if (el.settingBloom) el.settingBloom.checked = dq.bloom;
+    if (el.settingShadow) el.settingShadow.checked = dq.shadows;
+    state.scene.setBloom(dq.bloom);
+    state.scene.setShadows(dq.shadows);
   }
   state.scene.setPosition(state.match.board());
   state.scene.clearHighlights();

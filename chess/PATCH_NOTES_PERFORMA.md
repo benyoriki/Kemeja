@@ -67,3 +67,16 @@ dan kelancaran keseluruhan halaman di HP.
   (bukan diff per-baris). Dengan throttle di atas ini sudah cukup ringan,
   tapi kalau suatu saat pemain online bisa ratusan sekaligus, ini kandidat
   berikutnya untuk dioptimasi (render hanya baris yang berubah).
+
+---
+# Putaran 2 — Mode Ringan (HP, PC lama, Windows 7)
+
+Terdeteksi otomatis (layar sentuh, CPU <=4 core, RAM <=4GB, Windows 7/XP, atau GPU software).
+
+- **Papan 3D:** bidak digabung jadi 1 mesh per jenis + material dipakai bersama (draw call bidak turun ~4-6x, tidak ada alokasi baru saat papan di-reset).
+- **Glow (bloom) mati di perangkat ringan** dan komposer baru dibuat saat dinyalakan di Pengaturan. Bayangan mati bila GPU software.
+- **Render 2 tingkat:** saat ada gerakan 30fps; saat diam 10fps (ringan) / 30fps (PC kuat). Peta bayangan hanya digambar ulang saat ada gerakan.
+- Resolusi: HP maks 1.25x, PC lama 1x. Partikel ambient dikurangi.
+- **Komputer (Stockfish):** kedalaman dibatasi (maks 10) + batas waktu berpikir 1,2 dtk di perangkat ringan (3 dtk di PC kuat), Hash 16MB.
+- **CSS:** kelas `perf-low` mematikan backdrop-filter, blur 70px pada orb latar, dan animasi dekoratif turnamen; daftar ranking dirender maks tiap 2,5 dtk.
+- `effects.js` dibangun ulang dari `effects.source.js` (Three.js r160, esbuild, target Chrome 80).
