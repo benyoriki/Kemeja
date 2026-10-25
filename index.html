@@ -66,7 +66,7 @@
 <!-- Stylesheet: style.min.css = fungsi sistem/layout (minified), particles.min.css = efek visual/partikel (minified) -->
 <link rel="stylesheet" href="style.min.css?v=25">
 <link rel="stylesheet" href="particles.min.css?v=7">
-<link rel="stylesheet" href="p3-glass.css?v=13">
+<link rel="stylesheet" href="p3-glass.css?v=14">
 <link rel="stylesheet" href="lite.css?v=2">
 </head>
 <body>
@@ -1569,45 +1569,48 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="p3-sheen"></div>
   <button type="button" class="p3-close" aria-label="Tutup">&times;</button>
   <div class="p3-body">
-    <span class="p3-badge"><i></i>PART 03 &bull; SEGERA HADIR</span>
-    <p class="p3-done">Pendaftaran tuntas &bull; Produksi tuntas</p>
-    <h2 class="p3-title">Kepercayaan Anda membawa kita sejauh ini.<br><span>Mari lanjutkan bersama.</span></h2>
-    <p class="p3-sub">Terima kasih telah menjadi bagian dari perjalanan LOKON PRIMA. Kemeja kerja kebanggaan kita sudah rampung, dan kini kami merancang langkah berikutnya dengan standar yang lebih tinggi. <span class="p3-long">Setiap suara Anda menentukan arah yang kami ambil.</span></p>
-    <ul class="p3-steps">
-      <li class="p3-merge"><span class="p3-ic">&#10003;</span><b>Part 01 &amp; 02</b> Daftar &amp; Produksi<em>SELESAI</em></li>
-      <li class="p3-full"><span class="p3-ic">&#10003;</span><b>Part 01</b> Pendaftaran<em>SELESAI</em></li>
-      <li class="p3-full"><span class="p3-ic">&#10003;</span><b>Part 02</b> Produksi Kemeja<em>SELESAI</em></li>
-      <li class="p3-next"><span class="p3-ic">3</span><b>Part 03</b> Dalam persiapan<em>SEGERA HADIR</em></li>
-    </ul>
-
-    <div class="p3-poll" id="p3Poll">
-      <p class="p3-pq">Apakah Anda tertarik dengan Part 03?</p>
-      <div class="p3-pbtns">
-        <button type="button" class="p3-pbtn p3-yes" id="p3Yes" data-v="yes"><span aria-hidden="true">&#128077;</span> Tertarik</button>
-        <button type="button" class="p3-pbtn p3-no" id="p3No" data-v="no"><span aria-hidden="true">&#128581;</span> Belum tertarik</button>
+    <div class="p3-grid">
+      <div class="p3-col-l">
+        <span class="p3-badge"><i></i>PART 03 &bull; SEGERA HADIR</span>
+        <p class="p3-done">Pendaftaran tuntas &bull; Produksi tuntas</p>
+        <h2 class="p3-title">Kepercayaan Anda membawa kita sejauh ini.<br><span>Mari lanjutkan bersama.</span></h2>
+        <p class="p3-sub">Terima kasih telah menjadi bagian dari perjalanan LOKON PRIMA. Kemeja kerja kebanggaan kita sudah rampung, dan kini kami merancang langkah berikutnya dengan standar yang lebih tinggi. <span class="p3-long">Setiap suara Anda menentukan arah yang kami ambil.</span></p>
+        <ul class="p3-steps">
+          <li class="p3-merge"><span class="p3-ic">&#10003;</span><b>Part 01 &amp; 02</b> Daftar &amp; Produksi<em>SELESAI</em></li>
+          <li class="p3-full"><span class="p3-ic">&#10003;</span><b>Part 01</b> Pendaftaran<em>SELESAI</em></li>
+          <li class="p3-full"><span class="p3-ic">&#10003;</span><b>Part 02</b> Produksi Kemeja<em>SELESAI</em></li>
+          <li class="p3-next"><span class="p3-ic">3</span><b>Part 03</b> Dalam persiapan<em>SEGERA HADIR</em></li>
+        </ul>
+        <div class="p3-count" id="p3Count">
+          <div><strong>00</strong><small>Hari</small></div><div><strong>00</strong><small>Jam</small></div><div><strong>00</strong><small>Menit</small></div><div><strong>00</strong><small>Detik</small></div>
+        </div>
       </div>
-      <div class="p3-res" id="p3Res">
-        <div class="p3-bar"><span>Tertarik</span><div><i id="p3BarYes"></i></div><b id="p3PctYes">0%</b></div>
-        <div class="p3-bar p3-barno"><span>Belum tertarik</span><div><i id="p3BarNo"></i></div><b id="p3PctNo">0%</b></div>
+      <div class="p3-col-r">
+        <div class="p3-poll" id="p3Poll">
+          <p class="p3-pq">Apakah Anda tertarik dengan Part 03?</p>
+          <div class="p3-pbtns">
+            <button type="button" class="p3-pbtn p3-yes" id="p3Yes" data-v="yes"><span aria-hidden="true">&#128077;</span> Tertarik</button>
+            <button type="button" class="p3-pbtn p3-no" id="p3No" data-v="no"><span aria-hidden="true">&#128581;</span> Belum tertarik</button>
+          </div>
+          <div class="p3-res" id="p3Res">
+            <div class="p3-bar"><span>Tertarik</span><div><i id="p3BarYes"></i></div><b id="p3PctYes">0%</b></div>
+            <div class="p3-bar p3-barno"><span>Belum tertarik</span><div><i id="p3BarNo"></i></div><b id="p3PctNo">0%</b></div>
+          </div>
+          <p class="p3-pmsg" id="p3PMsg">Pilihan Anda membantu kami menentukan langkah selanjutnya.</p>
+        </div>
+        <div class="p3-stats">
+          <span><b id="p3Views">&ndash;</b><small>kunjungan</small></span>
+          <span><b id="p3Total">&ndash;</b><small>suara masuk</small></span>
+          <span><b id="p3JView">&ndash;</b><small>lihat jaket</small></span>
+        </div>
       </div>
-      <p class="p3-pmsg" id="p3PMsg">Pilihan Anda membantu kami menentukan langkah selanjutnya.</p>
-      <div class="p3-stats">
-        <span><b id="p3Views">&ndash;</b> kunjungan</span>
-        <span><b id="p3Total">&ndash;</b> suara masuk</span>
-        <span><b id="p3JView">&ndash;</b> orang lihat model jaket</span>
-      </div>
-    </div>
-
-    <div class="p3-count" id="p3Count">
-      <div><strong>00</strong><small>Hari</small></div><div><strong>00</strong><small>Jam</small></div><div><strong>00</strong><small>Menit</small></div><div><strong>00</strong><small>Detik</small></div>
     </div>
     <div class="p3-actions">
       <button type="button" class="p3-btn p3-ok" id="p3Jaket">Lihat Model Jaket</button>
-      <p class="p3-note">Terus pantau website ini untuk kabar terbaru.</p>
-    </div>
-    <div class="p3-dev">
-      <span class="p3-dev-ic" aria-hidden="true">&lt;/&gt;</span>
-      <span class="p3-dev-tx"><small>Sistem &amp; Website Developer</small><a href="https://benyoriki.com" target="_blank" rel="noopener noreferrer">benyoriki.com <i aria-hidden="true">&#8599;</i></a></span>
+      <a class="p3-devbtn" href="https://benyoriki.com" target="_blank" rel="noopener noreferrer">
+        <span class="p3-db-ic" aria-hidden="true">&lt;/&gt;</span>
+        <span class="p3-db-tx"><small>Butuh Teknologi?</small><strong>benyoriki.com <i aria-hidden="true">&#8599;</i></strong></span>
+      </a>
     </div>
   </div>
   <!-- Kunci: harus menjawab soal logika matematika untuk menutup -->
@@ -1637,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="p3-gscroll"><img src="model-jaket.jpg" alt="Model Jaket Kerja AQUA - PT. Lokon Prima, 8 pilihan perpaduan warna" width="1024" height="1536" decoding="async"></div>
 </div>
 <button type="button" id="p3Pill" aria-label="Buka info Part 03"><i></i>Part 03 &bull; Segera Hadir</button>
-<script src="p3-glass.js?v=6" defer></script>
+<script src="p3-glass.js?v=7" defer></script>
 <script src="lite.js?v=1" defer></script>
 
 <!-- script.js = fungsi sistem inti, particles.js = efek visual/partikel (harus dimuat SETELAH script.js) -->
