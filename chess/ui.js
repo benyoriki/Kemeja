@@ -89,6 +89,10 @@ export function renderMoveHistory(el, verboseHistory){
   }
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
+  el.scrollLeft = el.scrollWidth;
+  const sc = el.parentElement;
+  if (sc) sc.classList.toggle('has-moves', verboseHistory.length > 0);
+  if (sc){ sc.scrollTop = sc.scrollHeight; sc.scrollLeft = sc.scrollWidth; }
 }
 
 export function setTimerDisplay(el, ms, isActive){

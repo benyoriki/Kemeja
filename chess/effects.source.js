@@ -61,6 +61,13 @@ function squareToXZ(square){
   return { x, z };
 }
 
+const THEMES = {
+  neon:   { light: 0x7d97c8, dark: 0x131b31, w: 0xF3EFE6, b: 0x7a5df0, frame: 0x232c46 },
+  kayu:   { light: 0xe3c08d, dark: 0x8a5a32, w: 0xF6EFE0, b: 0x3b2a22, frame: 0x4a3220 },
+  es:     { light: 0xe9f4ff, dark: 0x6f9fd0, w: 0xFFFFFF, b: 0x1e3a6e, frame: 0x2a4b78 },
+  zamrud: { light: 0xcfe8d5, dark: 0x2f7a5a, w: 0xF7F3E8, b: 0x22313a, frame: 0x174232 }
+};
+
 function easeInOutQuad(t){ return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; }
 function easeOutBack(t){ const c1=1.70158, c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
 
@@ -82,6 +89,7 @@ export class Chess3DScene{
     this._activeUntil = 0;
     this._lastFrameAt = 0;
     this.composer = null;
+    this._theme = 'neon';
 
     // PERFORMA: setiap pemanggilan metode publik (gerak bidak, highlight, zoom,
     // perayaan, dst.) membangunkan render loop. Saat papan diam, loop turun
@@ -160,11 +168,21 @@ export class Chess3DScene{
     this.controls.minPolarAngle = 0.35;
     this.controls.maxPolarAngle = 1.15;
     this.controls.enablePan = false;
+    this.controls.minAzimuthAngle = -0.8;
+    this.controls.maxAzimuthAngle = 0.8;
+    if (isCoarse){
+      // HP: 1 jari = pilih bidak (tidak memutar kamera); putar/zoom pakai 2 jari atau tombol Kamera.
+      this.controls.touches.ONE = -1;
+      this.controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+    }
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener('change', () => this._wake(1200));
+    this.controls.addEventListener('start', () => { this._userMoved = true; });
+    this._setCameraForOrientation('w', true);
 
     this._setupLights(shadowSize);
     this._setupBoard();
+    this._setupGlowDecor();
     this._setupAmbientParticles();
     this._setupParticlePools();
     if (this.quality.bloom) this._setupComposer(w, h);
@@ -234,6 +252,7 @@ export class Chess3DScene{
     // Bingkai papan
     const frameGeo = new THREE.BoxGeometry(9.2, 0.32, 9.2);
     const frameMat = new THREE.MeshStandardMaterial({ color: 0x232c46, metalness: 0.5, roughness: 0.42 });
+    this._frameMat = frameMat;
     const frame = new THREE.Mesh(frameGeo, frameMat);
     frame.position.y = -0.16;
     frame.receiveShadow = true;
@@ -243,8 +262,9 @@ export class Chess3DScene{
     // 64 petak — DIGABUNG jadi 2 InstancedMesh (terang/gelap) alih-alih 64
     // mesh terpisah. Sama persis secara visual, tapi draw call turun dari
     // 64 jadi 2 → beban GPU jauh lebih ringan, khususnya di HP.
-    const lightMat = new THREE.MeshStandardMaterial({ color: 0x4a6087, metalness: 0.2, roughness: 0.48 });
-    const darkMat  = new THREE.MeshStandardMaterial({ color: 0x1a2338, metalness: 0.3, roughness: 0.42 });
+    const lightMat = new THREE.MeshStandardMaterial({ color: 0x7d97c8, metalness: 0.15, roughness: 0.5 });
+    const darkMat  = new THREE.MeshStandardMaterial({ color: 0x131b31, metalness: 0.3, roughness: 0.42 });
+    this._lightMat = lightMat; this._darkMat = darkMat;
     const squareGeo = new THREE.BoxGeometry(SQUARE_SIZE * 0.97, 0.12, SQUARE_SIZE * 0.97);
 
     const lightMesh = new THREE.InstancedMesh(squareGeo, lightMat, 32);
@@ -289,6 +309,7 @@ export class Chess3DScene{
     // Plakat nama di sisi kanan & kiri papan (menyatu dengan alas board,
     // dibuat dari canvas texture ringan — tidak menambah draw call berarti).
     this._addSidePlaques(boardGroup);
+    this._addCoordinateLabels(boardGroup);
 
     this.boardGroup = boardGroup;
     this.scene.add(boardGroup);
@@ -422,6 +443,26 @@ export class Chess3DScene{
     boardGroup.add(makePlaque(['WEBSITE DEVELOPER @BENYORIKI'], -5.15, 1));
   }
 
+  /** "Glow palsu" murah (1 plane + 1 tekstur gradasi) pengganti bloom: aura cyan-ungu di bawah papan. */
+  _setupGlowDecor(){
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(64, 64, 6, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(23,230,230,0.55)');
+    grd.addColorStop(0.45, 'rgba(110,90,255,0.28)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(19, 19), mat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = -0.32;
+    plane.renderOrder = -1;
+    this.scene.add(plane);
+  }
+
   _setupAmbientParticles(){
     const COUNT = this._software ? 24 : (this._lite ? 48 : 140);
     const geo = new THREE.BufferGeometry();
@@ -501,6 +542,7 @@ export class Chess3DScene{
     this.composer.addPass(this.bloomPass);
     this.composer.addPass(new OutputPass());
     if (this.composer) this.composer.setSize(w, h);
+    if (!this._userMoved && this.camera) this._setCameraForOrientation(this.orientation || 'w', true);
     this._wake(1200);
   }
 
@@ -528,32 +570,76 @@ export class Chess3DScene{
     });
   }
 
-  _setCameraForOrientation(color, instant){
+  /** Hitung posisi kamera supaya SELURUH papan pas di layar (portrait HP maupun PC),
+   *  dengan pencarian biner jarak sepanjang arah pandang tetap. */
+  _fitCamera(color){
+    const cam = this.camera;
     const aspect = this.container.clientWidth / Math.max(1, this.container.clientHeight);
-    // Layar sempit/portrait (HP) butuh jarak kamera lebih jauh supaya papan
-    // tidak terpotong di kiri-kanan; layar lebar (PC/tablet) tetap dekat.
-    const dist = aspect < 0.55 ? 12.5 : aspect < 0.8 ? 10.5 : 8.4;
-    const height = aspect < 0.55 ? 10.8 : aspect < 0.8 ? 9.2 : 7.6;
-    const pos = color === 'w' ? { x: 0, y: height, z: dist } : { x: 0, y: height, z: -dist };
-    if (instant || !this.camera){
-      this.camera && this.camera.position.set(pos.x, pos.y, pos.z);
-      this.camera && this.camera.lookAt(0, 0, 0);
+    cam.aspect = aspect;
+    cam.updateProjectionMatrix();
+    const portrait = aspect < 0.9;
+    const elev = portrait ? 1.0 : 0.93;               // sudut pandang (rad)
+    const sign = color === 'w' ? 1 : -1;
+    const dir = new THREE.Vector3(0, Math.sin(elev), Math.cos(elev) * sign);
+    const limX = 0.96, limY = portrait ? 0.6 : 0.84;  // sisakan ruang untuk kartu pemain & dok
+    const R = 4.6;
+    const pts = [];
+    [-R, R].forEach(x => [-R, R].forEach(z => { pts.push([x, 0, z]); pts.push([x, 1.1, z]); }));
+    const v = new THREE.Vector3();
+    const fits = (d) => {
+      cam.position.copy(dir).multiplyScalar(d);
+      cam.lookAt(0, 0, 0);
+      cam.updateMatrixWorld(true);
+      for (let i = 0; i < pts.length; i++){
+        v.set(pts[i][0], pts[i][1], pts[i][2]).project(cam);
+        if (Math.abs(v.x) > limX || Math.abs(v.y) > limY) return false;
+      }
+      return true;
+    };
+    let lo = 7, hi = 70;
+    for (let i = 0; i < 18; i++){ const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
+    return { pos: dir.clone().multiplyScalar(hi), dist: hi };
+  }
+
+  _setCameraForOrientation(color, instant){
+    this.orientation = color;
+    if (!this.camera) return;
+    const start = this.camera.position.clone();
+    const { pos, dist } = this._fitCamera(color);
+    if (this.controls) this.controls.maxDistance = Math.max(26, dist * 1.6);
+    if (instant){
+      this.camera.position.copy(pos);
+      this.camera.lookAt(0, 0, 0);
       return;
     }
-    const start = this.camera.position.clone();
+    this.camera.position.copy(start);
     this._tweenValue(0, 1, 900, easeInOutQuad, (t) => {
-      this.camera.position.lerpVectors(start, new THREE.Vector3(pos.x, pos.y, pos.z), t);
+      this.camera.position.lerpVectors(start, pos, t);
       this.camera.lookAt(0, 0, 0);
     });
   }
 
+  /** Tombol "Kamera": kembalikan sudut pandang otomatis yang pas di layar. */
+  resetCamera(){
+    this._userMoved = false;
+    if (this.controls) this.controls.target.set(0, 0, 0);
+    this._setCameraForOrientation(this.orientation || 'w', false);
+  }
+
   setOrientation(color){
     this.orientation = color;
+    if (this._labelsW){ this._labelsW.visible = color === 'w'; this._labelsB.visible = color !== 'w'; }
+    if (this.controls){
+      // Putaran dibatasi di sekitar sisi pemain (sisi putih); sisi hitam bebas.
+      this.controls.minAzimuthAngle = color === 'w' ? -0.8 : -Infinity;
+      this.controls.maxAzimuthAngle = color === 'w' ? 0.8 : Infinity;
+    }
     this._setCameraForOrientation(color, false);
   }
 
   /** Dolly kamera masuk/keluar sepanjang garis pandang saat ini (dipakai tombol zoom di dock). */
   zoomBy(factor){
+    this._userMoved = true;
     const cam = this.camera, target = this.controls.target;
     const dir = new THREE.Vector3().subVectors(cam.position, target);
     const dist = dir.length();
@@ -584,12 +670,13 @@ export class Chess3DScene{
     let mat = this._pieceMats[color];
     if (!mat){
       const isWhite = color === 'w';
+      const th = THEMES[this._theme] || THEMES.neon;
       mat = new THREE.MeshStandardMaterial({
-        color: isWhite ? 0xEDEFF3 : 0x717CAD,
+        color: isWhite ? th.w : th.b,
         metalness: isWhite ? 0.08 : 0.22,
         roughness: isWhite ? 0.48 : 0.46,
-        emissive: isWhite ? 0x0d1520 : 0x3a2570,
-        emissiveIntensity: isWhite ? 0.04 : 0.42
+        emissive: isWhite ? 0x2a2a34 : new THREE.Color(th.b).multiplyScalar(0.35),
+        emissiveIntensity: isWhite ? 0.14 : 0.5
       });
       this._pieceMats[color] = mat;
     }
@@ -614,35 +701,48 @@ export class Chess3DScene{
 
     add(new THREE.CylinderGeometry(0.24, 0.28, 0.1, q(24)), 0.05);
     add(new THREE.CylinderGeometry(0.16, 0.22, 0.14, q(24)), 0.16);
+    const ring = (r, y) => { const m = add(new THREE.TorusGeometry(r, 0.025, 8, q(24)), y); m.rotation.x = Math.PI / 2; return m; };
 
     switch (type){
-      case 'p':
-        add(new THREE.SphereGeometry(0.15, q(20), q(16)), 0.36);
+      case 'p': // pion
+        add(new THREE.CylinderGeometry(0.1, 0.17, 0.2, q(18)), 0.31);
+        ring(0.12, 0.43);
+        add(new THREE.SphereGeometry(0.14, q(20), q(16)), 0.5);
         break;
-      case 'r':
-        add(new THREE.CylinderGeometry(0.19, 0.19, 0.42, q(20)), 0.42);
-        { const crown = add(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 8), 0.66); crown.rotation.y = Math.PI/8; }
+      case 'r': // benteng
+        add(new THREE.CylinderGeometry(0.17, 0.2, 0.42, q(20)), 0.42);
+        ring(0.2, 0.62);
+        { const crown = add(new THREE.CylinderGeometry(0.23, 0.2, 0.12, 8), 0.7); crown.rotation.y = Math.PI / 8; }
         break;
-      case 'n': {
-        add(new THREE.CylinderGeometry(0.16, 0.2, 0.4, q(18)), 0.4);
-        const head = add(new THREE.BoxGeometry(0.16, 0.28, 0.34), 0.66);
-        head.position.z = 0.06;
-        head.rotation.x = -0.25;
-        const nose = add(new THREE.BoxGeometry(0.12, 0.14, 0.18), 0.68);
-        nose.position.z = 0.2;
+      case 'n': { // kuda: kepala kuda hasil extrude profil 2D
+        add(new THREE.CylinderGeometry(0.15, 0.2, 0.28, q(18)), 0.33);
+        const sh = new THREE.Shape();
+        sh.moveTo(-0.15, 0.26); sh.lineTo(-0.17, 0.55); sh.lineTo(-0.1, 0.74); sh.lineTo(-0.08, 0.9);
+        sh.lineTo(-0.01, 0.8); sh.lineTo(0.07, 0.8); sh.lineTo(0.2, 0.64); sh.lineTo(0.26, 0.58);
+        sh.lineTo(0.23, 0.5); sh.lineTo(0.11, 0.5); sh.lineTo(0.03, 0.42); sh.lineTo(0.15, 0.26);
+        sh.lineTo(-0.15, 0.26);
+        const eg = new THREE.ExtrudeGeometry(sh, { depth: 0.22, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 1, curveSegments: 4 });
+        eg.rotateY(-Math.PI / 2);
+        eg.translate(0.11, 0, 0);
+        const em = new THREE.Mesh(eg);
+        parts.push(em);
         break;
       }
-      case 'b':
-        add(new THREE.ConeGeometry(0.19, 0.5, q(22)), 0.5);
-        add(new THREE.SphereGeometry(0.09, q(16), q(12)), 0.82);
+      case 'b': // gajah/uskup
+        add(new THREE.CylinderGeometry(0.1, 0.19, 0.2, q(20)), 0.32);
+        ring(0.13, 0.43);
+        add(new THREE.ConeGeometry(0.16, 0.4, q(22)), 0.62);
+        add(new THREE.SphereGeometry(0.075, q(16), q(12)), 0.88);
         break;
-      case 'q':
+      case 'q': // menteri
         add(new THREE.CylinderGeometry(0.1, 0.22, 0.58, q(22)), 0.55);
+        ring(0.15, 0.3);
         add(new THREE.TorusGeometry(0.19, 0.045, 10, q(24)), 0.86);
         add(new THREE.SphereGeometry(0.09, q(16), q(12)), 0.98);
         break;
-      case 'k':
+      case 'k': // raja
         add(new THREE.CylinderGeometry(0.1, 0.22, 0.62, q(22)), 0.57);
+        ring(0.15, 0.3);
         add(new THREE.TorusGeometry(0.2, 0.04, 10, q(24)), 0.9);
         add(new THREE.BoxGeometry(0.06, 0.2, 0.06), 1.06);
         add(new THREE.BoxGeometry(0.16, 0.06, 0.06), 1.03);
@@ -651,8 +751,9 @@ export class Chess3DScene{
 
     const geos = parts.map((m) => {
       m.updateMatrix();
-      const g = m.geometry;
+      let g = m.geometry;
       g.applyMatrix4(m.matrix);
+      if (g.index){ const ni = g.toNonIndexed(); g.dispose(); g = ni; }   // samakan format supaya bisa digabung
       return g;
     });
     const merged = mergeGeometries(geos, false);
@@ -940,6 +1041,57 @@ export class Chess3DScene{
   }
 
   /* ---------------- Kualitas / performa ---------------- */
+
+  /** Ganti tema warna papan & bidak (hanya mengubah warna material: tanpa beban tambahan). */
+  setTheme(name){
+    const th = THEMES[name] || THEMES.neon;
+    this._theme = THEMES[name] ? name : 'neon';
+    if (this._lightMat) this._lightMat.color.setHex(th.light);
+    if (this._darkMat) this._darkMat.color.setHex(th.dark);
+    if (this._frameMat) this._frameMat.color.setHex(th.frame);
+    if (this._pieceMats){
+      if (this._pieceMats.w) this._pieceMats.w.color.setHex(th.w);
+      if (this._pieceMats.b){
+        this._pieceMats.b.color.setHex(th.b);
+        this._pieceMats.b.emissive.setHex(th.b).multiplyScalar(0.35);
+      }
+    }
+    this.renderer.shadowMap.needsUpdate = true;
+    this._wake(1500);
+  }
+
+  /** Huruf a-h dan angka 1-8 di bingkai papan: 2 plane transparan (1 untuk sisi putih, 1 untuk sisi hitam). */
+  _addCoordinateLabels(group){
+    const make = (black) => {
+      const S = 512, U = S / 9.2;                     // px per satuan dunia
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = S;
+      const g = cv.getContext('2d');
+      g.font = '700 30px Outfit, Arial, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = 'rgba(190,222,255,0.92)';
+      const put = (txt, wx, wz) => {
+        const x = S / 2 + wx * U, y = S / 2 + wz * U;
+        g.save(); g.translate(x, y); if (black) g.rotate(Math.PI); g.fillText(txt, 0, 0); g.restore();
+      };
+      for (let f = 0; f < 8; f++) put(FILES[f], (f - 3.5), black ? -4.3 : 4.3);
+      for (let r = 1; r <= 8; r++) put(String(r), black ? 4.3 : -4.3, 3.5 - (r - 1));
+      const tex = new THREE.CanvasTexture(cv);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(9.2, 9.2),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false })
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.position.y = 0.013;
+      return m;
+    };
+    this._labelsW = make(false);
+    this._labelsB = make(true);
+    this._labelsB.visible = false;
+    group.add(this._labelsW, this._labelsB);
+  }
 
   setBloom(enabled){
     this.quality.bloom = enabled;

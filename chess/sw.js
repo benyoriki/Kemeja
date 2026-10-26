@@ -13,7 +13,7 @@
 // saat pemain benar-benar mulai main, supaya install PWA & buka pertama
 // kali jauh lebih ringan/cepat. File tetap otomatis ter-cache lewat
 // fetch handler network-first di bawah begitu benar-benar diminta.
-const CACHE_NAME = 'lokon-arena-v8';
+const CACHE_NAME = 'lokon-arena-v11';
 const APP_SHELL = [
   './index.html',
   './style.css',

@@ -80,3 +80,19 @@ Terdeteksi otomatis (layar sentuh, CPU <=4 core, RAM <=4GB, Windows 7/XP, atau G
 - **Komputer (Stockfish):** kedalaman dibatasi (maks 10) + batas waktu berpikir 1,2 dtk di perangkat ringan (3 dtk di PC kuat), Hash 16MB.
 - **CSS:** kelas `perf-low` mematikan backdrop-filter, blur 70px pada orb latar, dan animasi dekoratif turnamen; daftar ranking dirender maks tiap 2,5 dtk.
 - `effects.js` dibangun ulang dari `effects.source.js` (Three.js r160, esbuild, target Chrome 80).
+
+---
+# Putaran 3 — Tampilan Game 2026 (tetap ringan)
+- Kamera otomatis pas di layar (portrait HP & PC), tombol "Kamera" untuk reset.
+- Papan: kontras petak lebih jelas; bidak hitam violet vivid, putih ivory; kuda berbentuk kepala kuda; cincin dekoratif pada pion/gajah/benteng.
+- "Glow palsu" murah (1 plane gradasi) pengganti bloom.
+- HUD HP satu baris (avatar, nama, bidak tertangkap, jam), strip riwayat langkah, jam aktif berwarna.
+- Dok: 5 tombol utama berlabel + menu "Lainnya"; kartu solid bergradasi (tanpa blur).
+- Layar hasil dengan animasi ringan & warna menang/kalah.
+
+---
+# Putaran 4 — Papan 2D cadangan, koordinat, tema, petunjuk
+- `effects2d.js`: papan 2D super ringan (tanpa WebGL). Otomatis dipakai bila WebGL tidak ada / GPU software, atau lewat Pengaturan "Mode Super Ringan".
+- Koordinat a-h & 1-8 di bingkai papan 3D (2D juga). Tema papan: Neon, Kayu, Es, Zamrud.
+- Putaran kamera dibatasi di sisi pemain; di HP 1 jari = pilih bidak, 2 jari = putar/zoom.
+- Pita status (giliran, skak, komputer berpikir, selisih materi), pilihan promosi pion, tombol Petunjuk (3x), rokade & en passant kini tampil benar.

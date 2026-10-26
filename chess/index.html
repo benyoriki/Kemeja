@@ -17,7 +17,7 @@
 (function(){try{var u=navigator.userAgent||'',n=navigator;
 if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.deviceMemory||4)<=4||(window.matchMedia&&matchMedia('(pointer:coarse)').matches)||(n.connection&&n.connection.saveData)){document.documentElement.className+=' perf-low';}}catch(e){}})();
 </script>
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=8">
 
 <!-- Three.js sudah di-bundle & di-tree-shake langsung ke dalam effects.js (lihat effects.source.js untuk versi asli/edit) -->
 </head>
@@ -44,7 +44,7 @@ if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.devic
   </div>
   <div class="topbar-badges">
     <div id="guestBadge" class="guest-badge glass">
-      <i class="fa-solid fa-eye"></i> Mode Tamu — hanya melihat
+      <i class="fa-solid fa-eye"></i> Mode Tamu — bebas berlatih
     </div>
     <button id="btnMatchHistory" class="history-fab glass" title="Riwayat Pertandingan Saya" style="display:none;">
       <i class="fa-solid fa-clock-rotate-left"></i>
@@ -91,7 +91,7 @@ if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.devic
 
   <div class="mode-select-row">
     <button id="btnVsComputer" class="mode-card computer glass">
-      <span class="mode-card-tag">Latihan</span>
+      <span class="mode-card-tag">Latihan • Terbuka untuk semua</span>
       <span class="mode-icon-badge"><i class="fa-solid fa-robot mode-icon"></i></span>
       <h3>Lawan Komputer</h3>
       <p>Main melawan mesin AI level 1–20. Tidak memengaruhi rating maupun statistik — murni untuk berlatih.</p>
@@ -185,22 +185,43 @@ if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.devic
     <div id="moveHistoryList"></div>
   </aside>
 
+  <div class="turn-status wait" id="turnStatus"><span class="ts-dot"></span><b id="tsText">Memuat…</b><em id="tsMat"></em></div>
+
+  <div class="promo-picker" id="promoPicker">
+    <div class="promo-box">
+      <p>Promosikan pion menjadi…</p>
+      <div class="promo-row">
+        <button type="button" data-p="q"><span>&#9819;&#xFE0E;</span>Menteri</button>
+        <button type="button" data-p="r"><span>&#9820;&#xFE0E;</span>Benteng</button>
+        <button type="button" data-p="b"><span>&#9821;&#xFE0E;</span>Gajah</button>
+        <button type="button" data-p="n"><span>&#9822;&#xFE0E;</span>Kuda</button>
+      </div>
+    </div>
+  </div>
+
   <div class="draw-offer-box glass" id="drawOfferBox"></div>
 
   <div class="emote-bubble-layer" id="emoteBubbleLayer"></div>
   <div class="emote-picker glass" id="emotePicker" style="display:none;"></div>
 
-  <div class="action-dock glass">
-    <button class="dock-btn danger" id="btnResign" title="Menyerah"><i class="fa-solid fa-flag"></i></button>
-    <button class="dock-btn" id="btnDraw" title="Tawarkan Remis"><i class="fa-solid fa-handshake"></i></button>
-    <button class="dock-btn" id="btnEmote" title="Kirim Reaksi"><i class="fa-regular fa-face-smile"></i></button>
-    <button class="dock-btn" id="btnUndo" title="Undo (vs komputer)"><i class="fa-solid fa-rotate-left"></i></button>
-    <button class="dock-btn" id="btnZoomOut" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-    <button class="dock-btn" id="btnZoomIn" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-    <button class="dock-btn" id="btnMute" title="Mute"><i class="fa-solid fa-volume-high"></i></button>
-    <button class="dock-btn" id="btnFullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
-    <button class="dock-btn" id="btnSettings" title="Pengaturan"><i class="fa-solid fa-gear"></i></button>
-    <button class="dock-btn exit" id="btnExitGame" title="Keluar"><i class="fa-solid fa-door-open"></i></button>
+  <div class="action-dock">
+    <div class="dock-more" id="dockMore">
+      <button class="dock-btn" id="btnHint" title="Petunjuk langkah"><i class="fa-regular fa-lightbulb"></i><span class="dock-lbl">Petunjuk</span></button>
+      <button class="dock-btn" id="btnDraw" title="Tawarkan Remis"><i class="fa-solid fa-handshake"></i><span class="dock-lbl">Remis</span></button>
+      <button class="dock-btn" id="btnEmote" title="Kirim Reaksi"><i class="fa-regular fa-face-smile"></i><span class="dock-lbl">Reaksi</span></button>
+      <button class="dock-btn" id="btnZoomIn" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i><span class="dock-lbl">Zoom +</span></button>
+      <button class="dock-btn" id="btnZoomOut" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i><span class="dock-lbl">Zoom −</span></button>
+      <button class="dock-btn" id="btnMute" title="Mute"><i class="fa-solid fa-volume-high"></i><span class="dock-lbl">Suara</span></button>
+      <button class="dock-btn" id="btnFullscreen" title="Fullscreen"><i class="fa-solid fa-expand"></i><span class="dock-lbl">Penuh</span></button>
+      <button class="dock-btn" id="btnSettings" title="Pengaturan"><i class="fa-solid fa-gear"></i><span class="dock-lbl">Atur</span></button>
+    </div>
+    <div class="dock-main">
+      <button class="dock-btn danger" id="btnResign" title="Menyerah"><i class="fa-solid fa-flag"></i><span class="dock-lbl">Menyerah</span></button>
+      <button class="dock-btn" id="btnUndo" title="Undo (vs komputer)"><i class="fa-solid fa-rotate-left"></i><span class="dock-lbl">Undo</span></button>
+      <button class="dock-btn" id="btnResetCam" title="Reset kamera"><i class="fa-solid fa-camera-rotate"></i><span class="dock-lbl">Kamera</span></button>
+      <button class="dock-btn" id="btnMore" title="Menu lainnya"><i class="fa-solid fa-ellipsis"></i><span class="dock-lbl">Lainnya</span></button>
+      <button class="dock-btn exit" id="btnExitGame" title="Keluar"><i class="fa-solid fa-door-open"></i><span class="dock-lbl">Keluar</span></button>
+    </div>
   </div>
 </section>
 
@@ -306,6 +327,19 @@ if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.devic
       <label class="switch"><input type="checkbox" id="settingShadow" checked><span class="slider"></span></label>
     </div>
     <div class="settings-row">
+      <label>Tema Papan</label>
+      <select id="settingTheme" class="settings-select">
+        <option value="neon">Neon (bawaan)</option>
+        <option value="kayu">Kayu Klasik</option>
+        <option value="es">Es</option>
+        <option value="zamrud">Zamrud</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label>Mode Super Ringan (papan 2D)</label>
+      <label class="switch"><input type="checkbox" id="setting2D"><span class="slider"></span></label>
+    </div>
+    <div class="settings-row">
       <label>Efek Bloom/Glow</label>
       <label class="switch"><input type="checkbox" id="settingBloom" checked><span class="slider"></span></label>
     </div>
@@ -317,8 +351,8 @@ if(/Windows NT (5\.|6\.0|6\.1)/.test(u)||(n.hardwareConcurrency||4)<=4||(n.devic
   <div class="modal-box glass" style="text-align:center;">
     <button class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
     <i class="fa-solid fa-lock guest-lock-icon"></i>
-    <h3>Silakan Daftar Terlebih Dahulu</h3>
-    <p style="font-size:13px;color:var(--ink-dim);margin-top:8px;">Kamu perlu terdaftar sebagai peserta LOKON PRIMA untuk bisa bermain, mengirim tantangan, dan muncul di ranking. Sebagai tamu, kamu tetap bisa melihat dasbor peringkat & pemain online secara real-time.</p>
+    <h3>Daftar untuk Duel Online</h3>
+    <p style="font-size:13px;color:var(--ink-dim);margin-top:8px;">Duel online, tantangan, dan ranking khusus peserta LOKON PRIMA yang sudah terdaftar. Sebagai tamu, kamu tetap bebas berlatih melawan komputer dan melihat dasbor peringkat secara real-time.</p>
     <div class="guest-lock-actions">
       <button class="btn-outline" data-close-modal>Tutup</button>
       <a href="../index.html#daftar" class="btn-solid">Daftar Sekarang</a>
@@ -501,6 +535,6 @@ document.addEventListener('DOMContentLoaded', function () {
 <div id="toastContainer"></div>
 <div id="challengeContainer"></div>
 
-<script type="module" src="script.js?v=6"></script>
+<script type="module" src="script.js?v=9"></script>
 </body>
 </html>

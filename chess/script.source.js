@@ -45,7 +45,25 @@ function loadScene3DModule(){
   }
   return Chess3DScenePromise;
 }
+/* Pilih papan 2D super ringan bila: dipilih manual, WebGL tidak ada, atau GPU hanya software
+   (umum di Windows 7 + driver lama). */
+function use2DPreferred(){
+  try { if (localStorage.getItem('chessMode2d') === '1') return true; } catch (e) {}
+  try {
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+    if (!gl) return true;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const soft = ext && /swiftshader|llvmpipe|software|basic render/i.test(String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)));
+    const lose = gl.getExtension('WEBGL_lose_context');
+    if (lose) lose.loseContext();
+    return !!soft;
+  } catch (e) { return true; }
+}
+function getBoardTheme(){ try { return localStorage.getItem('chessTheme') || 'neon'; } catch (e) { return 'neon'; } }
+
 function prefetchScene3D(){
+  if (use2DPreferred()) return;
   const run = () => loadScene3DModule().catch(() => { Chess3DScenePromise = null; });
   if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 4000 });
   else setTimeout(run, 1500);
@@ -875,11 +893,11 @@ function wireModalInputFocusScroll(){
    7. MODE: LAWAN KOMPUTER (praktik — TIDAK memengaruhi rating/statistik)
 ========================================================= */
 async function startComputerGame(){
-  if (!state.session){ openGuestLock(); return; }
+  // Terbuka untuk SEMUA pengunjung (tamu & peserta): mode latihan tidak menulis data apa pun.
   const level = parseInt(el.computerLevelRange.value, 10) || 10;
 
   UI.switchScreen({ lobbyScreen: el.lobby, gameScreen: el.game }, 'gameScreen');
-  el.gameModeLabel.textContent = `Lawan Komputer • Level ${level} (latihan, rating tidak berubah)`;
+  el.gameModeLabel.textContent = `Lawan Komputer • Level ${level} • Latihan`;
 
   state.vsComputer = true;
   state.roomId = null;
@@ -1119,9 +1137,27 @@ async function setupBoardForNewGame(fen){
 
   if (!state.scene){
     UI.setLoadingProgress(el.loading, 90, 'Memuat papan 3D…');
-    const Chess3DScene = await loadScene3DModule();
-    state.scene = new Chess3DScene(el.board3d, { onSquareClick: onBoardSquareClick });
-    await state.scene.init();
+    let scene = null;
+    if (!use2DPreferred()){
+      try {
+        const Chess3DScene = await loadScene3DModule();
+        scene = new Chess3DScene(el.board3d, { onSquareClick: onBoardSquareClick });
+        await scene.init();
+      } catch (err) {
+        console.warn('3D gagal, pindah ke papan 2D:', err);
+        try { scene && scene.dispose && scene.dispose(); } catch (e2) {}
+        scene = null;
+        el.board3d.innerHTML = '';
+      }
+    }
+    if (!scene){
+      UI.setLoadingProgress(el.loading, 92, 'Memuat papan 2D ringan…');
+      const m2d = await import('./effects2d.js');
+      scene = new m2d.Chess2DScene(el.board3d, { onSquareClick: onBoardSquareClick });
+      await scene.init();
+    }
+    state.scene = scene;
+    state.scene.setTheme && state.scene.setTheme(getBoardTheme());
     // Perangkat lemah (HP, PC lama/Windows 7, GPU software) mulai dengan glow mati
     // (dan bayangan mati bila GPU software). Pemain tetap bisa menyalakannya di Pengaturan.
     const dq = state.scene.defaults || { bloom: true, shadows: true };
@@ -1133,6 +1169,9 @@ async function setupBoardForNewGame(fen){
   state.scene.setPosition(state.match.board());
   state.scene.clearHighlights();
   state.scene.clearCheck();
+  state.hintsUsed = 0;
+  const hb = document.getElementById('btnHint');
+  if (hb) hb.style.display = state.vsComputer ? '' : 'none';
   state.scene.setOrientation(state.vsComputer ? 'w' : state.myColor);
   renderHud();
   UI.renderMoveHistory(el.moveHistoryList, []);
@@ -1143,8 +1182,27 @@ function myTurnNow(){
   return state.match.turn === state.myColor;
 }
 
+/* Pilihan promosi pion (Menteri / Benteng / Gajah / Kuda) */
+function askPromotion(){
+  return new Promise((resolve) => {
+    const box = document.getElementById('promoPicker');
+    if (!box){ resolve('q'); return; }
+    box.classList.add('open');
+    const done = (p) => {
+      box.classList.remove('open');
+      box.onclick = null;
+      resolve(p);
+    };
+    box.onclick = (e) => {
+      const b = e.target.closest ? e.target.closest('[data-p]') : null;
+      if (b) done(b.getAttribute('data-p'));
+      else if (e.target === box) done('q');
+    };
+  });
+}
+
 function onBoardSquareClick(square){
-  if (!state.match || !myTurnNow()) return;
+  if (!state.match || !myTurnNow() || state.promoPending) return;
 
   if (state.selectedSquare){
     if (square === state.selectedSquare){
@@ -1155,9 +1213,15 @@ function onBoardSquareClick(square){
     const legal = state.match.legalMovesFrom(state.selectedSquare);
     const chosen = legal.find(m => m.to === square);
     if (chosen){
-      commitMove(state.selectedSquare, square, chosen.promotion ? 'q' : undefined);
+      const fromSq = state.selectedSquare;
       state.selectedSquare = null;
       state.scene.clearHighlights();
+      if (chosen.promotion){
+        state.promoPending = true;
+        askPromotion().then((p) => { state.promoPending = false; commitMove(fromSq, square, p); });
+      } else {
+        commitMove(fromSq, square, undefined);
+      }
       return;
     }
     // Klik petak lain milik sendiri -> pindah seleksi
@@ -1189,6 +1253,9 @@ async function commitMove(from, to, promotion){
   await state.scene.animateMove({
     from, to, captured: moveResult.captured, promotion: moveResult.promotion, color: moveResult.color
   });
+
+  // Rokade & en passant memindahkan/menghapus bidak lain: sinkronkan papan agar visualnya benar
+  if (moveResult.flags && /[kqe]/.test(moveResult.flags)) state.scene.setPosition(state.match.board());
 
   if (moveResult.captured) sound.capture(); else sound.move();
   if (state.match.isCheck() && !state.match.isCheckmate()){
@@ -1258,7 +1325,7 @@ function reflectGameStatusEffects(){
 /* ---------------- HUD ---------------- */
 function renderHud(){
   const selfName = state.vsComputer ? (state.session ? state.session.nama : 'Tamu') : (state.me ? state.me.nama : '-');
-  const selfRating = state.vsComputer ? (state.me ? state.me.rating : '-') : (state.me ? state.me.rating : '-');
+  const selfRating = state.me ? state.me.rating : (state.vsComputer ? 'Latihan' : '-');
   el.hudSelfName.textContent = selfName;
   el.hudSelfRating.textContent = selfRating;
   el.hudSelfAvatar.textContent = UI.initials(selfName);
@@ -1277,6 +1344,52 @@ function renderHud(){
   const selfMs = state.localTimers[myColor], oppMs = state.localTimers[oppColor];
   if (el.duelFillSelf) el.duelFillSelf.style.width = `${(selfMs/total)*100}%`;
   if (el.duelFillOpp) el.duelFillOpp.style.width = `${(oppMs/total)*100}%`;
+  updateTurnStatus();
+}
+
+/* Pita status: giliran, skak, komputer berpikir, selisih materi */
+const PIECE_VAL = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+function updateTurnStatus(){
+  const box = document.getElementById('turnStatus');
+  const t = document.getElementById('tsText'), m = document.getElementById('tsMat');
+  if (!box || !t || !state.match) return;
+  let txt, cls;
+  if (state.match.isGameOver()){ txt = 'Permainan selesai'; cls = 'over'; }
+  else {
+    const mine = myTurnNow(), check = state.match.isCheck();
+    if (mine){ txt = check ? 'Skak! Giliranmu' : 'Giliranmu'; cls = check ? 'check' : 'mine'; }
+    else if (state.vsComputer){ txt = check ? 'Skak! Komputer berpikir…' : 'Komputer berpikir…'; cls = check ? 'check' : 'wait'; }
+    else { txt = check ? 'Skak! Menunggu lawan…' : 'Menunggu lawan…'; cls = check ? 'check' : 'wait'; }
+  }
+  t.textContent = txt;
+  box.className = 'turn-status ' + cls;
+  const myColor = state.vsComputer ? 'w' : state.myColor;
+  const oppColor = myColor === 'w' ? 'b' : 'w';
+  const cap = state.match.capturedPieces();
+  const sum = (arr) => (arr || []).reduce((a, x) => a + (PIECE_VAL[x] || 0), 0);
+  const diff = sum(cap[oppColor]) - sum(cap[myColor]);
+  m.textContent = diff > 0 ? `Materi +${diff}` : (diff < 0 ? `Materi −${-diff}` : 'Materi seimbang');
+}
+
+/* Petunjuk (hanya lawan komputer): maksimal 3x per permainan */
+async function giveHint(){
+  if (!state.vsComputer || !state.computer || !state.match || state.match.isGameOver()) return;
+  if (!myTurnNow() || state.hintBusy) return;
+  if ((state.hintsUsed || 0) >= 3){ UI.toast(el.toastContainer, 'Petunjuk sudah dipakai 3x di permainan ini.', 'info'); return; }
+  state.hintBusy = true;
+  try {
+    const legalAll = [];
+    'abcdefgh'.split('').forEach(f => { for (let r = 1; r <= 8; r++) legalAll.push(...state.match.legalMovesFrom(f + r)); });
+    const mv = await state.computer.bestMove(state.match.fen, () => legalAll);
+    if (mv && myTurnNow()){
+      state.hintsUsed = (state.hintsUsed || 0) + 1;
+      state.selectedSquare = mv.from;
+      state.scene.highlightSelected(mv.from);
+      state.scene.showLegalMoves([{ to: mv.to, captured: false }]);
+      UI.toast(el.toastContainer, `Saran: ${mv.from} → ${mv.to} (${3 - state.hintsUsed} petunjuk tersisa)`, 'info');
+    }
+  } catch (e) { /* diabaikan */ }
+  state.hintBusy = false;
 }
 
 /* ---------------- Timer loop ---------------- */
@@ -1542,10 +1655,43 @@ function wireGameActions(){
   el.btnZoomIn && el.btnZoomIn.addEventListener('click', () => { sound.click(); state.scene && state.scene.zoomIn(); });
   el.btnZoomOut && el.btnZoomOut.addEventListener('click', () => { sound.click(); state.scene && state.scene.zoomOut(); });
 
+  // Dok: tombol utama + menu "Lainnya" + reset kamera
+  const dockMore = document.getElementById('dockMore');
+  const btnMore = document.getElementById('btnMore');
+  const btnResetCam = document.getElementById('btnResetCam');
+  btnMore && btnMore.addEventListener('click', (e) => { e.stopPropagation(); dockMore.classList.toggle('open'); });
+  dockMore && dockMore.addEventListener('click', (e) => {
+    if (e.target.closest('.dock-btn') && !e.target.closest('#btnMute')) setTimeout(() => dockMore.classList.remove('open'), 0);
+  });
+  document.addEventListener('click', (e) => {
+    if (dockMore && !e.target.closest('.action-dock')) dockMore.classList.remove('open');
+  });
+  btnResetCam && btnResetCam.addEventListener('click', () => { state.scene && state.scene.resetCamera(); });
+  const btnHint = document.getElementById('btnHint');
+  btnHint && btnHint.addEventListener('click', giveHint);
+
+  // Tema papan & mode super ringan (disimpan di perangkat)
+  const selTheme = document.getElementById('settingTheme');
+  if (selTheme){
+    selTheme.value = getBoardTheme();
+    selTheme.addEventListener('change', () => {
+      try { localStorage.setItem('chessTheme', selTheme.value); } catch (e) {}
+      state.scene && state.scene.setTheme && state.scene.setTheme(selTheme.value);
+    });
+  }
+  const chk2D = document.getElementById('setting2D');
+  if (chk2D){
+    try { chk2D.checked = localStorage.getItem('chessMode2d') === '1'; } catch (e) {}
+    chk2D.addEventListener('change', () => {
+      try { localStorage.setItem('chessMode2d', chk2D.checked ? '1' : '0'); } catch (e) {}
+      UI.toast(el.toastContainer, 'Mode papan berubah setelah halaman dimuat ulang.', 'info');
+    });
+  }
+
   el.btnMute && el.btnMute.addEventListener('click', () => {
     const muted = !sound.muted;
     sound.setMuted(muted);
-    el.btnMute.innerHTML = muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+    el.btnMute.innerHTML = muted ? '<i class="fa-solid fa-volume-xmark"></i><span class="dock-lbl">Suara</span>' : '<i class="fa-solid fa-volume-high"></i><span class="dock-lbl">Suara</span>';
   });
 
   el.btnFullscreen && el.btnFullscreen.addEventListener('click', () => {
@@ -1675,7 +1821,7 @@ async function boot(){
     el.guestBadge && (el.guestBadge.style.display = 'flex');
     el.memberBadge && (el.memberBadge.style.display = 'none');
     if (el.dashMenuName) el.dashMenuName.textContent = 'Tamu';
-    if (el.dashMenuRating) el.dashMenuRating.textContent = 'Mode Tamu — hanya melihat';
+    if (el.dashMenuRating) el.dashMenuRating.textContent = 'Mode Tamu — bisa berlatih lawan komputer';
   }
 
   UI.setLoadingProgress(el.loading, 80, 'Menyiapkan dasbor…');
@@ -1695,7 +1841,6 @@ async function boot(){
     el.computerLevelValue.textContent = e.target.value;
   });
   el.btnVsComputer && el.btnVsComputer.addEventListener('click', () => {
-    if (!state.session){ openGuestLock(); return; }
     document.getElementById('computerLevelPanel').classList.add('open');
   });
   el.btnVsPlayer && el.btnVsPlayer.addEventListener('click', () => {
